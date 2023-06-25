@@ -27,6 +27,9 @@ namespace Donuts
         private static bool notVisibleToPlayer;
         private static bool validNavPath;
         private static NavMeshPath path;
+        private static bool notARoof;
+        private static float groundHeight;
+        private static GClass624 bot;
 
         private static Vector3 coordinate;
         private static Vector3 spawnPosition;
@@ -162,7 +165,7 @@ namespace Donuts
                         maplocation = gameWorld.MainPlayer.Location.ToLower();
                         coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                        if (IsWithinBotDistance(coordinate) && maplocation == hotspot.MapName)
+                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
                         {
                             SpawnBots(coordinate);
                             botsSpawned = true;
@@ -180,7 +183,7 @@ namespace Donuts
             }
         }
 
-        private bool IsWithinBotDistance(Vector3 position)
+        private bool IsWithinBotActivationDistance(Vector3 position)
         {
             float distance = Vector3.Distance(gameWorld.MainPlayer.Position, position);
             return distance <= botMaxDistance;
@@ -216,14 +219,42 @@ namespace Donuts
                     else
                     {
                         side = (UnityEngine.Random.Range(0, 2) == 0) ? EPlayerSide.Usec : EPlayerSide.Bear;
-                        wildSpawnType = WildSpawnType.pmcBot;
+                        //grab WildSpawnType SPTUsec or SPTBear
+                        if (side == EPlayerSide.Usec)
+                        {
+                            wildSpawnType = (WildSpawnType)Enum.Parse(typeof(WildSpawnType), "SPTUsec");
+                        }
+                        else
+                        {
+                            wildSpawnType = (WildSpawnType)Enum.Parse(typeof(WildSpawnType), "SPTBear");
+                        }
+
+                        //wildSpawnType = WildSpawnType.pmcBot;
                     }
 
-                    var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
+                    //setup bot details
+                    bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
 
                     spawnPosition = GetRandomSpawnPosition(coordinate, botMinDistance, botMaxDistance);
 
                     isOnNavMesh = NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 1f, NavMesh.AllAreas);
+
+                    //move check up here to make sure roof isn't in gameobject name from collider
+                    spawnPosition = hit.position;
+                    Ray ray = new Ray(spawnPosition, Vector3.down);
+                    if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
+                    {
+                        groundHeight = heightHit.point.y;
+                        notARoof = !heightHit.collider.name.ToLower().Contains("roof");
+
+                        // Adjust the spawn position to the ground height if it's above the ground
+                        if (spawnPosition.y > groundHeight)
+                        {
+                            spawnPosition.y = groundHeight;
+                        }
+
+                    }
+
                     path = new NavMeshPath();
 
                     validNavPath = NavMesh.CalculatePath(hit.position, coordinate, NavMesh.AllAreas, path);
@@ -232,28 +263,15 @@ namespace Donuts
                    
                     notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, hit.position, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
 
-                    if (isOnNavMesh && notVisibleToPlayer && validNavPath)
+                    if (isOnNavMesh && notVisibleToPlayer && validNavPath && notARoof)
                     {
-                        spawnPosition = hit.position;
-                        Ray ray = new Ray(spawnPosition, Vector3.down);
-                        if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
-                        {
-                            float groundHeight = heightHit.point.y;
+                        var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
+                        var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+                        var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
+                        Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
-                            // Adjust the spawn position to the ground height if it's above the ground
-                            if (spawnPosition.y > groundHeight)
-                            {
-                                spawnPosition.y = groundHeight;
-                            }
-
-                            var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
-                            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
-                            var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                            Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
-
-                            AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
-                            count++;
-                        }
+                        AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
+                        count++;
                     }
 
                     await Task.Delay(20);
