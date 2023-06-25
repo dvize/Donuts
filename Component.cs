@@ -25,6 +25,8 @@ namespace Donuts
         private static string maplocation;
         private static bool isOnNavMesh;
         private static bool notVisibleToPlayer;
+        private static bool validNavPath;
+        private static NavMeshPath path;
 
         private static Vector3 coordinate;
         private static Vector3 spawnPosition;
@@ -220,16 +222,19 @@ namespace Donuts
 
                     spawnPosition = GetRandomSpawnPosition(coordinate, botMinDistance, botMaxDistance);
 
-                    isOnNavMesh = NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 0.2f, NavMesh.AllAreas);
+                    isOnNavMesh = NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 1f, NavMesh.AllAreas);
+                    path = new NavMeshPath();
 
-                    //bool validNavPath = NavMesh.CalculatePath(spawnPosition, coordinate, NavMesh.AllAreas, NavMeshPath.path);
+                    validNavPath = NavMesh.CalculatePath(spawnPosition, coordinate, NavMesh.AllAreas, path);
 
                    //update hit position
-                    spawnPosition = hit.position;
+                   
                     notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, spawnPosition, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
 
-                    if (isOnNavMesh && notVisibleToPlayer)
+                    if (isOnNavMesh && notVisibleToPlayer && validNavPath)
                     {
+                        spawnPosition = hit.position;
+
                         var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
                         var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
 
