@@ -32,7 +32,7 @@ namespace Donuts
         private static Vector3 spawnPosition;
 
         private static GameWorld gameWorld;
-        private Player player;
+        private static LocationSettingsClass locationSettingsClass;
 
         private static BotSpawnerClass botSpawnerClass;
         protected static ManualLogSource Logger
@@ -57,6 +57,8 @@ namespace Donuts
             LoadFightLocations();
 
             Logger.LogDebug("Loaded Bot Fight Locations: " + fightLocations.Locations.Count);
+
+            
         }
 
         public static void Enable()
@@ -67,7 +69,6 @@ namespace Donuts
                 gameWorld.GetOrAddComponent<DonutComponent>();
 
                 botSpawnerClass = (Singleton<IBotGame>.Instance).BotsController.BotSpawner;
-
 
                 Logger.LogDebug("Donuts Enabled");
             }
@@ -225,11 +226,11 @@ namespace Donuts
                     isOnNavMesh = NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 1f, NavMesh.AllAreas);
                     path = new NavMeshPath();
 
-                    validNavPath = NavMesh.CalculatePath(spawnPosition, coordinate, NavMesh.AllAreas, path);
+                    validNavPath = NavMesh.CalculatePath(hit.position, coordinate, NavMesh.AllAreas, path);
 
                    //update hit position
                    
-                    notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, spawnPosition, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
+                    notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, hit.position, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
 
                     if (isOnNavMesh && notVisibleToPlayer && validNavPath)
                     {
@@ -237,7 +238,7 @@ namespace Donuts
                         Ray ray = new Ray(spawnPosition, Vector3.down);
                         if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                         {
-                            float groundHeight = heightHit.point.y;
+                            float groundHeight = Math.Abs(heightHit.point.y);
 
                             // Adjust the spawn position to the ground height if it's above the ground
                             if (spawnPosition.y > groundHeight)
@@ -268,9 +269,14 @@ namespace Donuts
 
         private Vector3 GetRandomSpawnPosition(Vector3 coordinate, float minDistance, float maxDistance)
         {
-            Vector3 direction = UnityEngine.Random.insideUnitSphere;
+
+            Vector3 direction = UnityEngine.Random.onUnitSphere;
             float distance = UnityEngine.Random.Range(minDistance, maxDistance);
-            Vector3 spawnPosition = coordinate + direction.normalized * distance;
+
+            if (distance > maxDistance)
+                distance = maxDistance;
+
+            Vector3 spawnPosition = coordinate + (direction * distance);
 
             return spawnPosition;
         }
