@@ -55,13 +55,6 @@ namespace Donuts
             maplocation = gameWorld.MainPlayer.Location.ToLower();
 
             LoadFightLocations();
-
-            Logger.LogDebug("Loaded Bot Fight Locations: " + fightLocations.Locations.Count);
-
-            //filter out locations from list if they are not on the same map as the player
-            fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
-
-            Logger.LogDebug("Valid Bot Fight Locations: " + fightLocations.Locations.Count);
         }
         public static void Enable()
         {
@@ -83,17 +76,32 @@ namespace Donuts
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
-                // Get the path to the JSON file from the DLL file.
-                string jsonPath = Path.Combine(directoryPath, "FightLocations.json");
+                string jsonFolderPath = Path.Combine(directoryPath, "dvize.Donuts", "patterns");
+                string[] jsonFiles = Directory.GetFiles(jsonFolderPath, "*.json");
 
-                // Try to read the JSON file of FightLocations using Newtonsoft.Json into fightLocations, else show error and disable the plugin.
-                if (!File.Exists(jsonPath))
+                List<Entry> combinedLocations = new List<Entry>();
+
+                foreach (string file in jsonFiles)
                 {
-                    Logger.LogError("FightLocations.json not found, disabling plugin");
+                    FightLocations fightfile = JsonConvert.DeserializeObject<FightLocations>(File.ReadAllText(file));
+                    combinedLocations.AddRange(fightfile.Locations);
+                }
+
+                if (combinedLocations.Count == 0)
+                {
+                    Logger.LogError("No Bot Fight Entries found in JSON files, disabling plugin");
                     Debug.Break();
                 }
 
-                fightLocations = JsonConvert.DeserializeObject<FightLocations>(File.ReadAllText(jsonPath));
+                Logger.LogDebug("Loaded " + combinedLocations.Count + " Bot Fight Entries");
+
+                // Assign the combined fight locations to the fightLocations variable.
+                fightLocations = new FightLocations { Locations = combinedLocations };
+                
+                //filter fightLocations for maplocation
+                fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
+                Logger.LogDebug("Valid Bot Fight Entries: " + fightLocations.Locations.Count);
+
                 fileLoaded = true;
             }
         }
