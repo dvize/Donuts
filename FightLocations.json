@@ -1,0 +1,13 @@
+{
+    "Locations":[
+        {
+        "MapName":"bigmap",
+        "Name":"dorms baby",
+        "Position": {
+		  "x": 510.865,
+		  "y": 3.43099976,
+		  "z": 46.168
+      	}
+        
+		}]
+}
