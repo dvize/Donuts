@@ -256,7 +256,7 @@ namespace Donuts
                     if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                     {
                         groundHeight = heightHit.point.y;
-                        notARoof = (!heightHit.collider.name.ToLower().Contains("roof")) && (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof"));
+                        notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) && (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof"));
 
                         // Adjust the spawn position to the ground height if it's above the ground
                         if (spawnPosition.y > groundHeight)
