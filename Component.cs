@@ -238,7 +238,7 @@ namespace Donuts
                         Ray ray = new Ray(spawnPosition, Vector3.down);
                         if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                         {
-                            float groundHeight = Math.Abs(heightHit.point.y);
+                            float groundHeight = heightHit.point.y;
 
                             // Adjust the spawn position to the ground height if it's above the ground
                             if (spawnPosition.y > groundHeight)
