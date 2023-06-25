@@ -76,7 +76,7 @@ namespace Donuts
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
-                string jsonFolderPath = Path.Combine(directoryPath, "dvize.Donuts", "patterns");
+                string jsonFolderPath = Path.Combine(directoryPath, "patterns");
                 string[] jsonFiles = Directory.GetFiles(jsonFolderPath, "*.json");
 
                 List<Entry> combinedLocations = new List<Entry>();
@@ -317,7 +317,9 @@ namespace Donuts
                     if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                     {
                         groundHeight = heightHit.point.y;
-                        notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) && (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof"));
+                        notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) && 
+                            (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof")) &&
+                            (!heightHit.collider.gameObject.name.ToLower().Contains("blocker"));
 
                         // Adjust the spawn position to the ground height if it's above the ground
                         if (spawnPosition.y > groundHeight)
