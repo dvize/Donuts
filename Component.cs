@@ -234,8 +234,8 @@ namespace Donuts
                     if (isOnNavMesh && notVisibleToPlayer && validNavPath)
                     {
                         spawnPosition = hit.position;
-                        Ray ray = new Ray(spawnPosition + Vector3.up * 100f, Vector3.down);
-                        if (Physics.Raycast(ray, out RaycastHit heightHit, Mathf.Infinity, LayerMaskClass.PlayerStaticCollisionsMask))
+                        Ray ray = new Ray(spawnPosition, Vector3.down);
+                        if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                         {
                             float groundHeight = heightHit.point.y;
 
