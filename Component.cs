@@ -383,7 +383,7 @@ namespace Donuts
             int layerMask = LayerMaskClass.DefaultLayer;
 
             //check if any gameobject parent has the name "WALLS" in it
-            if (Physics.SphereCast(position, 0.5f, Vector3.zero, out RaycastHit hitInfo, 0f, layerMask))
+            if (Physics.SphereCast(position, 1.0f, Vector3.zero, out RaycastHit hitInfo, 0f, layerMask))
             {
                 Transform currentTransform = hitInfo.collider.gameObject.transform;
 
