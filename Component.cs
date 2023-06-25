@@ -234,14 +234,24 @@ namespace Donuts
                     if (isOnNavMesh && notVisibleToPlayer && validNavPath)
                     {
                         spawnPosition = hit.position;
+                        Ray ray = new Ray(spawnPosition + Vector3.up * 100f, Vector3.down);
+                        if (Physics.Raycast(ray, out RaycastHit heightHit, Mathf.Infinity, LayerMaskClass.PlayerStaticCollisionsMask))
+                        {
+                            float groundHeight = heightHit.point.y;
 
-                        var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
-                        var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+                            // Adjust the spawn position to the ground height if it's above the ground
+                            if (spawnPosition.y > groundHeight)
+                            {
+                                spawnPosition.y = groundHeight;
+                                var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
+                                var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
 
-                        Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
-                      
-                        AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, botSpawnerClass.GetClosestZone(spawnPosition, out botMaxDistance), bot, null, cancellationToken.Token });
-                        count++;
+                                Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+
+                                AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, botSpawnerClass.GetClosestZone(spawnPosition, out botMaxDistance), bot, null, cancellationToken.Token });
+                                count++;
+                            }
+                        }
                     }
 
                     await Task.Delay(20);
