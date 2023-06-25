@@ -222,7 +222,7 @@ namespace Donuts
 
                     isOnNavMesh = NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 0.2f, NavMesh.AllAreas);
 
-                    bool validNavPath = NavMesh.CalculatePath(spawnPosition, coordinate, NavMesh.AllAreas, NavMeshPath.path);
+                    //bool validNavPath = NavMesh.CalculatePath(spawnPosition, coordinate, NavMesh.AllAreas, NavMeshPath.path);
 
                    //update hit position
                     spawnPosition = hit.position;
