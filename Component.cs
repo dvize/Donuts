@@ -113,7 +113,7 @@ namespace Donuts
                         maplocation = gameWorld.MainPlayer.Location.ToLower();
                         coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
+                        if (IsWithinBotActivationDistance(coordinate, hotspot.MaxDistance) && maplocation == hotspot.MapName)
                         {
                             SpawnBots(coordinate, hotspot);
                             botsSpawned = true;
@@ -131,10 +131,10 @@ namespace Donuts
             }
         }
 
-        private bool IsWithinBotActivationDistance(Vector3 position)
+        private bool IsWithinBotActivationDistance(Vector3 position, float MaxDistance)
         {
             float distance = Vector3.Distance(gameWorld.MainPlayer.Position, position);
-            return distance <= botMaxDistance;
+            return distance <= MaxDistance;
         }
 
         private async void SpawnBots(Vector3 coordinate, Entry hotspot)
