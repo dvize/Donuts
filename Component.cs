@@ -324,7 +324,7 @@ namespace Donuts
                     {
                         groundHeight = heightHit.point.y;
                         notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) &&
-                            (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof")) &&
+                            (!heightHit.collider.gameObject.transform.parent.gameObject.name.ToLower().Contains("roof")) &&
                             (!heightHit.collider.gameObject.name.ToLower().Contains("blocker"));
 
                         // Adjust the spawn position to the ground height if it's above the ground
