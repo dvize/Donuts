@@ -97,7 +97,7 @@ namespace Donuts
 
                 // Assign the combined fight locations to the fightLocations variable.
                 fightLocations = new FightLocations { Locations = combinedLocations };
-                
+
                 //filter fightLocations for maplocation
                 fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
                 Logger.LogDebug("Valid Bot Fight Entries For Current Map: " + fightLocations.Locations.Count);
@@ -123,6 +123,12 @@ namespace Donuts
 
                         if (IsWithinBotActivationDistance(coordinate, hotspot.MaxDistance) && maplocation == hotspot.MapName)
                         {
+                            //check if passes hotspot.spawnChance
+                            if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
+                            {
+                                Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot : " + hotspot.Name);
+                                continue;
+                            }
                             SpawnBots(coordinate, hotspot);
                             botsSpawned = true;
 
@@ -317,7 +323,7 @@ namespace Donuts
                     if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                     {
                         groundHeight = heightHit.point.y;
-                        notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) && 
+                        notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) &&
                             (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof")) &&
                             (!heightHit.collider.gameObject.name.ToLower().Contains("blocker"));
 
@@ -400,9 +406,14 @@ namespace Donuts
         {
             get; set;
         }
-
         public int MaxRandomNumBots
         {
+            get; set;
+        }
+
+        public int SpawnChance
+        {
+
             get; set;
         }
     }

@@ -11,7 +11,8 @@
 			"WildSpawnType": "sptusec",
 			"MinDistance": 25.0,
 			"MaxDistance": 60,
-			"MaxRandomNumBots": 2
+			"MaxRandomNumBots": 2,
+			"SpawnChance": 100
         },
 		{
             "MapName": "bigmap",
@@ -24,7 +25,8 @@
 			"WildSpawnType": "sptbear",
 			"MinDistance": 25.0,
 			"MaxDistance": 60,
-			"MaxRandomNumBots": 2
+			"MaxRandomNumBots": 2,
+			"SpawnChance": 100
         }
     ]
 }
