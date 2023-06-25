@@ -160,6 +160,114 @@ namespace Donuts
 
                     switch (hotspot.WildSpawnType.ToLower())
                     {
+                        case "assault":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.assault;
+                            break;
+                        case "assaultgroup":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.assaultGroup;
+                            break;
+                        case "bossbully":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossBully;
+                            break;
+                        case "bossgluhar":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossGluhar;
+                            break;
+                        case "bosskilla":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossKilla;
+                            break;
+                        case "bosskojaniy":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossKojaniy;
+                            break;
+                        case "bosssanitar":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossSanitar;
+                            break;
+                        case "bosstagilla":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossTagilla;
+                            break;
+                        case "bosszryachiy":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossZryachiy;
+                            break;
+                        case "cursedassault":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.cursedAssault;
+                            break;
+                        case "exusec":
+                            side = EPlayerSide.Usec;
+                            wildSpawnType = WildSpawnType.pmcBot;
+                            break;
+                        case "followerbully":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerBully;
+                            break;
+                        case "followergluharassault":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerGluharAssault;
+                            break;
+                        case "followergluharscout":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerGluharScout;
+                            break;
+                        case "followergluharsecurity":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerGluharSecurity;
+                            break;
+                        case "followergluharsnipe":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerGluharSnipe;
+                            break;
+                        case "followerkojaniy":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerKojaniy;
+                            break;
+                        case "followersanitar":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerSanitar;
+                            break;
+                        case "followertagilla":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerTagilla;
+                            break;
+                        case "followerzryachiy":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerZryachiy;
+                            break;
+                        case "gifter":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.gifter;
+                            break;
+                        case "marksman":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.marksman;
+                            break;
+                        case "pmcbot":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.pmcBot;
+                            break;
+                        case "sectantpriest":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.sectantPriest;
+                            break;
+                        case "sectantwarrior":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.sectantWarrior;
+                            break;
+                        case "usec":
+                            side = EPlayerSide.Usec;
+                            wildSpawnType = sptUsec;
+                            break;
+                        case "bear":
+                            side = EPlayerSide.Bear;
+                            wildSpawnType = sptBear;
+                            break;
                         case "sptusec":
                             side = EPlayerSide.Usec;
                             wildSpawnType = sptUsec;
@@ -167,10 +275,6 @@ namespace Donuts
                         case "sptbear":
                             side = EPlayerSide.Bear;
                             wildSpawnType = sptBear;
-                            break;
-                        case "exusec":
-                            side = EPlayerSide.Usec;
-                            wildSpawnType = WildSpawnType.pmcBot;
                             break;
                         case "followerbigpipe":
                             side = EPlayerSide.Savage;
