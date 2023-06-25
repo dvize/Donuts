@@ -24,7 +24,7 @@ namespace Donuts
                 "1.Main Settings",
                 "Bot Spawn Distance",
                 100f,
-                "In seconds, it will choose +/- rand(100) seconds randomly from the given value");
+                "Distance in which the player is away from the fight location point that it triggers bot spawn");
 
             SpawnTimer = Config.Bind(
                 "1.Main Settings",
