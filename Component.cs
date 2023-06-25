@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
-using EFT.Game.Spawning;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -53,9 +52,8 @@ namespace Donuts
 
         private void Start()
         {
-            SetupBotDistanceForMap();
-            Logger.LogDebug("Setup Bot Min Distance for Map: " + botMinDistance);
-            Logger.LogDebug("Setup Bot Max Distance for Map: " + botMaxDistance);
+            Logger.LogDebug("Setup maplocation");
+            maplocation = gameWorld.MainPlayer.Location.ToLower();
 
             LoadFightLocations();
 
@@ -76,57 +74,6 @@ namespace Donuts
                 botSpawnerClass = (Singleton<IBotGame>.Instance).BotsController.BotSpawner;
 
                 Logger.LogDebug("Donuts Enabled");
-            }
-        }
-
-        private void SetupBotDistanceForMap()
-        {
-            Logger.LogDebug("Setup Bot Distance for Map");
-            maplocation = gameWorld.MainPlayer.Location.ToLower();
-
-            switch (maplocation)
-            {
-                case "factory4_day":
-                case "factory4_night":
-                    botMinDistance = DonutsPlugin.factoryMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.factoryMaxDistance.Value;
-                    break;
-                case "bigmap":
-                    botMinDistance = DonutsPlugin.customsMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.customsMaxDistance.Value;
-                    break;
-                case "interchange":
-                    botMinDistance = DonutsPlugin.interchangeMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.interchangeMaxDistance.Value;
-                    break;
-                case "rezervbase":
-                    botMinDistance = DonutsPlugin.reserveMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.reserveMaxDistance.Value;
-                    break;
-                case "laboratory":
-                    botMinDistance = DonutsPlugin.laboratoryMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.laboratoryMaxDistance.Value;
-                    break;
-                case "lighthouse":
-                    botMinDistance = DonutsPlugin.lighthouseMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.lighthouseMaxDistance.Value;
-                    break;
-                case "shoreline":
-                    botMinDistance = DonutsPlugin.shorelineMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.shorelineMaxDistance.Value;
-                    break;
-                case "woods":
-                    botMinDistance = DonutsPlugin.woodsMinDistance.Value;
-                    botMinDistance = DonutsPlugin.woodsMaxDistance.Value;
-                    break;
-                case "tarkovstreets":
-                    botMinDistance = DonutsPlugin.tarkovstreetsMinDistance.Value;
-                    botMaxDistance = DonutsPlugin.tarkovstreetsMaxDistance.Value;
-                    break;
-                default:
-                    botMinDistance = 50.0f;
-                    botMaxDistance = 150.0f;
-                    break;
             }
         }
 
@@ -169,11 +116,11 @@ namespace Donuts
 
                         if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
                         {
-                            SpawnBots(coordinate);
+                            SpawnBots(coordinate, hotspot);
                             botsSpawned = true;
 
-                            //break after first point found to spawn
-                            break;
+                            //Remove Break as we want them to be able to define the same location but with bot specific changes.
+                            //break;
                         }
                     }
 
@@ -191,56 +138,57 @@ namespace Donuts
             return distance <= botMaxDistance;
         }
 
-        private async void SpawnBots(Vector3 coordinate)
+        private async void SpawnBots(Vector3 coordinate, Entry hotspot)
         {
             Logger.LogDebug("Timer: " + timer);
             Logger.LogDebug("Entered SpawnBots()");
             int count = 0;
-            int botMin = DonutsPlugin.BotMin.Value;
-            int botMax = DonutsPlugin.BotMax.Value;
-
-            if (botMin >= botMax)
-            {
-                Logger.LogWarning("Invalid bot min and max values. BotMin should be less than BotMax.");
-                return;
-            }
 
             try
             {
-                while (count < UnityEngine.Random.Range(botMin, botMax))
+                while (count < UnityEngine.Random.Range(1, hotspot.MaxRandomNumBots))
                 {
-                    string type = (UnityEngine.Random.Range(0, 2) == 0) ? "scav" : "pmc";
                     EPlayerSide side;
                     WildSpawnType wildSpawnType;
+                    botMinDistance = hotspot.MinDistance;
+                    botMaxDistance = hotspot.MaxDistance;
 
-                    if (type == "scav")
+                    //define spt wildspawn
+                    Type wildSpawnTypeEnum = typeof(EFT.WildSpawnType);
+
+                    WildSpawnType sptUsec = (WildSpawnType)wildSpawnTypeEnum.GetField("sptUsec").GetValue(null);
+                    WildSpawnType sptBear = (WildSpawnType)wildSpawnTypeEnum.GetField("sptBear").GetValue(null);
+
+                    switch (hotspot.WildSpawnType.ToLower())
                     {
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.assault;
-                    }
-                    else
-                    {
-                        side = (UnityEngine.Random.Range(0, 2) == 0) ? EPlayerSide.Usec : EPlayerSide.Bear;
-
-                        //define spt specific wildspawntype
-                        Type wildSpawnTypeClassType = typeof(EFT.WildSpawnType);
-
-                        FieldInfo sptUsecField = wildSpawnTypeClassType.GetField("sptUsec");
-                        FieldInfo sptBearField = wildSpawnTypeClassType.GetField("sptBear");
-
-                        WildSpawnType sptUsec = (WildSpawnType)sptUsecField.GetValue(null);
-                        WildSpawnType sptBear = (WildSpawnType)sptBearField.GetValue(null);
-
-                        if (side == EPlayerSide.Usec)
-                        {
+                        case "sptusec":
+                            side = EPlayerSide.Usec;
                             wildSpawnType = sptUsec;
-                        }
-                        else
-                        {
+                            break;
+                        case "sptbear":
+                            side = EPlayerSide.Bear;
                             wildSpawnType = sptBear;
-                        }
-
-                        //wildSpawnType = WildSpawnType.pmcBot;
+                            break;
+                        case "exusec":
+                            side = EPlayerSide.Usec;
+                            wildSpawnType = WildSpawnType.pmcBot;
+                            break;
+                        case "followerbigpipe":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerBigPipe;
+                            break;
+                        case "followerbirdeye":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.followerBirdEye;
+                            break;
+                        case "bossknight":
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.bossKnight;
+                            break;
+                        default:
+                            side = EPlayerSide.Savage;
+                            wildSpawnType = WildSpawnType.assault;
+                            break;
                     }
 
                     //setup bot details
@@ -270,8 +218,8 @@ namespace Donuts
 
                     validNavPath = NavMesh.CalculatePath(hit.position, coordinate, NavMesh.AllAreas, path);
 
-                   //update hit position
-                   
+                    //update hit position
+
                     notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, hit.position, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
 
                     if (isOnNavMesh && notVisibleToPlayer && validNavPath && notARoof)
@@ -322,6 +270,23 @@ namespace Donuts
             get; set;
         }
         public Position Position
+        {
+            get; set;
+        }
+        public string WildSpawnType
+        {
+            get; set;
+        }
+        public float MinDistance
+        {
+            get; set;
+        }
+        public float MaxDistance
+        {
+            get; set;
+        }
+
+        public int MaxRandomNumBots
         {
             get; set;
         }
