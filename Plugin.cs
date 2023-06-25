@@ -11,6 +11,7 @@ namespace Donuts
     {
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> SpawnTimer;
+        public static ConfigEntry<float> botSpawnDistance;
         private void Awake()
         {
             PluginEnabled = Config.Bind(
@@ -19,11 +20,17 @@ namespace Donuts
                 true,
                 "");
 
+            botSpawnDistance = Config.Bind(
+                "1.Main Settings",
+                "Bot Spawn Distance",
+                100f,
+                "In seconds, it will choose +/- rand(100) seconds randomly from the given value");
+
             SpawnTimer = Config.Bind(
                 "1.Main Settings",
-                "Time it spawns bots",
+                "Bot Spawn Timer",
                 300f,
-                "In seconds, it will choose +/- rand(100) seconds randomly from the given value");
+                "In seconds before it spawns next wave while player in the fight zone area");
 
 
             new NewGamePatch().Enable();

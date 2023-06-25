@@ -18,6 +18,7 @@ namespace Donuts
     {
         private static float botMinDistance;
         private static float botMaxDistance;
+
         private static float timer;
         private static FightLocations fightLocations;
         private static bool fileLoaded = false;
@@ -121,7 +122,7 @@ namespace Donuts
                         maplocation = gameWorld.MainPlayer.Location.ToLower();
                         coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                        if (IsWithinBotActivationDistance(coordinate, hotspot.MaxDistance) && maplocation == hotspot.MapName)
+                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
                         {
                             //check if passes hotspot.spawnChance
                             if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
@@ -145,10 +146,10 @@ namespace Donuts
             }
         }
 
-        private bool IsWithinBotActivationDistance(Vector3 position, float MaxDistance)
+        private bool IsWithinBotActivationDistance(Vector3 position)
         {
             float distance = Vector3.Distance(gameWorld.MainPlayer.Position, position);
-            return distance <= MaxDistance;
+            return distance <= DonutsPlugin.botSpawnDistance.Value;
         }
 
         private async void SpawnBots(Vector3 coordinate, Entry hotspot)
