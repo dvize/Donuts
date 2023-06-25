@@ -320,7 +320,7 @@ namespace Donuts
                     //move check up here to make sure roof isn't in gameobject name from collider
                     spawnPosition = hit.position;
                     Ray ray = new Ray(spawnPosition, Vector3.down);
-                    if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
+                    if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.DefaultLayer))
                     {
                         groundHeight = heightHit.point.y;
                         notARoof = (!heightHit.collider.gameObject.name.ToLower().Contains("roof")) &&
