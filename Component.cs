@@ -243,14 +243,15 @@ namespace Donuts
                             if (spawnPosition.y > groundHeight)
                             {
                                 spawnPosition.y = groundHeight;
-                                var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
-                                var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
-
-                                Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
-
-                                AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, botSpawnerClass.GetClosestZone(spawnPosition, out botMaxDistance), bot, null, cancellationToken.Token });
-                                count++;
                             }
+
+                            var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
+                            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+
+                            Logger.LogDebug("Spawning bot at distance of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+
+                            AccessTools.Method(typeof(BotSpawnerClass), "method_12").Invoke(botSpawnerClass, new object[] { spawnPosition, botSpawnerClass.GetClosestZone(spawnPosition, out botMaxDistance), bot, null, cancellationToken.Token });
+                            count++;
                         }
                     }
 
