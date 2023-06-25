@@ -61,9 +61,11 @@ namespace Donuts
 
             Logger.LogDebug("Loaded Bot Fight Locations: " + fightLocations.Locations.Count);
 
-            
-        }
+            //filter out locations from list if they are not on the same map as the player
+            fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
 
+            Logger.LogDebug("Valid Bot Fight Locations: " + fightLocations.Locations.Count);
+        }
         public static void Enable()
         {
             if (Singleton<IBotGame>.Instantiated)
@@ -219,14 +221,23 @@ namespace Donuts
                     else
                     {
                         side = (UnityEngine.Random.Range(0, 2) == 0) ? EPlayerSide.Usec : EPlayerSide.Bear;
-                        //grab WildSpawnType SPTUsec or SPTBear
+
+                        //define spt specific wildspawntype
+                        Type wildSpawnTypeClassType = typeof(EFT.WildSpawnType);
+
+                        FieldInfo sptUsecField = wildSpawnTypeClassType.GetField("sptUsec");
+                        FieldInfo sptBearField = wildSpawnTypeClassType.GetField("sptBear");
+
+                        WildSpawnType sptUsec = (WildSpawnType)sptUsecField.GetValue(null);
+                        WildSpawnType sptBear = (WildSpawnType)sptBearField.GetValue(null);
+
                         if (side == EPlayerSide.Usec)
                         {
-                            wildSpawnType = (WildSpawnType)Enum.Parse(typeof(WildSpawnType), "SPTUsec");
+                            wildSpawnType = sptUsec;
                         }
                         else
                         {
-                            wildSpawnType = (WildSpawnType)Enum.Parse(typeof(WildSpawnType), "SPTBear");
+                            wildSpawnType = sptBear;
                         }
 
                         //wildSpawnType = WildSpawnType.pmcBot;
@@ -245,7 +256,7 @@ namespace Donuts
                     if (Physics.Raycast(ray, out RaycastHit heightHit, 100f, LayerMaskClass.HighPolyWithTerrainMaskAI))
                     {
                         groundHeight = heightHit.point.y;
-                        notARoof = !heightHit.collider.name.ToLower().Contains("roof");
+                        notARoof = (!heightHit.collider.name.ToLower().Contains("roof")) && (!heightHit.collider.gameObject.transform.parent.name.ToLower().Contains("roof"));
 
                         // Adjust the spawn position to the ground height if it's above the ground
                         if (spawnPosition.y > groundHeight)
