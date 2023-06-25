@@ -343,7 +343,7 @@ namespace Donuts
 
                     notVisibleToPlayer = Physics.Linecast(gameWorld.MainPlayer.MainParts[BodyPartType.head].Position, hit.position, out RaycastHit hitInfo, LayerMaskClass.PlayerStaticCollisionsMask);
 
-                    if (isOnNavMesh && notVisibleToPlayer && validNavPath && notARoof)
+                    if (isOnNavMesh && notVisibleToPlayer && validNavPath && notARoof && !IsSpawnPositionInsideWall(spawnPosition))
                     {
                         var botZones = AccessTools.Field(typeof(BotSpawnerClass), "botZone_0").GetValue(botSpawnerClass) as BotZone[];
                         var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
@@ -378,7 +378,32 @@ namespace Donuts
 
             return spawnPosition;
         }
+        private bool IsSpawnPositionInsideWall(Vector3 position)
+        {
+            int layerMask = LayerMaskClass.DefaultLayer;
+
+            //check if any gameobject parent has the name "WALLS" in it
+            if (Physics.SphereCast(position, 0.5f, Vector3.zero, out RaycastHit hitInfo, 0f, layerMask))
+            {
+                Transform currentTransform = hitInfo.collider.gameObject.transform;
+
+                while (currentTransform != null)
+                {
+                    if (currentTransform.gameObject.name.ToUpper().Contains("WALLS"))
+                    {
+                        return true;
+                    }
+
+                    currentTransform = currentTransform.parent;
+                }
+            }
+
+            return false;
+        }
+
+
     }
+
 
     public class Entry
     {
