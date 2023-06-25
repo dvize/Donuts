@@ -34,7 +34,6 @@ namespace Donuts
         private static Vector3 spawnPosition;
 
         private static GameWorld gameWorld;
-        private static LocationSettingsClass locationSettingsClass;
 
         private static BotSpawnerClass botSpawnerClass;
         protected static ManualLogSource Logger
