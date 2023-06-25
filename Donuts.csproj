@@ -111,7 +111,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="FightLocations.json" />
+    <None Include="patterns\CustomsPMC.json" />
+    <None Include="patterns\CustomsScav.json" />
+    <None Include="patterns\ReservePMC.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

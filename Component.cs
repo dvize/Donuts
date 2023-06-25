@@ -100,7 +100,7 @@ namespace Donuts
                 
                 //filter fightLocations for maplocation
                 fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
-                Logger.LogDebug("Valid Bot Fight Entries: " + fightLocations.Locations.Count);
+                Logger.LogDebug("Valid Bot Fight Entries For Current Map: " + fightLocations.Locations.Count);
 
                 fileLoaded = true;
             }
