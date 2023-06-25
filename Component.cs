@@ -141,6 +141,8 @@ namespace Donuts
         {
             Logger.LogDebug("Timer: " + timer);
             Logger.LogDebug("Entered SpawnBots()");
+            Logger.LogDebug("hotspot: " + hotspot.Name);
+
             int count = 0;
 
             try
