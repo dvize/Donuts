@@ -11,7 +11,6 @@ using EFT;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
-using Logger = BepInEx.Logging.Logger;
 
 namespace Donuts
 {
@@ -24,14 +23,10 @@ namespace Donuts
         private static bool fileLoaded = false;
         private static string maplocation;
 
-        private static GClass624 bot;
-
         private static Vector3 coordinate;
-
         private static GameWorld gameWorld;
-
         private static BotSpawnerClass botSpawnerClass;
-        private static BotControllerClass botsController;
+
         private List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
@@ -76,6 +71,8 @@ namespace Donuts
 
         private void Start()
         {
+            botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
+
             Logger.LogDebug("Setup maplocation");
             maplocation = gameWorld.MainPlayer.Location.ToLower();
 
@@ -91,9 +88,6 @@ namespace Donuts
             {
                 gameWorld = Singleton<GameWorld>.Instance;
                 gameWorld.GetOrAddComponent<DonutComponent>();
-
-                botsController = (Singleton<IBotGame>.Instance).BotsController;
-                botSpawnerClass = botsController.BotSpawner;
 
                 Logger.LogDebug("Donuts Enabled");
             }
@@ -165,14 +159,12 @@ namespace Donuts
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
                                 continue;
                             }
-
-                            if (gameWorld.RegisteredPlayers.Count < DonutsPlugin.AbsMaxBotCount.Value)
-                            {
-                                Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
-                                await SpawnBots(hotspot, coordinate);
-                                hotspotTimer.ResetTimer();
-                                Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-                            }
+                            
+                            Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
+                            await SpawnBots(hotspot, coordinate);
+                            hotspotTimer.ResetTimer();
+                            Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                            
                         }
                     }
                 }
@@ -348,7 +340,7 @@ namespace Donuts
                 Vector3 spawnPosition = await getRandomSpawnPosition(hotspot, coordinate);
 
                 //setup bot details
-                bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
+                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
