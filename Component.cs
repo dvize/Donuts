@@ -11,6 +11,7 @@ using EFT;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
+using Logger = BepInEx.Logging.Logger;
 
 namespace Donuts
 {
@@ -19,7 +20,6 @@ namespace Donuts
         private static float botMinDistance;
         private static float botMaxDistance;
 
-        private static float timer;
         private static FightLocations fightLocations;
         private static bool fileLoaded = false;
         private static string maplocation;
@@ -105,6 +105,7 @@ namespace Donuts
             {
                 var hotspotTimer = new HotspotTimer(hotspot, DonutsPlugin.SpawnTimer.Value);
                 hotspotTimers.Add(hotspotTimer);
+
             }
         }
         private void LoadFightLocations()
@@ -144,7 +145,7 @@ namespace Donuts
             }
         }
 
-        private void Update()
+        private async void Update()
         {
             if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
@@ -156,8 +157,7 @@ namespace Donuts
                     {
                         var hotspot = hotspotTimer.Hotspot;
                         var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName &&
-                            (gameWorld.RegisteredPlayers.Count < DonutsPlugin.AbsMaxBotCount.Value))
+                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
                         {
                             // Check if passes hotspot.spawnChance
                             if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
@@ -165,9 +165,14 @@ namespace Donuts
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
                                 continue;
                             }
-                            Logger.LogDebug("Timer: " + hotspotTimer.getTimer());
-                            SpawnBots(hotspot, coordinate);
-                            hotspotTimer.ResetTimer();
+
+                            if (gameWorld.RegisteredPlayers.Count < DonutsPlugin.AbsMaxBotCount.Value)
+                            {
+                                Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
+                                await SpawnBots(hotspot, coordinate);
+                                hotspotTimer.ResetTimer();
+                                Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                            }
                         }
                     }
                 }
@@ -180,7 +185,6 @@ namespace Donuts
             float activationDistanceSquared = DonutsPlugin.botSpawnDistance.Value * DonutsPlugin.botSpawnDistance.Value;
             return distanceSquared <= activationDistanceSquared;
         }
-
         private async Task SpawnBots(Entry hotspot, Vector3 coordinate)
         {
             Logger.LogDebug("Entered SpawnBots()");
@@ -462,27 +466,31 @@ namespace Donuts
         private Entry hotspot;
         private float timer;
         private float spawnTimer;
-
         public Entry Hotspot => hotspot;
 
         public HotspotTimer(Entry hotspot, float spawnTimer)
         {
             this.hotspot = hotspot;
             this.spawnTimer = spawnTimer;
+            this.timer = 0f;
         }
 
         public void UpdateTimer()
         {
             timer += Time.deltaTime;
         }
-        public float getTimer()
+
+        public float GetTimer()
         {
             return timer;
         }
-
         public bool ShouldSpawn()
         {
-            return timer >= spawnTimer;
+            if (timer >= spawnTimer)
+            {
+                return true;
+            }
+            return false;
         }
 
         public void ResetTimer()
@@ -490,6 +498,7 @@ namespace Donuts
             timer = 0f;
         }
     }
+
     public class Entry
     {
         public string MapName
