@@ -37,7 +37,7 @@ namespace Donuts
             AbsMaxBotCount = Config.Bind(
                 "Main Settings",
                 "4. Absolute Max Bot Count",
-                24,
+                18,
                 "It will stop spawning bots over your maxbotcap limit once it hits this.");
 
             DespawnEnabled = Config.Bind(
