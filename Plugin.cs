@@ -6,8 +6,11 @@ using EFT;
 using Newtonsoft.Json;
 using System.IO;
 using Comfort.Common;
+using EFT.UI;
 using EFT.Communications;
 using UnityEngine;
+using Aki.Reflection.Utils;
+using System.Linq;
 
 namespace Donuts
 {
@@ -160,6 +163,11 @@ namespace Donuts
         }
         private void Update()
         {
+            if (displayMessageNotification == null)
+            {
+                displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
+            }
+
             if (CreateSpawnMarkerKey.Value.IsDown())
             {
                 CreateSpawnMarker();
