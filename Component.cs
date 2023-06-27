@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BepInEx.Logging;
@@ -32,10 +33,10 @@ namespace Donuts
         private Dictionary<string, MethodInfo> methodCache;
 
         //gizmo stuff
-        private bool isGizmoEnabled = false;
-        private HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
-        private List<GameObject> gizmoSpheres = new List<GameObject>();
-        private Coroutine gizmoUpdateCoroutine;
+        private static List<GameObject> gizmoSpheres = new List<GameObject>();
+        private static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
+        private static Coroutine gizmoUpdateCoroutine;
+        private static bool isGizmoEnabled;
 
         protected static ManualLogSource Logger
         {
@@ -102,7 +103,7 @@ namespace Donuts
         {
             foreach (var hotspot in fightLocations.Locations)
             {
-                var hotspotTimer = new HotspotTimer(hotspot, DonutsPlugin.SpawnTimer.Value);
+                var hotspotTimer = new HotspotTimer(hotspot);
                 hotspotTimers.Add(hotspotTimer);
 
             }
@@ -458,7 +459,7 @@ namespace Donuts
         }
 
         //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
-        private IEnumerator UpdateGizmoSpheresCoroutine()
+        private static IEnumerator UpdateGizmoSpheresCoroutine()
         {
             while (isGizmoEnabled)
             {
@@ -479,21 +480,22 @@ namespace Donuts
                     }
                 }
 
-                yield return new WaitForSeconds(10f);
+                yield return new WaitForSeconds(2f);
             }
         }
 
-        private void ToggleGizmoDisplay(bool enableGizmos)
+        public static void ToggleGizmoDisplay(bool enableGizmos)
         {
             isGizmoEnabled = enableGizmos;
+            MonoBehaviour monoBehaviour = Singleton<DonutComponent>.Instance;
 
             if (isGizmoEnabled && gizmoUpdateCoroutine == null)
             {
-                gizmoUpdateCoroutine = StartCoroutine(UpdateGizmoSpheresCoroutine());
+                gizmoUpdateCoroutine = monoBehaviour.StartCoroutine(UpdateGizmoSpheresCoroutine());
             }
             else if (!isGizmoEnabled && gizmoUpdateCoroutine != null)
             {
-                StopCoroutine(gizmoUpdateCoroutine);
+                monoBehaviour.StopCoroutine(gizmoUpdateCoroutine);
                 gizmoUpdateCoroutine = null;
 
                 // Destroy the drawn spheres
@@ -516,13 +518,11 @@ namespace Donuts
     {
         private Entry hotspot;
         private float timer;
-        private float spawnTimer;
         public Entry Hotspot => hotspot;
 
-        public HotspotTimer(Entry hotspot, float spawnTimer)
+        public HotspotTimer(Entry hotspot)
         {
             this.hotspot = hotspot;
-            this.spawnTimer = spawnTimer;
             this.timer = 0f;
         }
 
