@@ -1,16 +1,14 @@
-﻿using System.Reflection;
+﻿using System.IO;
+using System.Linq;
+using System.Reflection;
 using Aki.Reflection.Patching;
+using Aki.Reflection.Utils;
 using BepInEx;
 using BepInEx.Configuration;
 using EFT;
-using Newtonsoft.Json;
-using System.IO;
-using Comfort.Common;
-using EFT.UI;
 using EFT.Communications;
+using Newtonsoft.Json;
 using UnityEngine;
-using Aki.Reflection.Utils;
-using System.Linq;
 
 namespace Donuts
 {
@@ -19,10 +17,11 @@ namespace Donuts
     {
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> SpawnTimer;
-        public static ConfigEntry<float> botSpawnDistance;
+
         public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
+        public static ConfigEntry<float> DebugOpacity;
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -63,6 +62,7 @@ namespace Donuts
         };
         public static ConfigEntry<float> minSpawnDist;
         public static ConfigEntry<float> maxSpawnDist;
+        public static ConfigEntry<float> botTriggerDistance;
         public static ConfigEntry<int> maxRandNumBots;
         public static ConfigEntry<int> spawnChance;
 
@@ -70,95 +70,143 @@ namespace Donuts
 
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> WriteToFileKey;
 
+        public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> DeleteSpawnMarkerKey;
+
         private MethodInfo displayMessageNotification;
         private void Awake()
         {
+            //Main Settings
             PluginEnabled = Config.Bind(
                 "Main Settings",
-                "1. Plugin on/off",
+                "Donut On/Off",
                 true,
-                "");
-
-            botSpawnDistance = Config.Bind(
-                "Main Settings",
-                "2. Bot Spawn Distance",
-                150f,
-                "Distance in which the player is away from the fight location point that it triggers bot spawn");
-
-            SpawnTimer = Config.Bind(
-                "Main Settings",
-                "3. Bot Spawn Timer",
-                180f,
-                "In seconds before it spawns next wave while player in the fight zone area");
+                new ConfigDescription("Enable/Disable Spawning from Donut Points",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             AbsMaxBotCount = Config.Bind(
                 "Main Settings",
-                "4. Absolute Max Bot Count",
+                "Absolute Max Bot Count",
                 18,
-                "It will stop spawning bots over your maxbotcap limit once it hits this.");
+                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             DespawnEnabled = Config.Bind(
                 "Main Settings",
-                "5. Despawn Option",
+                "Despawn Option",
                 true,
-                "When enabled, removes furthest bots from player for each new dynamic spawn bot");
+                new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
+            //Debugging 
             DebugGizmos = Config.Bind(
                 "Debugging",
-                "1. Enable Debug Markers",
+                "Enable Debug Markers",
                 false,
-                "When enabled, draws debug spheres on set spawn from json");
+                new ConfigDescription("When enabled, draws debug spheres on set spawn from json",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
-            // Create a dropdown option for the selected option
+            DebugOpacity = Config.Bind(
+                "Debugging",
+                "Debug Sphere Opacity",
+                100f,
+                new ConfigDescription("Sets how much you can see through a Debug Sphere",
+                new AcceptableValueRange<float>(0f, 100f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
+            // Spawn Point Maker
             spawnName = Config.Bind(
                 "Spawn Point Maker",
-                "1. Name",
+                "Name",
                 "Spawn Name Here",
-                "Name used to set the point in json file");
+                new ConfigDescription("Name used to identify the spawn marker",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
 
             wildSpawns = Config.Bind(
                 "Spawn Point Maker",
-                "2. Wild Spawn Type",
+                "Wild Spawn Type",
                 "pmc",
-                new ConfigDescription("Select an option.", new AcceptableValueList<string>(wildDropValues)));
+                new ConfigDescription("Select an option.",
+                new AcceptableValueList<string>(wildDropValues),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
 
             minSpawnDist = Config.Bind(
                 "Spawn Point Maker",
-                "3. Min Spawn Distance",
+                "Min Spawn Distance",
                 1f,
-                "Min Distance Bots will Spawn From Marker You Set.");
+                new ConfigDescription("Min Distance Bots will Spawn From Marker You Set.",
+                new AcceptableValueRange<float>(0f, 500f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             maxSpawnDist = Config.Bind(
                 "Spawn Point Maker",
-                "4. Max Spawn Distance",
+                "Max Spawn Distance",
                 20f,
-                "Max Distance Bots will Spawn From Marker You Set.");
+                new ConfigDescription("Max Distance Bots will Spawn From Marker You Set.",
+                new AcceptableValueRange<float>(1f, 1000f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+
+            botTriggerDistance = Config.Bind(
+                "Spawn Point Maker",
+                "Bot Spawn Trigger Distance",
+                150f,
+                new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
+                new AcceptableValueRange<float>(0.1f, 1000f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+
+            SpawnTimer = Config.Bind(
+                "Spawn Point Maker",
+                "Bot Spawn Timer Trigger",
+                180f,
+                new ConfigDescription("In seconds before it spawns next wave while player in the fight zone area",
+                new AcceptableValueRange<float>(0f, 10000f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
 
             maxRandNumBots = Config.Bind(
                 "Spawn Point Maker",
-                "5. Max Random Bots",
+                "Max Random Bots",
                 2,
-                "Maximum number of bots of Wild Spawn Type that can spawn on this marker");
+                new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             spawnChance = Config.Bind(
                 "Spawn Point Maker",
-                "6. Spawn Chance for Marker",
+                "Spawn Chance for Marker",
                 50,
-                "Chance bot will be spawn here after timer is reached");
+                new ConfigDescription("Chance bot will be spawn here after timer is reached",
+                new AcceptableValueRange<int>(0, 100),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
             CreateSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
-                "7. Create Spawn Marker Key",
+                "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
-                "Press this key to create a spawn marker at your current location");
+                new ConfigDescription("Press this key to create a spawn marker at your current location",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            DeleteSpawnMarkerKey = Config.Bind(
+                "Spawn Point Maker",
+                "Delete Spawn Marker Key",
+                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
+                new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             WriteToFileKey = Config.Bind(
                 "Spawn Point Maker",
-                "8. Create Temp Json File",
+                "Create Temp Json File",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
-                "Press this key to write the json file with all entries so far");
+                new ConfigDescription("Press this key to write the json file with all entries so far",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
+            //Patches
             new NewGamePatch().Enable();
         }
         private void Update()
@@ -175,6 +223,44 @@ namespace Donuts
             if (WriteToFileKey.Value.IsDown())
             {
                 WriteToJsonFile();
+            }
+            if (DeleteSpawnMarkerKey.Value.IsDown())
+            {
+                DeleteSpawnMarker();
+            }
+        }
+
+        private void DeleteSpawnMarker()
+        {
+            // Check if any of the required objects are null
+            if (Donuts.DonutComponent.gameWorld == null)
+            {
+                Logger.LogDebug("IBotGame Not Instantiated or gameWorld is null.");
+                return;
+            }
+
+            // Get the closest spawn marker to the player
+            Donuts.Entry closestEntry = Donuts.DonutComponent.fightLocations.Locations.OrderBy(x =>
+                Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(x.Position.x, x.Position.y, x.Position.z))).FirstOrDefault();
+
+            // Check if the closest entry is null
+            if (closestEntry == null)
+            {
+                Logger.LogDebug("No spawn markers found.");
+                return;
+            }
+
+            // Remove the entry from the list if the distance from the player is less than 5m
+            if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
+            {
+                Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
+            }
+            
+            // Display a message to the player
+            if (displayMessageNotification != null)
+            {
+                var txt = $"Donuts: Spawn Marker Deleted for {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
+                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
 

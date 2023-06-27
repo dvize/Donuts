@@ -78,7 +78,7 @@ namespace Donuts
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
 
-            
+
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             Logger.LogDebug("Setup maplocation: " + maplocation);
             LoadFightLocations();
@@ -156,7 +156,7 @@ namespace Donuts
                     {
                         var hotspot = hotspotTimer.Hotspot;
                         var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-                        if (IsWithinBotActivationDistance(coordinate) && maplocation == hotspot.MapName)
+                        if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                         {
                             // Check if passes hotspot.spawnChance
                             if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
@@ -176,10 +176,10 @@ namespace Donuts
             }
         }
 
-        private bool IsWithinBotActivationDistance(Vector3 position)
+        private bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
         {
             float distanceSquared = (gameWorld.MainPlayer.Position - position).sqrMagnitude;
-            float activationDistanceSquared = DonutsPlugin.botSpawnDistance.Value * DonutsPlugin.botSpawnDistance.Value;
+            float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
             return distanceSquared <= activationDistanceSquared;
         }
         private async Task SpawnBots(Entry hotspot, Vector3 coordinate)
@@ -537,7 +537,7 @@ namespace Donuts
         }
         public bool ShouldSpawn()
         {
-            if (timer >= spawnTimer)
+            if (this.timer >= this.hotspot.BotTimerTrigger)
             {
                 return true;
             }
@@ -576,6 +576,16 @@ namespace Donuts
         {
             get; set;
         }
+
+        public float BotTriggerDistance
+        {
+            get; set;
+        }
+
+        public float BotTimerTrigger
+        {
+            get; set;
+        }
         public int MaxRandomNumBots
         {
             get; set;
@@ -583,7 +593,6 @@ namespace Donuts
 
         public int SpawnChance
         {
-
             get; set;
         }
     }
