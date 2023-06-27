@@ -20,21 +20,23 @@ namespace Donuts
         private float botMinDistance;
         private float botMaxDistance;
 
-        public static FightLocations fightLocations;
+        internal static FightLocations fightLocations;
+        internal static FightLocations sessionLocations;
+
         private bool fileLoaded = false;
         public static string maplocation;
 
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
 
-        private List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
+        internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
 
         //gizmo stuff
         private bool isGizmoEnabled = false;
-        private HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
-        private List<GameObject> gizmoSpheres = new List<GameObject>();
+        internal static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
+        internal static List<GameObject> gizmoSpheres = new List<GameObject>();
         private Coroutine gizmoUpdateCoroutine;
 
         protected static ManualLogSource Logger
@@ -462,6 +464,7 @@ namespace Donuts
         {
             while (isGizmoEnabled)
             {
+                //draw the locations from the loaded json files
                 foreach (var hotspot in fightLocations.Locations)
                 {
                     var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
@@ -469,10 +472,49 @@ namespace Donuts
                     if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(coordinate))
                     {
                         var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        sphere.GetComponent<Renderer>().material.color = Color.red;
+                        //green color with opacity control
+                        sphere.GetComponent<Renderer>().material.color = new Color(0f, 255f, 0f, DonutsPlugin.DebugOpacity.Value);
                         sphere.GetComponent<Collider>().enabled = false;
                         sphere.transform.position = coordinate;
-                        sphere.transform.localScale = new Vector3(1f, 1f, 1f);
+
+                        if (DonutsPlugin.gizmoRealSize.Value)
+                        {
+                            //set size to match the hotspot.MaxDistance. Y only needs to be height of person since that don't change
+                            sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
+                        }
+                        else
+                        {
+                            sphere.transform.localScale = new Vector3(1f, 1f, 1f);
+                        }
+
+                        gizmoSpheres.Add(sphere);
+                        drawnCoordinates.Add(coordinate);
+                    }
+                }
+
+                //draw the locations from the session fight locations
+                foreach (var hotspot in sessionLocations.Locations)
+                {
+                    var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+
+                    if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(coordinate))
+                    {
+
+                        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        //red color with opacity control
+                        sphere.GetComponent<Renderer>().material.color = new Color(255f, 0f, 0f, DonutsPlugin.DebugOpacity.Value);
+                        sphere.GetComponent<Collider>().enabled = false;
+                        sphere.transform.position = coordinate;
+
+                        if (DonutsPlugin.gizmoRealSize.Value)
+                        {
+                            //set size to match the hotspot.MaxDistance. Y only needs to be height of person since that don't change
+                            sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
+                        }
+                        else
+                        {
+                            sphere.transform.localScale = new Vector3(1f, 1f, 1f);
+                        }
 
                         gizmoSpheres.Add(sphere);
                         drawnCoordinates.Add(coordinate);

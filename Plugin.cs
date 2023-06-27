@@ -5,7 +5,6 @@ using Aki.Reflection.Patching;
 using Aki.Reflection.Utils;
 using BepInEx;
 using BepInEx.Configuration;
-using Comfort.Common;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
@@ -23,7 +22,7 @@ namespace Donuts
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<float> DebugOpacity;
-
+        public static ConfigEntry<bool> gizmoRealSize;
         //menu vars
         public static ConfigEntry<string> spawnName;
 
@@ -67,6 +66,7 @@ namespace Donuts
         public static ConfigEntry<int> maxRandNumBots;
         public static ConfigEntry<int> spawnChance;
 
+        public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
 
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> WriteToFileKey;
@@ -199,8 +199,19 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
+
+
+            //Save Settings
+            saveNewFileOnly = Config.Bind(
+                "Save Settings",
+                "Save New Locations Only",
+                false,
+                new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
             WriteToFileKey = Config.Bind(
-                "Spawn Point Maker",
+                "Save Settings",
                 "Create Temp Json File",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",
@@ -243,16 +254,18 @@ namespace Donuts
             //need to be able to see it to delete it
             if (DonutsPlugin.DebugGizmos.Value)
             {
+                //temporarily combine fightLocations and sessionLocations so i can find the closest entry
+                var combinedLocations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList();
+
                 // Get the closest spawn marker to the player
-                Donuts.Entry closestEntry = Donuts.DonutComponent.fightLocations.Locations.OrderBy(x =>
-                    Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(x.Position.x, x.Position.y, x.Position.z))).FirstOrDefault();
+                var closestEntry = combinedLocations.OrderBy(x => Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(x.Position.x, x.Position.y, x.Position.z))).FirstOrDefault();
 
                 // Check if the closest entry is null
                 if (closestEntry == null)
                 {
                     if (displayMessageNotification != null)
                     {
-                        var txt = $"Donuts: The Spawn Marker could not be deleted because it is not within 5 meters\n {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
+                        var txt = $"Donuts: The Spawn Marker could not be deleted because closest entry could not be found";
                         displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.grey });
                     }
                     return;
@@ -261,7 +274,17 @@ namespace Donuts
                 // Remove the entry from the list if the distance from the player is less than 5m
                 if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
                 {
-                    Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
+                    // check which list the entry is in and remove it from that list
+                    if (Donuts.DonutComponent.fightLocations.Locations.Contains(closestEntry))
+                    {
+
+                        Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
+                    }
+                    else if (Donuts.DonutComponent.sessionLocations.Locations.Contains(closestEntry))
+                    {
+
+                        Donuts.DonutComponent.sessionLocations.Locations.Remove(closestEntry);
+                    }
 
                     // Display a message to the player
                     if (displayMessageNotification != null)
@@ -270,13 +293,25 @@ namespace Donuts
                         displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
                     }
 
-                    //retoggle the debug display to refresh the gizmos
-                    (Singleton<DonutComponent>.Instance).ToggleGizmoDisplay(true);
+                    // Edit the DonutComponent.drawnCoordinates and gizmoSpheres list to remove the objects
+                    var coordinate = new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z);
+                    DonutComponent.drawnCoordinates.Remove(coordinate);
+
+                    var sphere = DonutComponent.gizmoSpheres.FirstOrDefault(x => x.transform.position == coordinate);
+                    DonutComponent.gizmoSpheres.Remove(sphere);
+
+                    // Destroy the sphere game object in the actual game world
+                    if (sphere != null)
+                    {
+                        Destroy(sphere);
+                    }
+
+
                 }
             }
-           
-            
-            
+
+
+
         }
 
         private void CreateSpawnMarker()
@@ -307,7 +342,11 @@ namespace Donuts
             };
 
             // Add new entry to fightLocations.locations list
-            Donuts.DonutComponent.fightLocations.Locations.Add(newEntry);
+            Donuts.DonutComponent.sessionLocations.Locations.Add(newEntry);
+
+            // make it testable immediately by adding the timer needed
+            var hotspotTimer = new HotspotTimer(newEntry);
+            DonutComponent.hotspotTimers.Add(hotspotTimer);
 
             var txt = $"Donuts: Wrote Entry for {newEntry.Name}\n SpawnType: {newEntry.WildSpawnType}\n Position: {newEntry.Position.x}, {newEntry.Position.y}, {newEntry.Position.z}";
 
@@ -329,12 +368,29 @@ namespace Donuts
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
             string jsonFolderPath = Path.Combine(directoryPath, "patterns");
+            string json = "";
+            string fileName = "";
 
-            // take the fightLocations object and serialize it to json
-            string json = JsonConvert.SerializeObject(Donuts.DonutComponent.fightLocations, Formatting.Indented);
-
+            //check if saveNewFileOnly is true then we use the sessionLocations object to serialize.  Otherwise we use combinedLocations
+            if (saveNewFileOnly.Value)
+            {
+                // take the sessionLocations object only and serialize it to json
+                json = JsonConvert.SerializeObject(Donuts.DonutComponent.sessionLocations, Formatting.Indented);
+                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_NewLocOnly.json";
+            }
+            else
+            {
+                //combine the fightLocations and sessionLocations objects into one variable
+                FightLocations combinedLocations = new Donuts.FightLocations
+                {
+                    Locations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList() 
+                };
+                
+                json = JsonConvert.SerializeObject(combinedLocations, Formatting.Indented);
+                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_All.json";
+            }
+         
             //write json to file with filename == Donuts.DonutComponent.maplocation + random number
-            string fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + ".json";
             string jsonFilePath = Path.Combine(jsonFolderPath, fileName);
             File.WriteAllText(jsonFilePath, json);
 
