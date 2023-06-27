@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,12 @@ namespace Donuts
         private List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
+
+        //gizmo stuff
+        private bool isGizmoEnabled = false;
+        private HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
+        private List<GameObject> gizmoSpheres = new List<GameObject>();
+        private Coroutine gizmoUpdateCoroutine;
 
         protected static ManualLogSource Logger
         {
@@ -68,7 +75,6 @@ namespace Donuts
                 }
             }
         }
-
         private void Start()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
@@ -159,12 +165,12 @@ namespace Donuts
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
                                 continue;
                             }
-                            
+
                             Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
                             await SpawnBots(hotspot, coordinate);
                             hotspotTimer.ResetTimer();
                             Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-                            
+
                         }
                     }
                 }
@@ -413,7 +419,7 @@ namespace Donuts
 
             return true;
         }
-    
+
         private bool IsSpawnPositionInsideWall(Vector3 position)
         {
             //check if any gameobject parent has the name "WALLS" in it
@@ -450,6 +456,60 @@ namespace Donuts
 
             // If the raycast does not hit any collider, the position is in the air
             return true;
+        }
+
+        //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
+        private IEnumerator UpdateGizmoSpheresCoroutine()
+        {
+            while (isGizmoEnabled)
+            {
+                foreach (var hotspot in fightLocations.Locations)
+                {
+                    var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+
+                    if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(coordinate))
+                    {
+                        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        sphere.GetComponent<Renderer>().material.color = Color.red;
+                        sphere.GetComponent<Collider>().enabled = false;
+                        sphere.transform.position = coordinate;
+                        sphere.transform.localScale = new Vector3(1f, 1f, 1f);
+
+                        gizmoSpheres.Add(sphere);
+                        drawnCoordinates.Add(coordinate);
+                    }
+                }
+
+                yield return new WaitForSeconds(10f); // Wait for 10 seconds before updating again
+            }
+        }
+
+        private void ToggleGizmoDisplay(bool enableGizmos)
+        {
+            isGizmoEnabled = enableGizmos;
+
+            if (isGizmoEnabled && gizmoUpdateCoroutine == null)
+            {
+                gizmoUpdateCoroutine = StartCoroutine(UpdateGizmoSpheresCoroutine());
+            }
+            else if (!isGizmoEnabled && gizmoUpdateCoroutine != null)
+            {
+                StopCoroutine(gizmoUpdateCoroutine);
+                gizmoUpdateCoroutine = null;
+
+                // Destroy the drawn spheres
+                foreach (var sphere in gizmoSpheres)
+                {
+                    Destroy(sphere);
+                }
+                gizmoSpheres.Clear();
+                drawnCoordinates.Clear();
+            }
+        }
+
+        private void OnGUI()
+        {
+            ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
         }
     }
 

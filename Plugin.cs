@@ -14,6 +14,7 @@ namespace Donuts
         public static ConfigEntry<float> botSpawnDistance;
         public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
+        public static ConfigEntry<bool> DebugGizmos;
         private void Awake()
         {
             PluginEnabled = Config.Bind(
@@ -46,6 +47,11 @@ namespace Donuts
                 true,
                 "When enabled, removes furthest bots from player for each new dynamic spawn bot");
 
+            DebugGizmos = Config.Bind(
+                "Debugging",
+                "1. Enable Debug Markers",
+                false,
+                "When enabled, draws debug spheres on set spawn from json");
 
             new NewGamePatch().Enable();
         }
