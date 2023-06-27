@@ -17,11 +17,11 @@ namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
-        private static float botMinDistance;
-        private static float botMaxDistance;
+        private float botMinDistance;
+        private float botMaxDistance;
 
         public static FightLocations fightLocations;
-        private static bool fileLoaded = false;
+        private bool fileLoaded = false;
         public static string maplocation;
 
         public static GameWorld gameWorld;
@@ -78,9 +78,9 @@ namespace Donuts
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
 
-            Logger.LogDebug("Setup maplocation");
+            
             maplocation = gameWorld.MainPlayer.Location.ToLower();
-
+            Logger.LogDebug("Setup maplocation: " + maplocation);
             LoadFightLocations();
             if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
