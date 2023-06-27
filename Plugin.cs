@@ -82,7 +82,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
             AbsMaxBotCount = Config.Bind(
                 "Main Settings",
@@ -98,7 +98,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             //Debugging 
             DebugGizmos = Config.Bind(
@@ -107,7 +107,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("When enabled, draws debug spheres on set spawn from json",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             DebugOpacity = Config.Bind(
                 "Debugging",
@@ -115,7 +115,7 @@ namespace Donuts
                 100f,
                 new ConfigDescription("Sets how much you can see through a Debug Sphere",
                 new AcceptableValueRange<float>(0f, 100f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             // Spawn Point Maker
             spawnName = Config.Bind(
