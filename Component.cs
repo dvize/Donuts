@@ -20,8 +20,8 @@ namespace Donuts
         private float botMinDistance;
         private float botMaxDistance;
 
-        internal static FightLocations fightLocations;
-        internal static FightLocations sessionLocations;
+        internal static FightLocations fightLocations = new FightLocations();
+        internal static FightLocations sessionLocations = new FightLocations();
 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -37,7 +37,7 @@ namespace Donuts
         private bool isGizmoEnabled = false;
         internal static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
         internal static List<GameObject> gizmoSpheres = new List<GameObject>();
-        private Coroutine gizmoUpdateCoroutine;
+        private static Coroutine gizmoUpdateCoroutine;
 
         protected static ManualLogSource Logger
         {
@@ -465,64 +465,78 @@ namespace Donuts
             while (isGizmoEnabled)
             {
                 //draw the locations from the loaded json files
-                foreach (var hotspot in fightLocations.Locations)
+
+                if (fightLocations != null && fightLocations.Locations != null && fightLocations.Locations.Count > 0)
                 {
-                    var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-
-                    if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(coordinate))
+                    foreach (var hotspot in fightLocations.Locations)
                     {
-                        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        //green color with opacity control
-                        sphere.GetComponent<Renderer>().material.color = new Color(0f, 255f, 0f, DonutsPlugin.DebugOpacity.Value);
-                        sphere.GetComponent<Collider>().enabled = false;
-                        sphere.transform.position = coordinate;
+                        var newcoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                        if (DonutsPlugin.gizmoRealSize.Value)
+                        if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(newcoordinate))
                         {
-                            //set size to match the hotspot.MaxDistance. Y only needs to be height of person since that don't change
-                            sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
-                        }
-                        else
-                        {
-                            sphere.transform.localScale = new Vector3(1f, 1f, 1f);
-                        }
+                            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                            var material = sphere.GetComponent<Renderer>().material;
+                            sphere.GetComponent<Renderer>().material.color = Color.green;
+                            sphere.GetComponent<Collider>().enabled = false;
+                            sphere.transform.position = newcoordinate;
 
-                        gizmoSpheres.Add(sphere);
-                        drawnCoordinates.Add(coordinate);
+                            //scale the sphere to hotSpot.MaxDistance if DonutsPlugin
+
+                            if (DonutsPlugin.gizmoRealSize.Value)
+                            {
+                                sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
+                            }
+                            else
+                            {
+                                sphere.transform.localScale = new Vector3(1f, 1f, 1f);
+                            }
+
+                            gizmoSpheres.Add(sphere);
+                            drawnCoordinates.Add(newcoordinate);
+                        }
                     }
+
                 }
 
-                //draw the locations from the session fight locations
-                foreach (var hotspot in sessionLocations.Locations)
+                // draw the locations for the sessionLocations
+                if (sessionLocations != null && sessionLocations.Locations != null && sessionLocations.Locations.Count > 0)
                 {
-                    var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                    if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(coordinate))
+                    foreach (var hotspot in sessionLocations.Locations)
                     {
 
-                        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        //red color with opacity control
-                        sphere.GetComponent<Renderer>().material.color = new Color(255f, 0f, 0f, DonutsPlugin.DebugOpacity.Value);
-                        sphere.GetComponent<Collider>().enabled = false;
-                        sphere.transform.position = coordinate;
+                        var newcoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                        if (DonutsPlugin.gizmoRealSize.Value)
+                        if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(newcoordinate))
                         {
-                            //set size to match the hotspot.MaxDistance. Y only needs to be height of person since that don't change
-                            sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
-                        }
-                        else
-                        {
-                            sphere.transform.localScale = new Vector3(1f, 1f, 1f);
-                        }
+                            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                            var material = cube.GetComponent<Renderer>().material;
+                            cube.GetComponent<Renderer>().material.color = Color.red;
+                            cube.GetComponent<Collider>().enabled = false;
+                            cube.transform.position = newcoordinate;
 
-                        gizmoSpheres.Add(sphere);
-                        drawnCoordinates.Add(coordinate);
+                            if (DonutsPlugin.gizmoRealSize.Value)
+                            {
+                                cube.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
+                            }
+                            else
+                            {
+                                cube.transform.localScale = new Vector3(1f, 1f, 1f);
+                            }
+
+                            gizmoSpheres.Add(cube);
+                            drawnCoordinates.Add(newcoordinate);
+                        }
                     }
+
                 }
+
 
                 yield return new WaitForSeconds(2f);
+
             }
+
+
         }
 
         public void ToggleGizmoDisplay(bool enableGizmos)
@@ -577,7 +591,7 @@ namespace Donuts
         }
         public bool ShouldSpawn()
         {
-            if (this.timer >= this.hotspot.BotTimerTrigger)
+            if (timer >= hotspot.BotTimerTrigger)
             {
                 return true;
             }

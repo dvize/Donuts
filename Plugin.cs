@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
@@ -16,13 +18,13 @@ namespace Donuts
     public class DonutsPlugin : BaseUnityPlugin
     {
         public static ConfigEntry<bool> PluginEnabled;
-        public static ConfigEntry<float> SpawnTimer;
+        public static ConfigEntry<float> botTimerTrigger;
 
         public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
-        public static ConfigEntry<float> DebugOpacity;
         public static ConfigEntry<bool> gizmoRealSize;
+
         //menu vars
         public static ConfigEntry<string> spawnName;
 
@@ -110,12 +112,12 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
-            DebugOpacity = Config.Bind(
+            gizmoRealSize = Config.Bind(
                 "Debugging",
-                "Debug Sphere Opacity",
-                100f,
-                new ConfigDescription("Sets how much you can see through a Debug Sphere",
-                new AcceptableValueRange<float>(0f, 100f),
+                "Debug Sphere Real Size",
+                false,
+                new ConfigDescription("When enabled, debug spheres will be the real size of the spawn radius",
+                null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             // Spawn Point Maker
@@ -159,7 +161,7 @@ namespace Donuts
                 new AcceptableValueRange<float>(0.1f, 1000f),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
-            SpawnTimer = Config.Bind(
+            botTimerTrigger = Config.Bind(
                 "Spawn Point Maker",
                 "Bot Spawn Timer Trigger",
                 180f,
@@ -317,32 +319,42 @@ namespace Donuts
         private void CreateSpawnMarker()
         {
             // Check if any of the required objects are null
-            if (Donuts.DonutComponent.gameWorld == null)
+            if (DonutComponent.gameWorld == null)
             {
                 Logger.LogDebug("IBotGame Not Instantiated or gameWorld is null.");
                 return;
             }
 
             // Create new Donuts.Entry
-            Donuts.Entry newEntry = new Donuts.Entry
+            Entry newEntry = new Entry
             {
                 Name = spawnName.Value,
-                MapName = Donuts.DonutComponent.maplocation,
+                MapName = DonutComponent.maplocation,
                 WildSpawnType = wildSpawns.Value,
                 MinDistance = minSpawnDist.Value,
                 MaxDistance = maxSpawnDist.Value,
                 MaxRandomNumBots = maxRandNumBots.Value,
                 SpawnChance = spawnChance.Value,
-                Position = new Donuts.Position
+                BotTimerTrigger = botTimerTrigger.Value,
+                BotTriggerDistance = botTriggerDistance.Value,
+                Position = new Position
                 {
-                    x = Donuts.DonutComponent.gameWorld.MainPlayer.Transform.position.x,
-                    y = Donuts.DonutComponent.gameWorld.MainPlayer.Transform.position.y,
-                    z = Donuts.DonutComponent.gameWorld.MainPlayer.Transform.position.z
+                    x = DonutComponent.gameWorld.MainPlayer.Position.x,
+                    y = DonutComponent.gameWorld.MainPlayer.Position.y,
+                    z = DonutComponent.gameWorld.MainPlayer.Position.z
                 }
+                
             };
 
-            // Add new entry to fightLocations.locations list
-            Donuts.DonutComponent.sessionLocations.Locations.Add(newEntry);
+            // Add new entry to sessionLocations.Locations list since we adding new ones
+
+            // Check if Locations is null
+            if (DonutComponent.sessionLocations.Locations == null)
+            {
+                DonutComponent.sessionLocations.Locations = new List<Entry>();
+            }
+
+            DonutComponent.sessionLocations.Locations.Add(newEntry);
 
             // make it testable immediately by adding the timer needed
             var hotspotTimer = new HotspotTimer(newEntry);
@@ -354,6 +366,8 @@ namespace Donuts
             {
                 displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
+            
+
         }
 
         private void WriteToJsonFile()
@@ -383,13 +397,13 @@ namespace Donuts
                 //combine the fightLocations and sessionLocations objects into one variable
                 FightLocations combinedLocations = new Donuts.FightLocations
                 {
-                    Locations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList() 
+                    Locations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList()
                 };
-                
+
                 json = JsonConvert.SerializeObject(combinedLocations, Formatting.Indented);
                 fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_All.json";
             }
-         
+
             //write json to file with filename == Donuts.DonutComponent.maplocation + random number
             string jsonFilePath = Path.Combine(jsonFolderPath, fileName);
             File.WriteAllText(jsonFilePath, json);
