@@ -20,12 +20,11 @@ namespace Donuts
         private static float botMinDistance;
         private static float botMaxDistance;
 
-        private static FightLocations fightLocations;
+        public static FightLocations fightLocations;
         private static bool fileLoaded = false;
-        private static string maplocation;
+        public static string maplocation;
 
-        private static Vector3 coordinate;
-        private static GameWorld gameWorld;
+        public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
 
         private List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
@@ -480,7 +479,7 @@ namespace Donuts
                     }
                 }
 
-                yield return new WaitForSeconds(10f); // Wait for 10 seconds before updating again
+                yield return new WaitForSeconds(10f);
             }
         }
 
