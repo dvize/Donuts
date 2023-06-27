@@ -164,6 +164,8 @@ namespace Donuts
                             if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
                             {
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
+                                hotspotTimer.ResetTimer();
+                                Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
                                 continue;
                             }
 
