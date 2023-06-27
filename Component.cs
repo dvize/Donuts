@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BepInEx.Logging;
@@ -33,10 +32,10 @@ namespace Donuts
         private Dictionary<string, MethodInfo> methodCache;
 
         //gizmo stuff
-        private static List<GameObject> gizmoSpheres = new List<GameObject>();
-        private static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
-        private static Coroutine gizmoUpdateCoroutine;
-        private static bool isGizmoEnabled;
+        private bool isGizmoEnabled = false;
+        private HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
+        private List<GameObject> gizmoSpheres = new List<GameObject>();
+        private Coroutine gizmoUpdateCoroutine;
 
         protected static ManualLogSource Logger
         {
@@ -459,7 +458,7 @@ namespace Donuts
         }
 
         //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
-        private static IEnumerator UpdateGizmoSpheresCoroutine()
+        private IEnumerator UpdateGizmoSpheresCoroutine()
         {
             while (isGizmoEnabled)
             {
@@ -484,18 +483,17 @@ namespace Donuts
             }
         }
 
-        public static void ToggleGizmoDisplay(bool enableGizmos)
+        public void ToggleGizmoDisplay(bool enableGizmos)
         {
             isGizmoEnabled = enableGizmos;
-            MonoBehaviour monoBehaviour = Singleton<DonutComponent>.Instance;
 
             if (isGizmoEnabled && gizmoUpdateCoroutine == null)
             {
-                gizmoUpdateCoroutine = monoBehaviour.StartCoroutine(UpdateGizmoSpheresCoroutine());
+                gizmoUpdateCoroutine = StartCoroutine(UpdateGizmoSpheresCoroutine());
             }
             else if (!isGizmoEnabled && gizmoUpdateCoroutine != null)
             {
-                monoBehaviour.StopCoroutine(gizmoUpdateCoroutine);
+                StopCoroutine(gizmoUpdateCoroutine);
                 gizmoUpdateCoroutine = null;
 
                 // Destroy the drawn spheres

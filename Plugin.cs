@@ -5,6 +5,7 @@ using Aki.Reflection.Patching;
 using Aki.Reflection.Utils;
 using BepInEx;
 using BepInEx.Configuration;
+using Comfort.Common;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
@@ -270,7 +271,7 @@ namespace Donuts
                     }
 
                     //retoggle the debug display to refresh the gizmos
-                    DonutComponent.ToggleGizmoDisplay(true);
+                    (Singleton<DonutComponent>.Instance).ToggleGizmoDisplay(true);
                 }
             }
            
