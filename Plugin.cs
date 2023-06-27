@@ -246,7 +246,11 @@ namespace Donuts
             // Check if the closest entry is null
             if (closestEntry == null)
             {
-                Logger.LogDebug("No spawn markers found.");
+                if (displayMessageNotification != null)
+                {
+                    var txt = $"Donuts: The Spawn Marker could not be deleted because it is not within 5 meters\n {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
+                    displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.grey });
+                }
                 return;
             }
 
@@ -254,14 +258,20 @@ namespace Donuts
             if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
             {
                 Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
+
+                // Display a message to the player
+                if (displayMessageNotification != null)
+                {
+                    var txt = $"Donuts: Spawn Marker Deleted for \n {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
+                    displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                }
+
+                //retoggle the debug display to refresh the gizmos
+                DonutsPlugin.DebugGizmos.Value = false;
+                DonutsPlugin.DebugGizmos.Value = true;
             }
             
-            // Display a message to the player
-            if (displayMessageNotification != null)
-            {
-                var txt = $"Donuts: Spawn Marker Deleted for {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
-                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-            }
+            
         }
 
         private void CreateSpawnMarker()
