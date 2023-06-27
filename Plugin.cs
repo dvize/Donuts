@@ -212,7 +212,7 @@ namespace Donuts
 
             if (displayMessageNotification != null)
             {
-                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.blue });
+                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
 
@@ -241,7 +241,7 @@ namespace Donuts
 
             if (displayMessageNotification != null)
             {
-                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.blue });
+                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
     }
