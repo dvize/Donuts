@@ -14,6 +14,7 @@ using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace Donuts
 {
@@ -592,24 +593,15 @@ namespace Donuts
             return displayMessageNotificationMethod;
         }
         //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
+
+        //update gizmo display periodically instead of having to toggle it on and off
         private IEnumerator UpdateGizmoSpheresCoroutine()
         {
             while (isGizmoEnabled)
             {
-                // Draw the locations from the loaded JSON files
+                RefreshGizmoDisplay(); // Refresh the gizmo display periodically
 
-                if (fightLocations != null && fightLocations.Locations != null && fightLocations.Locations.Count > 0)
-                {
-                    DrawMarkers(fightLocations.Locations, Color.green, PrimitiveType.Sphere);
-                }
-
-                // Draw the locations for the sessionLocations
-                if (sessionLocations != null && sessionLocations.Locations != null && sessionLocations.Locations.Count > 0)
-                {
-                    DrawMarkers(sessionLocations.Locations, Color.red, PrimitiveType.Cube);
-                }
-
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(3f);
             }
         }
         private void DrawMarkers(List<Entry> locations, Color color, PrimitiveType primitiveType)
@@ -647,6 +639,7 @@ namespace Donuts
 
             if (isGizmoEnabled && gizmoUpdateCoroutine == null)
             {
+                RefreshGizmoDisplay(); // Refresh the gizmo display initially
                 gizmoUpdateCoroutine = StartCoroutine(UpdateGizmoSpheresCoroutine());
             }
             else if (!isGizmoEnabled && gizmoUpdateCoroutine != null)
@@ -654,14 +647,37 @@ namespace Donuts
                 StopCoroutine(gizmoUpdateCoroutine);
                 gizmoUpdateCoroutine = null;
 
-                // Destroy the drawn markers
-                foreach (var marker in gizmoSpheres)
-                {
-                    Destroy(marker);
-                }
-                gizmoSpheres.Clear();
-                drawnCoordinates.Clear();
+                ClearGizmoMarkers(); // Clear the drawn markers
             }
+        }
+
+        private void RefreshGizmoDisplay()
+        {
+            ClearGizmoMarkers(); // Clear existing markers
+
+            // Check the values of DebugGizmos and gizmoRealSize and redraw the markers accordingly
+            if (DonutsPlugin.DebugGizmos.Value)
+            {
+                if (fightLocations != null && fightLocations.Locations != null && fightLocations.Locations.Count > 0)
+                {
+                    DrawMarkers(fightLocations.Locations, Color.green, PrimitiveType.Sphere);
+                }
+
+                if (sessionLocations != null && sessionLocations.Locations != null && sessionLocations.Locations.Count > 0)
+                {
+                    DrawMarkers(sessionLocations.Locations, Color.red, PrimitiveType.Cube);
+                }
+            }
+        }
+
+        private void ClearGizmoMarkers()
+        {
+            foreach (var marker in gizmoSpheres)
+            {
+                Destroy(marker);
+            }
+            gizmoSpheres.Clear();
+            drawnCoordinates.Clear();
         }
 
         private void OnGUI()
