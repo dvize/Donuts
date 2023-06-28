@@ -14,7 +14,6 @@ using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace Donuts
 {
@@ -23,8 +22,15 @@ namespace Donuts
         private float botMinDistance;
         private float botMaxDistance;
 
-        internal static FightLocations fightLocations = new FightLocations();
-        internal static FightLocations sessionLocations = new FightLocations();
+        internal static FightLocations fightLocations = new FightLocations()
+        {
+            Locations = new List<Entry>()
+        };
+
+        internal static FightLocations sessionLocations = new FightLocations()
+        {
+            Locations = new List<Entry>()
+        };
 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -87,8 +93,8 @@ namespace Donuts
                 }
             }
 
-            
-            
+
+
         }
         private void Start()
         {
@@ -193,6 +199,11 @@ namespace Donuts
                 }
 
                 DisplayMarkerInformation();
+
+                if (DonutsPlugin.DespawnEnabled.Value)
+                {
+                    DespawnFurthestBot();
+                }
             }
         }
 
@@ -371,11 +382,6 @@ namespace Donuts
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 Logger.LogDebug("Spawning bot at distance to player of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
-                if (DonutsPlugin.DespawnEnabled.Value)
-                {
-                    DespawnFurthestBot();
-                }
-
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
                 await Task.Delay(5);
@@ -508,7 +514,7 @@ namespace Donuts
                 Vector3 direction = closestShape.transform.position - gameWorld.MainPlayer.Transform.position;
                 float angle = Vector3.Angle(gameWorld.MainPlayer.Transform.forward, direction);
 
-                if (angle < 30f)
+                if (angle < 20f)
                 {
                     // Create a HashSet of positions for fast containment checks
                     var locationsSet = new HashSet<Vector3>();

@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
-using Aki.Reflection.Utils;
 using BepInEx;
 using BepInEx.Configuration;
 using EFT;
