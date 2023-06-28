@@ -6,9 +6,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
+using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -32,6 +34,7 @@ namespace Donuts
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
+        private static MethodInfo displayMessageNotificationMethod;
 
         //gizmo stuff
         private bool isGizmoEnabled = false;
@@ -59,6 +62,13 @@ namespace Donuts
             var wildSpawnTypeInstance = Activator.CreateInstance(wildSpawnTypeEnum);
             var fieldInfos = wildSpawnTypeEnum.GetFields();
 
+            // Retrieve displayMessageNotification MethodInfo
+            var displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
+            if (displayMessageNotification != null)
+            {
+                displayMessageNotificationMethod = displayMessageNotification;
+                methodCache["DisplayMessageNotification"] = displayMessageNotification;
+            }
 
             foreach (var fieldInfo in fieldInfos)
             {
@@ -75,6 +85,9 @@ namespace Donuts
                     break;
                 }
             }
+
+            
+            
         }
         private void Start()
         {
@@ -177,6 +190,8 @@ namespace Donuts
                         }
                     }
                 }
+
+                DisplayMarkerInformation();
             }
         }
 
@@ -461,6 +476,121 @@ namespace Donuts
             return true;
         }
 
+
+        private string lastDisplayedMarkerInfo = string.Empty;
+        private Coroutine resetMarkerInfoCoroutine;
+        private void DisplayMarkerInformation()
+        {
+            if (gizmoSpheres.Count == 0)
+            {
+                return;
+            }
+
+            GameObject closestShape = null;
+            float closestDistanceSq = float.MaxValue;
+
+            // Find the closest primitive shape game object to the player
+            foreach (var shape in gizmoSpheres)
+            {
+                Vector3 shapePosition = shape.transform.position;
+                float distanceSq = (shapePosition - gameWorld.MainPlayer.Transform.position).sqrMagnitude;
+                if (distanceSq < closestDistanceSq)
+                {
+                    closestDistanceSq = distanceSq;
+                    closestShape = shape;
+                }
+            }
+
+            // Check if the closest shape is within 20m and directly visible to the player
+            if (closestShape != null && closestDistanceSq <= 20f * 20f)
+            {
+                Vector3 direction = closestShape.transform.position - gameWorld.MainPlayer.Transform.position;
+                float angle = Vector3.Angle(gameWorld.MainPlayer.Transform.forward, direction);
+
+                if (angle < 30f)
+                {
+                    // Create a HashSet of positions for fast containment checks
+                    var locationsSet = new HashSet<Vector3>();
+                    foreach (var entry in fightLocations.Locations.Concat(sessionLocations.Locations))
+                    {
+                        locationsSet.Add(new Vector3(entry.Position.x, entry.Position.y, entry.Position.z));
+                    }
+
+                    // Check if the closest shape's position is contained in the HashSet
+                    Vector3 closestShapePosition = closestShape.transform.position;
+                    if (locationsSet.Contains(closestShapePosition))
+                    {
+                        if (displayMessageNotificationMethod != null)
+                        {
+                            Entry closestEntry = GetClosestEntry(closestShapePosition);
+                            if (closestEntry != null)
+                            {
+                                var txt =
+                                    $"Donuts: Marker Info\n" +
+                                    $"Name: {closestEntry.Name}\n" +
+                                    $"SpawnType: {closestEntry.WildSpawnType}\n" +
+                                    $"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}\n" +
+                                    $"Bot Timer Trigger: {closestEntry.BotTimerTrigger}\n" +
+                                    $"Spawn Chance: {closestEntry.SpawnChance}\n" +
+                                    $"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}";
+
+                                // Check if the marker info has changed since the last update
+                                if (txt != lastDisplayedMarkerInfo)
+                                {
+                                    lastDisplayedMarkerInfo = txt;
+
+                                    MethodInfo displayMessageNotificationMethod;
+                                    if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                                    {
+                                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                                    }
+
+                                    // Stop the existing coroutine if it's running
+                                    if (resetMarkerInfoCoroutine != null)
+                                    {
+                                        StopCoroutine(resetMarkerInfoCoroutine);
+                                    }
+
+                                    // Start a new coroutine to reset the marker info after a delay
+                                    resetMarkerInfoCoroutine = StartCoroutine(ResetMarkerInfoAfterDelay());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private IEnumerator ResetMarkerInfoAfterDelay()
+        {
+            yield return new WaitForSeconds(5f);
+
+            // Reset the marker info
+            lastDisplayedMarkerInfo = string.Empty;
+            resetMarkerInfoCoroutine = null;
+        }
+        private Entry GetClosestEntry(Vector3 position)
+        {
+            Entry closestEntry = null;
+            float closestDistanceSq = float.MaxValue;
+
+            foreach (var entry in fightLocations.Locations.Concat(sessionLocations.Locations))
+            {
+                Vector3 entryPosition = new Vector3(entry.Position.x, entry.Position.y, entry.Position.z);
+                float distanceSq = (entryPosition - position).sqrMagnitude;
+                if (distanceSq < closestDistanceSq)
+                {
+                    closestDistanceSq = distanceSq;
+                    closestEntry = entry;
+                }
+            }
+
+            return closestEntry;
+        }
+        public static MethodInfo GetDisplayMessageNotificationMethod()
+        {
+            return displayMessageNotificationMethod;
+        }
         //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
         private IEnumerator UpdateGizmoSpheresCoroutine()
         {
@@ -482,7 +612,6 @@ namespace Donuts
                 yield return new WaitForSeconds(2f);
             }
         }
-
         private void DrawMarkers(List<Entry> locations, Color color, PrimitiveType primitiveType)
         {
             foreach (var hotspot in locations)
@@ -540,6 +669,7 @@ namespace Donuts
             ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
         }
     }
+
 
     //------------------------------------------------------------------------------------------------------------------------- Classes
     public class HotspotTimer

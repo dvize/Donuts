@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +16,7 @@ namespace Donuts
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.0.0")]
     public class DonutsPlugin : BaseUnityPlugin
     {
+
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
 
@@ -75,7 +75,6 @@ namespace Donuts
 
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> DeleteSpawnMarkerKey;
 
-        private MethodInfo displayMessageNotification;
         private void Awake()
         {
             //Main Settings
@@ -225,11 +224,6 @@ namespace Donuts
         }
         private void Update()
         {
-            if (displayMessageNotification == null)
-            {
-                displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
-            }
-
             if (CreateSpawnMarkerKey.Value.IsDown())
             {
                 CreateSpawnMarker();
@@ -265,10 +259,11 @@ namespace Donuts
                 // Check if the closest entry is null
                 if (closestEntry == null)
                 {
-                    if (displayMessageNotification != null)
+                    var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
+                    if (displayMessageNotificationMethod != null)
                     {
                         var txt = $"Donuts: The Spawn Marker could not be deleted because closest entry could not be found";
-                        displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.grey });
+                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.grey });
                     }
                     return;
                 }
@@ -289,10 +284,11 @@ namespace Donuts
                     }
 
                     // Display a message to the player
-                    if (displayMessageNotification != null)
+                    var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
+                    if (displayMessageNotificationMethod != null)
                     {
                         var txt = $"Donuts: Spawn Marker Deleted for \n {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
-                        displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
                     }
 
                     // Edit the DonutComponent.drawnCoordinates and gizmoSpheres list to remove the objects
@@ -343,7 +339,7 @@ namespace Donuts
                     y = DonutComponent.gameWorld.MainPlayer.Position.y,
                     z = DonutComponent.gameWorld.MainPlayer.Position.z
                 }
-                
+
             };
 
             // Add new entry to sessionLocations.Locations list since we adding new ones
@@ -361,12 +357,12 @@ namespace Donuts
             DonutComponent.hotspotTimers.Add(hotspotTimer);
 
             var txt = $"Donuts: Wrote Entry for {newEntry.Name}\n SpawnType: {newEntry.WildSpawnType}\n Position: {newEntry.Position.x}, {newEntry.Position.y}, {newEntry.Position.z}";
-
-            if (displayMessageNotification != null)
+            var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
+            if (displayMessageNotificationMethod != null)
             {
-                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
-            
+
 
         }
 
@@ -409,10 +405,10 @@ namespace Donuts
             File.WriteAllText(jsonFilePath, json);
 
             var txt = $"Donuts: Wrote Json File to: {jsonFilePath}";
-
-            if (displayMessageNotification != null)
+            var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
+            if (displayMessageNotificationMethod != null)
             {
-                displayMessageNotification.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
     }
