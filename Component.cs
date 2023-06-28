@@ -362,7 +362,7 @@ namespace Donuts
 
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
-                await Task.Delay(0);
+                await Task.Delay(5);
                 count++;
             }
 
@@ -394,7 +394,7 @@ namespace Donuts
                 spawnPosition = coordinate;
                 spawnPosition.x += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
                 spawnPosition.z += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-                await Task.Delay(0);
+                await Task.Delay(5);
             } while (!IsValidSpawnPosition(spawnPosition));
 
             Logger.LogDebug("Found spawn position at: " + spawnPosition);
@@ -466,79 +466,50 @@ namespace Donuts
         {
             while (isGizmoEnabled)
             {
-                //draw the locations from the loaded json files
+                // Draw the locations from the loaded JSON files
 
                 if (fightLocations != null && fightLocations.Locations != null && fightLocations.Locations.Count > 0)
                 {
-                    foreach (var hotspot in fightLocations.Locations)
-                    {
-                        var newcoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-
-                        if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(newcoordinate))
-                        {
-                            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                            var material = sphere.GetComponent<Renderer>().material;
-                            sphere.GetComponent<Renderer>().material.color = Color.green;
-                            sphere.GetComponent<Collider>().enabled = false;
-                            sphere.transform.position = newcoordinate;
-
-                            //scale the sphere to hotSpot.MaxDistance if DonutsPlugin
-
-                            if (DonutsPlugin.gizmoRealSize.Value)
-                            {
-                                sphere.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
-                            }
-                            else
-                            {
-                                sphere.transform.localScale = new Vector3(1f, 1f, 1f);
-                            }
-
-                            gizmoSpheres.Add(sphere);
-                            drawnCoordinates.Add(newcoordinate);
-                        }
-                    }
-
+                    DrawMarkers(fightLocations.Locations, Color.green, PrimitiveType.Sphere);
                 }
 
-                // draw the locations for the sessionLocations
+                // Draw the locations for the sessionLocations
                 if (sessionLocations != null && sessionLocations.Locations != null && sessionLocations.Locations.Count > 0)
                 {
-
-                    foreach (var hotspot in sessionLocations.Locations)
-                    {
-
-                        var newcoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-
-                        if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(newcoordinate))
-                        {
-                            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                            var material = cube.GetComponent<Renderer>().material;
-                            cube.GetComponent<Renderer>().material.color = Color.red;
-                            cube.GetComponent<Collider>().enabled = false;
-                            cube.transform.position = newcoordinate;
-
-                            if (DonutsPlugin.gizmoRealSize.Value)
-                            {
-                                cube.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
-                            }
-                            else
-                            {
-                                cube.transform.localScale = new Vector3(1f, 1f, 1f);
-                            }
-
-                            gizmoSpheres.Add(cube);
-                            drawnCoordinates.Add(newcoordinate);
-                        }
-                    }
-
+                    DrawMarkers(sessionLocations.Locations, Color.red, PrimitiveType.Cube);
                 }
 
-
                 yield return new WaitForSeconds(2f);
-
             }
+        }
 
+        private void DrawMarkers(List<Entry> locations, Color color, PrimitiveType primitiveType)
+        {
+            foreach (var hotspot in locations)
+            {
+                var newCoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
+                if (maplocation == hotspot.MapName && !drawnCoordinates.Contains(newCoordinate))
+                {
+                    var marker = GameObject.CreatePrimitive(primitiveType);
+                    var material = marker.GetComponent<Renderer>().material;
+                    material.color = color;
+                    marker.GetComponent<Collider>().enabled = false;
+                    marker.transform.position = newCoordinate;
+
+                    if (DonutsPlugin.gizmoRealSize.Value)
+                    {
+                        marker.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
+                    }
+                    else
+                    {
+                        marker.transform.localScale = new Vector3(1f, 1f, 1f);
+                    }
+
+                    gizmoSpheres.Add(marker);
+                    drawnCoordinates.Add(newCoordinate);
+                }
+            }
         }
 
         public void ToggleGizmoDisplay(bool enableGizmos)
@@ -554,10 +525,10 @@ namespace Donuts
                 StopCoroutine(gizmoUpdateCoroutine);
                 gizmoUpdateCoroutine = null;
 
-                // Destroy the drawn spheres
-                foreach (var sphere in gizmoSpheres)
+                // Destroy the drawn markers
+                foreach (var marker in gizmoSpheres)
                 {
-                    Destroy(sphere);
+                    Destroy(marker);
                 }
                 gizmoSpheres.Clear();
                 drawnCoordinates.Clear();
@@ -570,6 +541,7 @@ namespace Donuts
         }
     }
 
+    //------------------------------------------------------------------------------------------------------------------------- Classes
     public class HotspotTimer
     {
         private Entry hotspot;
