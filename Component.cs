@@ -66,6 +66,23 @@ namespace Donuts
                 Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
             }
 
+        }
+
+        //add plugin checker from chainloader
+        public static bool IsPluginEnabled(string pluginGuid)
+        {
+            foreach (var plugin in Chainloader.PluginInfos.Values)
+            {
+                if (plugin.Metadata.GUID == pluginGuid && plugin.Instance.enabled)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Awake()
+        {
             fieldCache = new Dictionary<string, object>();
             methodCache = new Dictionary<string, MethodInfo>();
 
@@ -109,20 +126,6 @@ namespace Donuts
                     ?.Instance
                     ?.GetComponent<SAINComponent>();
             }
-
-        }
-
-        //add plugin checker from chainloader
-        public static bool IsPluginEnabled(string pluginGuid)
-        {
-            foreach (var plugin in Chainloader.PluginInfos.Values)
-            {
-                if (plugin.Metadata.GUID == pluginGuid && plugin.Instance.enabled)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
         private void Start()
         {
@@ -432,6 +435,7 @@ namespace Donuts
 
                     if (sainComponent != null)
                     {
+                        Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
                         sainComponent.BotController.RemoveBot(furthestBot.ProfileId);
                     }
                     else
