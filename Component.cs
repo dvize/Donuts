@@ -465,10 +465,10 @@ namespace Donuts
         }
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
-            Vector3 direction = (gameWorld.MainPlayer.Position - spawnPosition).normalized;
+            Vector3 direction = (gameWorld.MainPlayer.MainParts[BodyPartType.head].Position - spawnPosition).normalized;
             Ray ray = new Ray(spawnPosition, direction);
             RaycastHit hit;
-            float Distance = Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position);
+            float Distance = Vector3.Distance(spawnPosition, gameWorld.MainPlayer.MainParts[BodyPartType.head].Position);
             if (Physics.Raycast(ray, out hit, Distance, LayerMaskClass.HighPolyWithTerrainMask))
             {
                 //if hit has something in it and it does not have a player component in it then return false
