@@ -13,7 +13,6 @@ using UnityEngine;
 namespace Donuts
 {
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.0.0")]
-    [BepInDependency("me.sol.sain", "2.0")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -303,13 +302,8 @@ namespace Donuts
                     {
                         Destroy(sphere);
                     }
-
-
                 }
             }
-
-
-
         }
 
         private void CreateSpawnMarker()
