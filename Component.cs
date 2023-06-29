@@ -15,8 +15,6 @@ using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
-using SAIN;
-using SAIN.Components;
 
 namespace Donuts
 {
@@ -24,8 +22,6 @@ namespace Donuts
     {
         private float botMinDistance;
         private float botMaxDistance;
-        private bool isSainEnabled = false;
-        private SAINComponent sainComponent;
 
         internal static FightLocations fightLocations = new FightLocations()
         {
@@ -114,23 +110,10 @@ namespace Donuts
                     break;
                 }
             }
-
-            isSainEnabled = IsPluginEnabled("me.sol.sain");
-            Logger.LogDebug("SAIN Enabled: " + isSainEnabled);
-
-            if (isSainEnabled)
-            {
-                // SAIN plugin is loaded, you can access its components or perform related actions
-                sainComponent = Chainloader.PluginInfos.Values
-                    .FirstOrDefault(pluginInfo => pluginInfo.Metadata.GUID == "me.sol.sain")
-                    ?.Instance
-                    ?.GetComponent<SAINComponent>();
-            }
         }
         private void Start()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
-
 
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             Logger.LogDebug("Setup maplocation: " + maplocation);
@@ -432,17 +415,8 @@ namespace Donuts
                 if (furthestBot != null)
                 {
                     //despawn the bot
-
-                    if (sainComponent != null)
-                    {
-                        Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
-                        sainComponent.BotController.RemoveBot(furthestBot.ProfileId);
-                    }
-                    else
-                    {
-                        Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
-                        Singleton<IBotGame>.Instance.BotUnspawn(furthestBot.AIData.BotOwner);
-                    }
+                    Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
+                    Singleton<IBotGame>.Instance.BotUnspawn(furthestBot.AIData.BotOwner);
                 }
             }
         }
