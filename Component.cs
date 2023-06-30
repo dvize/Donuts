@@ -64,19 +64,6 @@ namespace Donuts
 
         }
 
-        //add plugin checker from chainloader
-        public static bool IsPluginEnabled(string pluginGuid)
-        {
-            foreach (var plugin in Chainloader.PluginInfos.Values)
-            {
-                if (plugin.Metadata.GUID == pluginGuid && plugin.Instance.enabled)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public void Awake()
         {
             fieldCache = new Dictionary<string, object>();
