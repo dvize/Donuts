@@ -18,11 +18,12 @@ namespace Donuts
 
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
-
+        public static ConfigEntry<float> coolDownTimer;
         public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
+        public static ConfigEntry<int> maxSpawnTriesPerBot;
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -83,7 +84,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             AbsMaxBotCount = Config.Bind(
                 "Main Settings",
@@ -91,13 +92,29 @@ namespace Donuts
                 18,
                 new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
             DespawnEnabled = Config.Bind(
                 "Main Settings",
                 "Despawn Option",
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            coolDownTimer = Config.Bind(
+                "Main Settings",
+                "Cool Down Timer",
+                180f,
+                new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
+                new AcceptableValueRange<float>(0f, 1000f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            maxSpawnTriesPerBot = Config.Bind(
+                "Main Settings",
+                "Max Spawn Tries Per Bot",
+                10,
+                new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 

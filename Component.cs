@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Aki.Reflection.Utils;
-using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
@@ -50,6 +49,9 @@ namespace Donuts
         internal static List<GameObject> gizmoSpheres = new List<GameObject>();
         private static Coroutine gizmoUpdateCoroutine;
 
+        //game flow
+        private int MaxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
+        private float cooldownTime = 60f;
         protected static ManualLogSource Logger
         {
             get; private set;
@@ -190,11 +192,21 @@ namespace Donuts
                                 continue;
                             }
 
+                            if (hotspotTimer.inCooldown)
+                            {
+                                Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
+                                continue;
+                            }
+
                             Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
                             await SpawnBots(hotspot, coordinate);
+                            //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
+                            if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
+                            {
+                                hotspotTimer.inCooldown = true;
+                            }
                             hotspotTimer.ResetTimer();
                             Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-
                         }
                     }
                 }
@@ -220,163 +232,26 @@ namespace Donuts
             Logger.LogDebug("hotspot: " + hotspot.Name);
 
             int count = 0;
+            int maxSpawnAttempts = 10;
 
             while (count < UnityEngine.Random.Range(1, hotspot.MaxRandomNumBots))
             {
-                EPlayerSide side;
-                WildSpawnType wildSpawnType;
+                Vector3 spawnPosition = await getRandomSpawnPosition(hotspot, coordinate, maxSpawnAttempts);
+
+                if (spawnPosition == Vector3.negativeInfinity)
+                {
+                    //need to count failed attempt and move to generating next bot
+                    count++;
+                    await Task.Delay(5);
+                    continue;
+                }
+
+                EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspot.WildSpawnType));
+                WildSpawnType wildSpawnType = GetWildSpawnType(hotspot.WildSpawnType.ToLower());
                 botMinDistance = hotspot.MinDistance;
                 botMaxDistance = hotspot.MaxDistance;
 
-                //define spt wildspawn
-
-                WildSpawnType sptUsec = (WildSpawnType)fieldCache["sptUsec"];
-                WildSpawnType sptBear = (WildSpawnType)fieldCache["sptBear"];
-
-                switch (hotspot.WildSpawnType.ToLower())
-                {
-                    case "assault":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.assault;
-                        break;
-                    case "assaultgroup":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.assaultGroup;
-                        break;
-                    case "bossbully":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossBully;
-                        break;
-                    case "bossgluhar":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossGluhar;
-                        break;
-                    case "bosskilla":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossKilla;
-                        break;
-                    case "bosskojaniy":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossKojaniy;
-                        break;
-                    case "bosssanitar":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossSanitar;
-                        break;
-                    case "bosstagilla":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossTagilla;
-                        break;
-                    case "bosszryachiy":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossZryachiy;
-                        break;
-                    case "cursedassault":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.cursedAssault;
-                        break;
-                    case "exusec":
-                        side = EPlayerSide.Usec;
-                        wildSpawnType = WildSpawnType.pmcBot;
-                        break;
-                    case "followerbully":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerBully;
-                        break;
-                    case "followergluharassault":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerGluharAssault;
-                        break;
-                    case "followergluharscout":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerGluharScout;
-                        break;
-                    case "followergluharsecurity":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerGluharSecurity;
-                        break;
-                    case "followergluharsnipe":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerGluharSnipe;
-                        break;
-                    case "followerkojaniy":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerKojaniy;
-                        break;
-                    case "followersanitar":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerSanitar;
-                        break;
-                    case "followertagilla":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerTagilla;
-                        break;
-                    case "followerzryachiy":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerZryachiy;
-                        break;
-                    case "gifter":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.gifter;
-                        break;
-                    case "marksman":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.marksman;
-                        break;
-                    case "pmcbot":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.pmcBot;
-                        break;
-                    case "sectantpriest":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.sectantPriest;
-                        break;
-                    case "sectantwarrior":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.sectantWarrior;
-                        break;
-                    case "usec":
-                        side = EPlayerSide.Usec;
-                        wildSpawnType = sptUsec;
-                        break;
-                    case "bear":
-                        side = EPlayerSide.Bear;
-                        wildSpawnType = sptBear;
-                        break;
-                    case "sptusec":
-                        side = EPlayerSide.Usec;
-                        wildSpawnType = sptUsec;
-                        break;
-                    case "sptbear":
-                        side = EPlayerSide.Bear;
-                        wildSpawnType = sptBear;
-                        break;
-                    case "followerbigpipe":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerBigPipe;
-                        break;
-                    case "followerbirdeye":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.followerBirdEye;
-                        break;
-                    case "bossknight":
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.bossKnight;
-                        break;
-                    case "pmc":
-                        //random wildspawntype is either assigned sptusec or sptbear at 50/50 chance
-                        wildSpawnType = UnityEngine.Random.Range(0, 2) == 0 ? sptUsec : sptBear;
-                        side = (wildSpawnType == sptUsec ? EPlayerSide.Usec : EPlayerSide.Bear);
-                        break;
-                    default:
-                        side = EPlayerSide.Savage;
-                        wildSpawnType = WildSpawnType.assault;
-                        break;
-                }
-
-                Vector3 spawnPosition = await getRandomSpawnPosition(hotspot, coordinate);
-
-                //setup bot details
+                // Setup bot details
                 var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
@@ -388,8 +263,106 @@ namespace Donuts
                 count++;
                 await Task.Delay(10);
             }
+        }
 
+        private WildSpawnType GetWildSpawnType(string spawnType)
+        {
+            //define spt wildspawn
+            WildSpawnType sptUsec = (WildSpawnType)fieldCache["sptUsec"];
+            WildSpawnType sptBear = (WildSpawnType)fieldCache["sptBear"];
 
+            switch (spawnType.ToLower())
+            {
+                case "assault":
+                    return WildSpawnType.assault;
+                case "assaultgroup":
+                    return WildSpawnType.assaultGroup;
+                case "bossbully":
+                    return WildSpawnType.bossBully;
+                case "bossgluhar":
+                    return WildSpawnType.bossGluhar;
+                case "bosskilla":
+                    return WildSpawnType.bossKilla;
+                case "bosskojaniy":
+                    return WildSpawnType.bossKojaniy;
+                case "bosssanitar":
+                    return WildSpawnType.bossSanitar;
+                case "bosstagilla":
+                    return WildSpawnType.bossTagilla;
+                case "bosszryachiy":
+                    return WildSpawnType.bossZryachiy;
+                case "cursedassault":
+                    return WildSpawnType.cursedAssault;
+                case "exusec":
+                    return WildSpawnType.pmcBot;
+                case "followerbully":
+                    return WildSpawnType.followerBully;
+                case "followergluharassault":
+                    return WildSpawnType.followerGluharAssault;
+                case "followergluharscout":
+                    return WildSpawnType.followerGluharScout;
+                case "followergluharsecurity":
+                    return WildSpawnType.followerGluharSecurity;
+                case "followergluharsnipe":
+                    return WildSpawnType.followerGluharSnipe;
+                case "followerkojaniy":
+                    return WildSpawnType.followerKojaniy;
+                case "followersanitar":
+                    return WildSpawnType.followerSanitar;
+                case "followertagilla":
+                    return WildSpawnType.followerTagilla;
+                case "followerzryachiy":
+                    return WildSpawnType.followerZryachiy;
+                case "gifter":
+                    return WildSpawnType.gifter;
+                case "marksman":
+                    return WildSpawnType.marksman;
+                case "pmcbot":
+                    return WildSpawnType.pmcBot;
+                case "sectantpriest":
+                    return WildSpawnType.sectantPriest;
+                case "sectantwarrior":
+                    return WildSpawnType.sectantWarrior;
+                case "usec":
+                    return sptUsec;
+                case "bear":
+                    return sptBear;
+                case "sptusec":
+                    return sptUsec;
+                case "sptbear":
+                    return sptBear;
+                case "followerbigpipe":
+                    return WildSpawnType.followerBigPipe;
+                case "followerbirdeye":
+                    return WildSpawnType.followerBirdEye;
+                case "bossknight":
+                    return WildSpawnType.bossKnight;
+                case "pmc":
+                    //random wildspawntype is either assigned sptusec or sptbear at 50/50 chance
+                    return (UnityEngine.Random.Range(0, 2) == 0) ? sptUsec : sptBear;
+                default:
+                    return WildSpawnType.assault;
+            }
+
+        }
+        private EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
+        {
+            //define spt wildspawn
+            WildSpawnType sptUsec = (WildSpawnType)fieldCache["sptUsec"];
+            WildSpawnType sptBear = (WildSpawnType)fieldCache["sptBear"];
+
+            if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
+            {
+                return EPlayerSide.Usec;
+            }
+            else if (spawnType == sptBear)
+            {
+                return EPlayerSide.Bear;
+            }
+            else
+            {
+                return EPlayerSide.Savage;
+            }
         }
 
         private void DespawnFurthestBot()
@@ -426,48 +399,43 @@ namespace Donuts
                 }
             }
         }
-        private async Task<Vector3> getRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
+        private async Task<Vector3> getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
-            Vector3 spawnPosition;
-
-            //keep grabbing random spawn positions on the same hotspot.Position.y until we find one that is not inside a wall
-            do
+            for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
             {
-                spawnPosition = coordinate;
-                spawnPosition.x += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-                spawnPosition.z += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-                await Task.Delay(5);
-            } while (!IsValidSpawnPosition(spawnPosition));
+                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-            Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                if (await IsValidSpawnPosition(spawnPosition))
+                {
+                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                    return spawnPosition;
+                }
+
+                await Task.Delay(5);
+            }
+
+            // Return an invalid position if maximum spawn attempts reached
+            return Vector3.negativeInfinity;
+        }
+
+        private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
+        {
+            Vector3 spawnPosition = coordinate;
+            spawnPosition.x += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            spawnPosition.z += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
             return spawnPosition;
         }
 
-        private bool IsValidSpawnPosition(Vector3 spawnPosition)
+        private async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition)
         {
-            return !IsSpawnPositionInvalid(spawnPosition);
+            return !await IsSpawnPositionInvalid(spawnPosition);
         }
-
-        private bool IsSpawnPositionInvalid(Vector3 spawnPosition)
+        private Task<bool> IsSpawnPositionInvalid(Vector3 spawnPosition)
         {
-            if (IsSpawnPositionInsideWall(spawnPosition))
-            {
-                return true;
-            }
-
-            if (IsSpawnPositionInPlayerLineOfSight(spawnPosition))
-            {
-                return true;
-            }
-
-            if (IsSpawnInAir(spawnPosition))
-            {
-                return true;
-            }
-
-            return false;
+            return Task.FromResult(IsSpawnPositionInsideWall(spawnPosition) ||
+                IsSpawnPositionInPlayerLineOfSight(spawnPosition) ||
+                IsSpawnInAir(spawnPosition));
         }
-
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
             Vector3 direction = (gameWorld.MainPlayer.MainParts[BodyPartType.head].Position - spawnPosition).normalized;
@@ -485,7 +453,6 @@ namespace Donuts
 
             return false;
         }
-
         private bool IsSpawnPositionInsideWall(Vector3 position)
         {
             // Check if any game object parent has the name "WALLS" in it
@@ -507,7 +474,6 @@ namespace Donuts
 
             return false;
         }
-
         private bool IsSpawnInAir(Vector3 position)
         {
             // Raycast down and determine if the position is in the air or not
@@ -519,8 +485,6 @@ namespace Donuts
                 // If the raycast hits a collider, it means the position is not in the air
                 return false;
             }
-
-            // If the raycast does not hit any collider, the position is in the air
             return true;
         }
 
@@ -739,17 +703,32 @@ namespace Donuts
     {
         private Entry hotspot;
         private float timer;
+        public bool inCooldown;
+        public int timesSpawned;
+        private float cooldownTimer;
         public Entry Hotspot => hotspot;
 
         public HotspotTimer(Entry hotspot)
         {
             this.hotspot = hotspot;
             this.timer = 0f;
+            this.inCooldown = false;
+            this.timesSpawned = 0;
+            this.cooldownTimer = 0f;
         }
 
         public void UpdateTimer()
         {
             timer += Time.deltaTime;
+            if (inCooldown)
+            {
+                cooldownTimer += Time.deltaTime;
+                if (cooldownTimer >= DonutsPlugin.coolDownTimer.Value)
+                {
+                    inCooldown = false;
+                    cooldownTimer = 0f;
+                }
+            }
         }
 
         public float GetTimer()
@@ -758,11 +737,7 @@ namespace Donuts
         }
         public bool ShouldSpawn()
         {
-            if (timer >= hotspot.BotTimerTrigger)
-            {
-                return true;
-            }
-            return false;
+            return timer >= hotspot.BotTimerTrigger;
         }
 
         public void ResetTimer()
@@ -813,6 +788,11 @@ namespace Donuts
         }
 
         public int SpawnChance
+        {
+            get; set;
+        }
+
+        public int MaxSpawnsBeforeCoolDown
         {
             get; set;
         }
