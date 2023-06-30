@@ -403,7 +403,14 @@ namespace Donuts
                 {
                     //despawn the bot
                     Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
-                    Singleton<IBotGame>.Instance.BotUnspawn(furthestBot.AIData.BotOwner);
+
+                    BotOwner botOwner = furthestBot.AIData.BotOwner;
+                    BotControllerClass botControllerClass = botOwner.BotsController;
+                    botControllerClass.BotDied(botOwner);
+                    botControllerClass.DestroyInfo(furthestBot);
+                    botOwner.Dispose();
+                    furthestBot.Dispose();
+                    Destroy(furthestBot);
                 }
             }
         }
