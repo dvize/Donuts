@@ -206,7 +206,7 @@ namespace Donuts
                 "Max Spawns Before Cooldown",
                 5,
                 new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
-                new AcceptableValueRange<int>(0, 100),
+                null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
             CreateSpawnMarkerKey = Config.Bind(

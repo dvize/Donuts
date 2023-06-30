@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aki.Reflection.Utils;
@@ -489,7 +490,8 @@ namespace Donuts
         }
 
 
-        private string lastDisplayedMarkerInfo = string.Empty;
+        private StringBuilder lastDisplayedMarkerInfo = new StringBuilder();
+        private StringBuilder previousMarkerInfo = new StringBuilder();
         private Coroutine resetMarkerInfoCoroutine;
         private void DisplayMarkerInformation()
         {
@@ -513,8 +515,8 @@ namespace Donuts
                 }
             }
 
-            // Check if the closest shape is within 20m and directly visible to the player
-            if (closestShape != null && closestDistanceSq <= 20f * 20f)
+            // Check if the closest shape is within 15m and directly visible to the player
+            if (closestShape != null && closestDistanceSq <= 10f * 10f)
             {
                 Vector3 direction = closestShape.transform.position - gameWorld.MainPlayer.Transform.position;
                 float angle = Vector3.Angle(gameWorld.MainPlayer.Transform.forward, direction);
@@ -537,20 +539,25 @@ namespace Donuts
                             Entry closestEntry = GetClosestEntry(closestShapePosition);
                             if (closestEntry != null)
                             {
-                                var txt =
-                                    $"Donuts: Marker Info\n" +
-                                    $"Name: {closestEntry.Name}\n" +
-                                    $"SpawnType: {closestEntry.WildSpawnType}\n" +
-                                    $"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}\n" +
-                                    $"Bot Timer Trigger: {closestEntry.BotTimerTrigger}\n" +
-                                    $"Spawn Chance: {closestEntry.SpawnChance}\n" +
-                                    $"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}";
+                                previousMarkerInfo.Clear();
+                                previousMarkerInfo.Append(lastDisplayedMarkerInfo);
+
+                                lastDisplayedMarkerInfo.Clear();
+
+                                lastDisplayedMarkerInfo.AppendLine("Donuts: Marker Info");
+                                lastDisplayedMarkerInfo.AppendLine($"Name: {closestEntry.Name}");
+                                lastDisplayedMarkerInfo.AppendLine($"SpawnType: {closestEntry.WildSpawnType}");
+                                lastDisplayedMarkerInfo.AppendLine($"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}");
+                                lastDisplayedMarkerInfo.AppendLine($"Bot Timer Trigger: {closestEntry.BotTimerTrigger}");
+                                lastDisplayedMarkerInfo.AppendLine($"Spawn Chance: {closestEntry.SpawnChance}");
+                                lastDisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
+                                lastDisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
+
+                                string txt = lastDisplayedMarkerInfo.ToString();
 
                                 // Check if the marker info has changed since the last update
-                                if (txt != lastDisplayedMarkerInfo)
+                                if (txt != previousMarkerInfo.ToString())
                                 {
-                                    lastDisplayedMarkerInfo = txt;
-
                                     MethodInfo displayMessageNotificationMethod;
                                     if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
                                     {
@@ -572,13 +579,12 @@ namespace Donuts
                 }
             }
         }
-
         private IEnumerator ResetMarkerInfoAfterDelay()
         {
             yield return new WaitForSeconds(5f);
 
             // Reset the marker info
-            lastDisplayedMarkerInfo = string.Empty;
+            lastDisplayedMarkerInfo.Clear();
             resetMarkerInfoCoroutine = null;
         }
         private Entry GetClosestEntry(Vector3 position)
