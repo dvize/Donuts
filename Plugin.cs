@@ -18,11 +18,12 @@ namespace Donuts
 
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
-
+        public static ConfigEntry<float> coolDownTimer;
         public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
+        public static ConfigEntry<int> maxSpawnTriesPerBot;
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -66,6 +67,7 @@ namespace Donuts
         public static ConfigEntry<float> botTriggerDistance;
         public static ConfigEntry<int> maxRandNumBots;
         public static ConfigEntry<int> spawnChance;
+        public static ConfigEntry<int> maxSpawnsBeforeCooldown;
 
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
@@ -83,7 +85,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             AbsMaxBotCount = Config.Bind(
                 "Main Settings",
@@ -91,13 +93,29 @@ namespace Donuts
                 18,
                 new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
             DespawnEnabled = Config.Bind(
                 "Main Settings",
                 "Despawn Option",
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            coolDownTimer = Config.Bind(
+                "Main Settings",
+                "Cool Down Timer",
+                180f,
+                new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
+                new AcceptableValueRange<float>(0f, 1000f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            maxSpawnTriesPerBot = Config.Bind(
+                "Main Settings",
+                "Max Spawn Tries Per Bot",
+                10,
+                new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
@@ -183,13 +201,21 @@ namespace Donuts
                 new AcceptableValueRange<int>(0, 100),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
+            maxSpawnsBeforeCooldown = Config.Bind(
+                "Spawn Point Maker",
+                "Max Spawns Before Cooldown",
+                5,
+                new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
             CreateSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
@@ -197,7 +223,7 @@ namespace Donuts
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
 
 
@@ -332,7 +358,9 @@ namespace Donuts
                     x = DonutComponent.gameWorld.MainPlayer.Position.x,
                     y = DonutComponent.gameWorld.MainPlayer.Position.y,
                     z = DonutComponent.gameWorld.MainPlayer.Position.z
-                }
+                },
+
+                MaxSpawnsBeforeCoolDown = maxSpawnsBeforeCooldown.Value
 
             };
 
