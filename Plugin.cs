@@ -67,6 +67,7 @@ namespace Donuts
         public static ConfigEntry<float> botTriggerDistance;
         public static ConfigEntry<int> maxRandNumBots;
         public static ConfigEntry<int> spawnChance;
+        public static ConfigEntry<int> maxSpawnsBeforeCooldown;
 
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
@@ -200,13 +201,21 @@ namespace Donuts
                 new AcceptableValueRange<int>(0, 100),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
+            maxSpawnsBeforeCooldown = Config.Bind(
+                "Spawn Point Maker",
+                "Max Spawns Before Cooldown",
+                5,
+                new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
+                new AcceptableValueRange<int>(0, 100),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
             CreateSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
@@ -214,7 +223,7 @@ namespace Donuts
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
 
 
@@ -349,7 +358,9 @@ namespace Donuts
                     x = DonutComponent.gameWorld.MainPlayer.Position.x,
                     y = DonutComponent.gameWorld.MainPlayer.Position.y,
                     z = DonutComponent.gameWorld.MainPlayer.Position.z
-                }
+                },
+
+                MaxSpawnsBeforeCoolDown = maxSpawnsBeforeCooldown.Value
 
             };
 
