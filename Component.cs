@@ -492,8 +492,8 @@ namespace Donuts
         }
 
 
-        private StringBuilder lastDisplayedMarkerInfo = new StringBuilder();
-        private StringBuilder previousMarkerInfo = new StringBuilder();
+        private StringBuilder DisplayedMarkerInfo = new StringBuilder();
+        private StringBuilder PreviousMarkerInfo = new StringBuilder();
         private Coroutine resetMarkerInfoCoroutine;
         private void DisplayMarkerInformation()
         {
@@ -541,24 +541,24 @@ namespace Donuts
                             Entry closestEntry = GetClosestEntry(closestShapePosition);
                             if (closestEntry != null)
                             {
-                                previousMarkerInfo.Clear();
-                                previousMarkerInfo.Append(lastDisplayedMarkerInfo);
+                                PreviousMarkerInfo.Clear();
+                                PreviousMarkerInfo.Append(DisplayedMarkerInfo);
 
-                                lastDisplayedMarkerInfo.Clear();
+                                DisplayedMarkerInfo.Clear();
 
-                                lastDisplayedMarkerInfo.AppendLine("Donuts: Marker Info");
-                                lastDisplayedMarkerInfo.AppendLine($"Name: {closestEntry.Name}");
-                                lastDisplayedMarkerInfo.AppendLine($"SpawnType: {closestEntry.WildSpawnType}");
-                                lastDisplayedMarkerInfo.AppendLine($"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}");
-                                lastDisplayedMarkerInfo.AppendLine($"Bot Timer Trigger: {closestEntry.BotTimerTrigger}");
-                                lastDisplayedMarkerInfo.AppendLine($"Spawn Chance: {closestEntry.SpawnChance}");
-                                lastDisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
-                                lastDisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
+                                DisplayedMarkerInfo.AppendLine("Donuts: Marker Info");
+                                DisplayedMarkerInfo.AppendLine($"Name: {closestEntry.Name}");
+                                DisplayedMarkerInfo.AppendLine($"SpawnType: {closestEntry.WildSpawnType}");
+                                DisplayedMarkerInfo.AppendLine($"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}");
+                                DisplayedMarkerInfo.AppendLine($"Bot Timer Trigger: {closestEntry.BotTimerTrigger}");
+                                DisplayedMarkerInfo.AppendLine($"Spawn Chance: {closestEntry.SpawnChance}");
+                                DisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
+                                DisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
 
-                                string txt = lastDisplayedMarkerInfo.ToString();
+                                string txt = DisplayedMarkerInfo.ToString();
 
                                 // Check if the marker info has changed since the last update
-                                if (txt != previousMarkerInfo.ToString())
+                                if (txt != PreviousMarkerInfo.ToString())
                                 {
                                     MethodInfo displayMessageNotificationMethod;
                                     if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
@@ -586,7 +586,7 @@ namespace Donuts
             yield return new WaitForSeconds(5f);
 
             // Reset the marker info
-            lastDisplayedMarkerInfo.Clear();
+            DisplayedMarkerInfo.Clear();
             resetMarkerInfoCoroutine = null;
         }
         private Entry GetClosestEntry(Vector3 position)
