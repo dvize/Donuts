@@ -189,7 +189,7 @@ namespace Donuts
                             {
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
                                 hotspotTimer.ResetTimer();
-                                Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                                Logger.LogDebug("Resetting Regular Spawn Timer (because failed chance): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
                                 continue;
                             }
 
@@ -199,15 +199,17 @@ namespace Donuts
                                 continue;
                             }
 
-                            Logger.LogDebug("Timer: " + hotspotTimer.GetTimer() + " Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
                             await SpawnBots(hotspot, coordinate);
+                            Logger.LogDebug("Regular Spawn Timer Timer: " + hotspotTimer.GetTimer() + "Attempt Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
+                            hotspotTimer.timesSpawned++;
+
                             //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
                             if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
                             {
                                 hotspotTimer.inCooldown = true;
                             }
                             hotspotTimer.ResetTimer();
-                            Logger.LogDebug("Resetting Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                            Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
                         }
                     }
                 }
@@ -733,6 +735,7 @@ namespace Donuts
                 {
                     inCooldown = false;
                     cooldownTimer = 0f;
+                    timesSpawned = 0;
                 }
             }
         }
