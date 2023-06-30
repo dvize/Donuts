@@ -236,11 +236,11 @@ namespace Donuts
 
             while (count < UnityEngine.Random.Range(1, hotspot.MaxRandomNumBots))
             {
-                Vector3 spawnPosition = await getRandomSpawnPosition(hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = await getRandomSpawnPosition(hotspot, coordinate, maxSpawnAttempts);
 
-                if (spawnPosition == Vector3.negativeInfinity)
+                if (!spawnPosition.HasValue)
                 {
-                    //need to count failed attempt and move to generating next bot
+                    // Failed to get a valid spawn position, move on to generating the next bot
                     count++;
                     await Task.Delay(5);
                     continue;
@@ -255,8 +255,8 @@ namespace Donuts
                 var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
-                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                Logger.LogDebug("Spawning bot at distance to player of: " + Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+                var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
+                Logger.LogDebug("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
@@ -399,7 +399,7 @@ namespace Donuts
                 }
             }
         }
-        private async Task<Vector3> getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private async Task<Vector3?> getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
             for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
             {
@@ -414,8 +414,8 @@ namespace Donuts
                 await Task.Delay(5);
             }
 
-            // Return an invalid position if maximum spawn attempts reached
-            return Vector3.negativeInfinity;
+            // Return null if no valid position found
+            return null;
         }
 
         private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
