@@ -385,8 +385,8 @@ namespace Donuts
 
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
-                await Task.Delay(5);
                 count++;
+                await Task.Delay(10);
             }
 
 
@@ -396,12 +396,24 @@ namespace Donuts
         {
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
-            if (gameWorld.RegisteredPlayers.Count >= DonutsPlugin.AbsMaxBotCount.Value)
+            if (bots.Count >= DonutsPlugin.AbsMaxBotCount.Value)
             {
-                var furthestBot = bots.OrderByDescending(x => Vector3.Distance(x.Position, gameWorld.MainPlayer.Position)).FirstOrDefault();
+                float maxDistance = -1f;
+                Player furthestBot = null;
+
+                foreach (Player bot in bots)
+                {
+                    float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
+                    if (distance > maxDistance)
+                    {
+                        maxDistance = distance;
+                        furthestBot = bot;
+                    }
+                }
+
                 if (furthestBot != null)
                 {
-                    //despawn the bot
+                    // Despawn the bot
                     Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
 
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
@@ -433,29 +445,50 @@ namespace Donuts
 
         private bool IsValidSpawnPosition(Vector3 spawnPosition)
         {
-            return !IsSpawnPositionInsideWall(spawnPosition) && !IsSpawnPositionInPlayerLineOfSight(spawnPosition) && !IsSpawnInAir(spawnPosition);
+            return !IsSpawnPositionInvalid(spawnPosition);
         }
+
+        private bool IsSpawnPositionInvalid(Vector3 spawnPosition)
+        {
+            if (IsSpawnPositionInsideWall(spawnPosition))
+            {
+                return true;
+            }
+
+            if (IsSpawnPositionInPlayerLineOfSight(spawnPosition))
+            {
+                return true;
+            }
+
+            if (IsSpawnInAir(spawnPosition))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
             Vector3 direction = (gameWorld.MainPlayer.MainParts[BodyPartType.head].Position - spawnPosition).normalized;
             Ray ray = new Ray(spawnPosition, direction);
             RaycastHit hit;
-            float Distance = Vector3.Distance(spawnPosition, gameWorld.MainPlayer.MainParts[BodyPartType.head].Position);
-            if (Physics.Raycast(ray, out hit, Distance, LayerMaskClass.HighPolyWithTerrainMask))
+            float distance = Vector3.Distance(spawnPosition, gameWorld.MainPlayer.MainParts[BodyPartType.head].Position);
+            if (Physics.Raycast(ray, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
             {
-                //if hit has something in it and it does not have a player component in it then return false
+                // If hit has something in it and it does not have a player component in it then return true
                 if (hit.collider != null && !hit.collider.GetComponentInParent<Player>())
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         private bool IsSpawnPositionInsideWall(Vector3 position)
         {
-            //check if any gameobject parent has the name "WALLS" in it
+            // Check if any game object parent has the name "WALLS" in it
             Vector3 boxSize = new Vector3(1f, 1f, 1f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
 
