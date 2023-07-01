@@ -199,8 +199,7 @@ namespace Donuts
                                 continue;
                             }
 
-                            await SpawnBots(hotspot, coordinate);
-                            Logger.LogDebug("Regular Spawn Timer Timer: " + hotspotTimer.GetTimer() + "Attempt Spawned Bots at: " + coordinate + " for hotspot: " + hotspot.Name);
+                            await SpawnBots(hotspotTimer, coordinate);
                             hotspotTimer.timesSpawned++;
 
                             //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -229,17 +228,18 @@ namespace Donuts
             float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
             return distanceSquared <= activationDistanceSquared;
         }
-        private async Task SpawnBots(Entry hotspot, Vector3 coordinate)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            Logger.LogDebug("Entered SpawnBots()");
-            Logger.LogDebug("hotspot: " + hotspot.Name);
+            //Logger.LogDebug("Entered SpawnBots()");
+            //Logger.LogDebug("hotspot: " + hotspot.Name);
+            Logger.LogDebug("Triggered Regular Spawn Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspotTimer.Hotspot.Name);
 
             int count = 0;
             int maxSpawnAttempts = 10;
 
-            while (count < UnityEngine.Random.Range(1, hotspot.MaxRandomNumBots))
+            while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
-                Vector3? spawnPosition = await getRandomSpawnPosition(hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = await getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
                 if (!spawnPosition.HasValue)
                 {
@@ -249,10 +249,10 @@ namespace Donuts
                     continue;
                 }
 
-                EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspot.WildSpawnType));
-                WildSpawnType wildSpawnType = GetWildSpawnType(hotspot.WildSpawnType.ToLower());
-                botMinDistance = hotspot.MinDistance;
-                botMaxDistance = hotspot.MaxDistance;
+                EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
+                WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
+                botMinDistance = hotspotTimer.Hotspot.MinDistance;
+                botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
 
                 // Setup bot details
                 var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
