@@ -237,6 +237,9 @@ namespace Donuts
             int count = 0;
             int maxSpawnAttempts = 10;
 
+            //moved outside so all spawns for a point are same side
+            EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
+
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
                 Vector3? spawnPosition = await getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
@@ -249,7 +252,7 @@ namespace Donuts
                     continue;
                 }
 
-                EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
+                
                 WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
                 botMinDistance = hotspotTimer.Hotspot.MinDistance;
                 botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
