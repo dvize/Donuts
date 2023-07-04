@@ -464,12 +464,15 @@ namespace Donuts
         private Vector3? GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
         {
             Vector3 spawnPosition = coordinate;
-            //keep generating random spawnPosition.x and spawnPosition.z for ten tries while it is minimum distance away from player
 
             for (int i = 0; i < DonutsPlugin.maxSpawnTriesPerBot.Value; i++)
             {
-                spawnPosition.x = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-                spawnPosition.z = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+                float randomX = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+                float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+
+                spawnPosition.x = coordinate.x + randomX;
+                spawnPosition.z = coordinate.z + randomZ;
+
                 if (Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) > DonutsPlugin.minSpawnDistanceFromPlayer.Value)
                 {
                     return spawnPosition;
@@ -478,7 +481,7 @@ namespace Donuts
 
             return null;
         }
-                
+
         private bool IsValidSpawnPosition(Vector3 spawnPosition)
         {
             if (spawnPosition != null)
