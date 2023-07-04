@@ -19,11 +19,21 @@ namespace Donuts
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
         public static ConfigEntry<float> coolDownTimer;
-        public static ConfigEntry<int> AbsMaxBotCount;
         public static ConfigEntry<bool> DespawnEnabled;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
+        public static ConfigEntry<float> minSpawnDistanceFromPlayer;
+        //bot limits setup
+        public static ConfigEntry<int> factoryBotLimit;
+        public static ConfigEntry<int> interchangeBotLimit;
+        public static ConfigEntry<int> laboratoryBotLimit;
+        public static ConfigEntry<int> lighthouseBotLimit;
+        public static ConfigEntry<int> reserveBotLimit;
+        public static ConfigEntry<int> shorelineBotLimit;
+        public static ConfigEntry<int> woodsBotLimit;
+        public static ConfigEntry<int> customsBotLimit;
+        public static ConfigEntry<int> tarkovstreetsBotLimit;
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -87,14 +97,6 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
-            AbsMaxBotCount = Config.Bind(
-                "Main Settings",
-                "Absolute Max Bot Count",
-                18,
-                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
-
             DespawnEnabled = Config.Bind(
                 "Main Settings",
                 "Despawn Option",
@@ -119,6 +121,13 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
+            minSpawnDistanceFromPlayer = Config.Bind(
+                "Main Settings",
+                "Min Spawn Distance From Player",
+                20f,
+                new ConfigDescription("How far the random selected near the spawn marker needs to be from player",
+                new AcceptableValueRange<float>(0f, 500f),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 0 }));
             //Debugging 
             DebugGizmos = Config.Bind(
                 "Debugging",
@@ -225,6 +234,78 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
+            // Bot Limit Menu
+            factoryBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Factory Max Bot Count",
+               10,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
+
+            interchangeBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Interchange Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
+
+            laboratoryBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Laboratory Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+
+            lighthouseBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Lighthouse Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+
+            reserveBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Reserve Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
+
+            shorelineBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Shoreline Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+
+            woodsBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Woods Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
+
+            customsBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Customs Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            tarkovstreetsBotLimit = Config.Bind(
+               "Bot Limits Before Despawn",
+               "Streets Max Bot Count",
+               18,
+               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
+               null,
+               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
 
             //Save Settings

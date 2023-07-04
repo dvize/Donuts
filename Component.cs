@@ -12,6 +12,7 @@ using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
 using EFT.Communications;
+using EFT.Game.Spawning;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -35,7 +36,7 @@ namespace Donuts
 
         private bool fileLoaded = false;
         public static string maplocation;
-
+        private static int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
 
@@ -52,7 +53,6 @@ namespace Donuts
 
         //game flow
         private int MaxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
-        private float cooldownTime = 60f;
         protected static ManualLogSource Logger
         {
             get; private set;
@@ -112,7 +112,48 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
+            SetupBotLimit();
+            Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
         }
+
+        private void SetupBotLimit()
+        {
+            switch (maplocation)
+            {
+                case "factory4_day":
+                case "factory4_night":
+                    AbsBotLimit = DonutsPlugin.factoryBotLimit.Value;
+                    break;
+                case "bigmap":
+                    AbsBotLimit = DonutsPlugin.customsBotLimit.Value;
+                    break;
+                case "interchange":
+                    AbsBotLimit = DonutsPlugin.interchangeBotLimit.Value;
+                    break;
+                case "rezervbase":
+                    AbsBotLimit = DonutsPlugin.reserveBotLimit.Value;
+                    break;
+                case "laboratory":
+                    AbsBotLimit = DonutsPlugin.laboratoryBotLimit.Value;
+                    break;
+                case "lighthouse":
+                    AbsBotLimit = DonutsPlugin.lighthouseBotLimit.Value;
+                    break;
+                case "shoreline":
+                    AbsBotLimit = DonutsPlugin.shorelineBotLimit.Value;
+                    break;
+                case "woods":
+                    AbsBotLimit = DonutsPlugin.woodsBotLimit.Value;
+                    break;
+                case "tarkovstreets":
+                    AbsBotLimit = DonutsPlugin.tarkovstreetsBotLimit.Value;
+                    break;
+                default:
+                    AbsBotLimit = 18;
+                    break;
+            }
+        }
+
         public static void Enable()
         {
             if (Singleton<IBotGame>.Instantiated)
@@ -199,7 +240,8 @@ namespace Donuts
                                 continue;
                             }
 
-                            await SpawnBots(hotspotTimer, coordinate);
+                            Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
+                            SpawnBots(hotspotTimer, coordinate);
                             hotspotTimer.timesSpawned++;
 
                             //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -207,8 +249,9 @@ namespace Donuts
                             {
                                 hotspotTimer.inCooldown = true;
                             }
-                            hotspotTimer.ResetTimer();
                             Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                            hotspotTimer.ResetTimer();
+
                         }
                     }
                 }
@@ -228,46 +271,43 @@ namespace Donuts
             float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
             return distanceSquared <= activationDistanceSquared;
         }
-        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private void SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             //Logger.LogDebug("Entered SpawnBots()");
             //Logger.LogDebug("hotspot: " + hotspot.Name);
             Logger.LogDebug("Triggered Regular Spawn Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspotTimer.Hotspot.Name);
 
             int count = 0;
-            int maxSpawnAttempts = 10;
+            int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             //moved outside so all spawns for a point are same side
             EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
-                Vector3? spawnPosition = await getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
                 if (!spawnPosition.HasValue)
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
                     count++;
-                    await Task.Delay(5);
                     continue;
                 }
 
-                
                 WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
                 botMinDistance = hotspotTimer.Hotspot.MinDistance;
                 botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
 
                 // Setup bot details
-                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 0f, null);
+                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 1f, new GClass614 { TriggerType = SpawnTriggerType.interactObject });
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-                Logger.LogDebug("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+                Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
                 count++;
-                await Task.Delay(10);
             }
         }
 
@@ -375,7 +415,7 @@ namespace Donuts
         {
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
-            if (bots.Count >= DonutsPlugin.AbsMaxBotCount.Value)
+            if (bots.Count >= AbsBotLimit)
             {
                 float maxDistance = -1f;
                 Player furthestBot = null;
@@ -405,40 +445,54 @@ namespace Donuts
                 }
             }
         }
-        private async Task<Vector3?> getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private Vector3? getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
-            for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
+
+            Vector3? spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
+
+            if (IsValidSpawnPosition((Vector3)spawnPosition))
             {
-                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
-
-                if (await IsValidSpawnPosition(spawnPosition))
-                {
-                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
-                    return spawnPosition;
-                }
-
-                await Task.Delay(5);
+                Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                return spawnPosition;
             }
+
 
             // Return null if no valid position found
             return null;
         }
 
-        private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
+        private Vector3? GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
         {
             Vector3 spawnPosition = coordinate;
-            spawnPosition.x += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-            spawnPosition.z += UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-            return spawnPosition;
-        }
+            //keep generating random spawnPosition.x and spawnPosition.z for ten tries while it is minimum distance away from player
 
-        private async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition)
-        {
-            return !await IsSpawnPositionInvalid(spawnPosition);
+            for (int i = 0; i < DonutsPlugin.maxSpawnTriesPerBot.Value; i++)
+            {
+                spawnPosition.x = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+                spawnPosition.z = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+                if (Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) > DonutsPlugin.minSpawnDistanceFromPlayer.Value)
+                {
+                    return spawnPosition;
+                }
+            }
+
+            return null;
         }
-        private Task<bool> IsSpawnPositionInvalid(Vector3 spawnPosition)
+                
+        private bool IsValidSpawnPosition(Vector3 spawnPosition)
         {
-            return Task.FromResult(IsSpawnPositionInsideWall(spawnPosition) ||
+            if (spawnPosition != null)
+            {
+                return IsSpawnPositionInvalid(spawnPosition);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private bool IsSpawnPositionInvalid(Vector3 spawnPosition)
+        {
+            return (IsSpawnPositionInsideWall(spawnPosition) ||
                 IsSpawnPositionInPlayerLineOfSight(spawnPosition) ||
                 IsSpawnInAir(spawnPosition));
         }
@@ -710,6 +764,7 @@ namespace Donuts
 
 
     //------------------------------------------------------------------------------------------------------------------------- Classes
+
     public class HotspotTimer
     {
         private Entry hotspot;
