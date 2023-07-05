@@ -12,7 +12,6 @@ using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
 using EFT.Communications;
-using EFT.Game.Spawning;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -254,7 +253,7 @@ namespace Donuts
 
                 if (DonutsPlugin.DespawnEnabled.Value)
                 {
-                    DespawnFurthestBot();
+                    StartCoroutine(DespawnFurthestBotCoroutine());
                 }
 
                 yield return null;
@@ -302,7 +301,7 @@ namespace Donuts
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { (Vector3)spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
-               
+
 
                 count++;
                 yield return new WaitForSeconds(0.01f);
@@ -408,7 +407,7 @@ namespace Donuts
             }
         }
 
-        private void DespawnFurthestBot()
+        private IEnumerator DespawnFurthestBotCoroutine()
         {
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
@@ -440,22 +439,29 @@ namespace Donuts
                     furthestBot.Dispose();
                     Destroy(furthestBot);
                 }
+
+                yield return new WaitForSeconds(0.01f);
             }
         }
         private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
-            for (int i = 0; i < maxSpawnAttempts; i++)
+            Vector3? spawnPosition = null;
+
+            Parallel.For(0, maxSpawnAttempts, (i, loopState) =>
             {
-                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
+                if (spawnPosition.HasValue)
+                    return;
 
-                if (IsValidSpawnPosition(spawnPosition))
+                Vector3 randomSpawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
+
+                if (IsValidSpawnPosition(randomSpawnPosition))
                 {
-                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
-                    return spawnPosition;
+                    spawnPosition = randomSpawnPosition;
+                    loopState.Break();
                 }
-            }
+            });
 
-            return null;
+            return spawnPosition;
         }
 
         private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
@@ -655,10 +661,7 @@ namespace Donuts
 
             return closestEntry;
         }
-        public static MethodInfo GetDisplayMessageNotificationMethod()
-        {
-            return displayMessageNotificationMethod;
-        }
+        public static MethodInfo GetDisplayMessageNotificationMethod() => displayMessageNotificationMethod;
         //------------------------------------------------------------------------------------------------------------------------- Gizmo Stuff
 
         //update gizmo display periodically instead of having to toggle it on and off
@@ -747,10 +750,7 @@ namespace Donuts
             drawnCoordinates.Clear();
         }
 
-        private void OnGUI()
-        {
-            ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
-        }
+        private void OnGUI() => ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
     }
 
 
@@ -789,23 +789,17 @@ namespace Donuts
             }
         }
 
-        public float GetTimer()
-        {
-            return timer;
-        }
+        public float GetTimer() => timer;
         public bool ShouldSpawn()
         {
-            if (hotspot.IgnoreTimerFirstSpawn == true) 
+            if (hotspot.IgnoreTimerFirstSpawn == true)
             {
                 return true;
             }
             return timer >= hotspot.BotTimerTrigger;
         }
 
-        public void ResetTimer()
-        {
-            timer = 0f;
-        }
+        public void ResetTimer() => timer = 0f;
     }
 
     public class Entry
@@ -861,7 +855,7 @@ namespace Donuts
 
         public bool IgnoreTimerFirstSpawn
         {
-           get; set;
+            get; set;
         }
     }
 
