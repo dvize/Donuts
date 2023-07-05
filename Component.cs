@@ -91,15 +91,11 @@ namespace Donuts
                 fieldCache[fieldInfo.Name] = fieldInfo.GetValue(wildSpawnTypeInstance);
             }
 
-            var methodInfos = typeof(BotSpawnerClass).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_12", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            foreach (var methodInfo in methodInfos)
+            if (methodInfo != null)
             {
-                if (methodInfo.Name == "method_12")
-                {
-                    methodCache[methodInfo.Name] = methodInfo;
-                    break;
-                }
+                methodCache[methodInfo.Name] = methodInfo;
             }
         }
         private void Start()
@@ -496,18 +492,21 @@ namespace Donuts
         }
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
-            Vector3 direction = (gameWorld.MainPlayer.MainParts[BodyPartType.head].Position - spawnPosition).normalized;
-            Ray ray = new Ray(spawnPosition, direction);
-            RaycastHit hit;
-            float distance = Vector3.Distance(spawnPosition, gameWorld.MainPlayer.MainParts[BodyPartType.head].Position);
-            if (Physics.Raycast(ray, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
+            //add try catch for when player is null at end of raid
+            try
             {
-                // If hit has something in it and it does not have a player component in it then return true
-                if (hit.collider != null && !hit.collider.GetComponentInParent<Player>())
+                Vector3 playerPosition = gameWorld.MainPlayer.MainParts[BodyPartType.head].Position;
+                Vector3 direction = (playerPosition - spawnPosition).normalized;
+                float distance = Vector3.Distance(spawnPosition, playerPosition);
+
+                RaycastHit hit;
+                if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
                 {
+                    // No objects found between spawn point and player
                     return true;
                 }
             }
+            catch { }
 
             return false;
         }
@@ -536,7 +535,7 @@ namespace Donuts
         {
             // Raycast down and determine if the position is in the air or not
             Ray ray = new Ray(position, Vector3.down);
-            float distance = 100f;
+            float distance = 10f;
 
             if (Physics.Raycast(ray, out RaycastHit hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
             {

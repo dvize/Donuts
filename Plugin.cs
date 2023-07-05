@@ -490,8 +490,8 @@ namespace Donuts
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
             string jsonFolderPath = Path.Combine(directoryPath, "patterns");
-            string json = "";
-            string fileName = "";
+            string json = string.Empty;
+            string fileName = string.Empty;
 
             //check if saveNewFileOnly is true then we use the sessionLocations object to serialize.  Otherwise we use combinedLocations
             if (saveNewFileOnly.Value)
