@@ -14,6 +14,7 @@ using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Donuts
 {
@@ -261,9 +262,15 @@ namespace Donuts
 
         private bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
         {
-            float distanceSquared = (gameWorld.MainPlayer.Position - position).sqrMagnitude;
-            float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
-            return distanceSquared <= activationDistanceSquared;
+            try
+            {
+                float distanceSquared = (gameWorld.MainPlayer.Position - position).sqrMagnitude;
+                float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
+                return distanceSquared <= activationDistanceSquared;
+            }
+            catch { }
+
+            return false;
         }
         private IEnumerator SpawnBotsCoroutine(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
@@ -448,7 +455,7 @@ namespace Donuts
             {
                 Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-                if (IsValidSpawnPosition(spawnPosition))
+                if (IsValidSpawnPosition(spawnPosition) && HasValidPath(spawnPosition))
                 {
                     Logger.LogDebug("Found spawn position at: " + spawnPosition);
                     return spawnPosition;
@@ -466,6 +473,19 @@ namespace Donuts
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
+        private bool HasValidPath(Vector3 spawnPosition)
+        {
+            NavMeshPath path = new NavMeshPath();
+            if (NavMesh.CalculatePath(spawnPosition, gameWorld.MainPlayer.Transform.position, NavMesh.AllAreas, path))
+            {
+                if (path.status == NavMeshPathStatus.PathComplete)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
         private bool IsValidSpawnPosition(Vector3 spawnPosition)
         {
             if (spawnPosition != null)
