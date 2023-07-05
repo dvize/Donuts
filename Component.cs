@@ -21,9 +21,6 @@ namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
-        private float botMinDistance;
-        private float botMaxDistance;
-
         internal static FightLocations fightLocations = new FightLocations()
         {
             Locations = new List<Entry>()
@@ -51,9 +48,6 @@ namespace Donuts
         internal static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
         internal static List<GameObject> gizmoSpheres = new List<GameObject>();
         private static Coroutine gizmoUpdateCoroutine;
-
-        //game flow
-        private int MaxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
         protected static ManualLogSource Logger
         {
             get; private set;
@@ -248,6 +242,7 @@ namespace Donuts
                             if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
                             {
                                 hotspotTimer.inCooldown = true;
+                                Logger.LogWarning("Hotspot: " + hotspot.Name + " is now in cooldown");
                             }
                             Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
                             hotspotTimer.ResetTimer();
@@ -298,8 +293,6 @@ namespace Donuts
                     continue;
                 }
 
-                botMinDistance = hotspotTimer.Hotspot.MinDistance;
-                botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
 
                 // Setup bot details
                 var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 1f, new GClass614 { TriggerType = SpawnTriggerType.interactObject });
@@ -308,13 +301,13 @@ namespace Donuts
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
-                methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
+                methodCache["method_12"].Invoke(botSpawnerClass, new object[] { (Vector3)spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
+               
 
                 count++;
                 yield return new WaitForSeconds(0.01f);
             }
         }
-
         private WildSpawnType GetWildSpawnType(string spawnType)
         {
             //define spt wildspawn
