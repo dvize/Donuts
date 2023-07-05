@@ -78,7 +78,7 @@ namespace Donuts
         public static ConfigEntry<int> maxRandNumBots;
         public static ConfigEntry<int> spawnChance;
         public static ConfigEntry<int> maxSpawnsBeforeCooldown;
-
+        public static ConfigEntry<bool> ignoreTimerFirstSpawn;
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
 
@@ -218,13 +218,21 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
+            ignoreTimerFirstSpawn = Config.Bind(
+                "Spawn Point Maker",
+                "Ignore Timer for First Spawn",
+                false,
+                new ConfigDescription("When enabled for this point, it will still spawn even if timer is not ready for first spawn only",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
             CreateSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
                 "Spawn Point Maker",
@@ -232,7 +240,7 @@ namespace Donuts
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 0 }));
 
             // Bot Limit Menu
             factoryBotLimit = Config.Bind(
@@ -441,7 +449,8 @@ namespace Donuts
                     z = DonutComponent.gameWorld.MainPlayer.Position.z
                 },
 
-                MaxSpawnsBeforeCoolDown = maxSpawnsBeforeCooldown.Value
+                MaxSpawnsBeforeCoolDown = maxSpawnsBeforeCooldown.Value,
+                IgnoreTimerFirstSpawn = ignoreTimerFirstSpawn.Value,
 
             };
 

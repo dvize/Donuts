@@ -280,9 +280,16 @@ namespace Donuts
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
+            //if hotspotTimer.hotspot IgnoreTimerFirstSpawn is true then we set it false since we doing the first spawn.
+            if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
+            {
+                hotspotTimer.Hotspot.IgnoreTimerFirstSpawn = false;
+            }
+
             //moved outside so all spawns for a point are same side
             EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
-
+            WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
+            
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
                 Vector3? spawnPosition = getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
@@ -294,7 +301,7 @@ namespace Donuts
                     continue;
                 }
 
-                WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
+                
                 botMinDistance = hotspotTimer.Hotspot.MinDistance;
                 botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
 
@@ -614,6 +621,7 @@ namespace Donuts
                                 DisplayedMarkerInfo.AppendLine($"Spawn Chance: {closestEntry.SpawnChance}");
                                 DisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
                                 DisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
+                                DisplayedMarkerInfo.AppendLine($"Ignore Timer for First Spawn: {closestEntry.IgnoreTimerFirstSpawn}");
 
                                 string txt = DisplayedMarkerInfo.ToString();
 
@@ -807,6 +815,10 @@ namespace Donuts
         }
         public bool ShouldSpawn()
         {
+            if (hotspot.IgnoreTimerFirstSpawn == true) 
+            {
+                return true;
+            }
             return timer >= hotspot.BotTimerTrigger;
         }
 
@@ -865,6 +877,11 @@ namespace Donuts
         public int MaxSpawnsBeforeCoolDown
         {
             get; set;
+        }
+
+        public bool IgnoreTimerFirstSpawn
+        {
+           get; set;
         }
     }
 
