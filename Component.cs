@@ -39,6 +39,7 @@ namespace Donuts
         private static int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
+        private static Coroutine updateCoroutine;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
@@ -114,6 +115,8 @@ namespace Donuts
             }
             SetupBotLimit();
             Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
+
+            updateCoroutine = StartCoroutine(UpdateCoroutine());
         }
 
         private void SetupBotLimit()
@@ -211,9 +214,9 @@ namespace Donuts
             }
         }
 
-        private async void Update()
+        private IEnumerator UpdateCoroutine()
         {
-            if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
+            while (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
                 foreach (var hotspotTimer in hotspotTimers)
                 {
@@ -223,6 +226,7 @@ namespace Donuts
                     {
                         var hotspot = hotspotTimer.Hotspot;
                         var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+
                         if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                         {
                             // Check if passes hotspot.spawnChance
@@ -241,7 +245,7 @@ namespace Donuts
                             }
 
                             Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                            SpawnBots(hotspotTimer, coordinate);
+                            yield return SpawnBotsCoroutine(hotspotTimer, coordinate);
                             hotspotTimer.timesSpawned++;
 
                             //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -251,7 +255,6 @@ namespace Donuts
                             }
                             Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
                             hotspotTimer.ResetTimer();
-
                         }
                     }
                 }
@@ -262,6 +265,8 @@ namespace Donuts
                 {
                     DespawnFurthestBot();
                 }
+
+                yield return null;
             }
         }
 
@@ -271,28 +276,24 @@ namespace Donuts
             float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
             return distanceSquared <= activationDistanceSquared;
         }
-        private void SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private IEnumerator SpawnBotsCoroutine(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            //Logger.LogDebug("Entered SpawnBots()");
-            //Logger.LogDebug("hotspot: " + hotspot.Name);
-            Logger.LogDebug("Triggered Regular Spawn Timer: " + hotspotTimer.GetTimer() + " for hotspot: " + hotspotTimer.Hotspot.Name);
-
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
-            //if hotspotTimer.hotspot IgnoreTimerFirstSpawn is true then we set it false since we doing the first spawn.
+            // If hotspotTimer.hotspot IgnoreTimerFirstSpawn is true then we set it false since we're doing the first spawn.
             if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
             {
                 hotspotTimer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
 
-            //moved outside so all spawns for a point are same side
+            // Moved outside so all spawns for a point are on the same side
             EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
-            
+
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
-                Vector3? spawnPosition = getRandomSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
                 if (!spawnPosition.HasValue)
                 {
@@ -301,7 +302,6 @@ namespace Donuts
                     continue;
                 }
 
-                
                 botMinDistance = hotspotTimer.Hotspot.MinDistance;
                 botMaxDistance = hotspotTimer.Hotspot.MaxDistance;
 
@@ -315,6 +315,7 @@ namespace Donuts
                 methodCache["method_12"].Invoke(botSpawnerClass, new object[] { spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
 
                 count++;
+                yield return new WaitForSeconds(0.01f);
             }
         }
 
@@ -452,41 +453,28 @@ namespace Donuts
                 }
             }
         }
-        private Vector3? getRandomSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
-
-            Vector3? spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
-
-            if (IsValidSpawnPosition((Vector3)spawnPosition))
+            for (int i = 0; i < maxSpawnAttempts; i++)
             {
-                Logger.LogDebug("Found spawn position at: " + spawnPosition);
-                return spawnPosition;
-            }
+                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-
-            // Return null if no valid position found
-            return null;
-        }
-
-        private Vector3? GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
-        {
-            Vector3 spawnPosition = coordinate;
-
-            for (int i = 0; i < DonutsPlugin.maxSpawnTriesPerBot.Value; i++)
-            {
-                float randomX = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-                float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-
-                spawnPosition.x = coordinate.x + randomX;
-                spawnPosition.z = coordinate.z + randomZ;
-
-                if (Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position) > DonutsPlugin.minSpawnDistanceFromPlayer.Value)
+                if (IsValidSpawnPosition(spawnPosition))
                 {
+                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
                     return spawnPosition;
                 }
             }
 
             return null;
+        }
+
+        private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
+        {
+            float randomX = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+
+            return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
         private bool IsValidSpawnPosition(Vector3 spawnPosition)
