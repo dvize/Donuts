@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
@@ -445,23 +444,18 @@ namespace Donuts
         }
         private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
-            Vector3? spawnPosition = null;
-
-            Parallel.For(0, maxSpawnAttempts, (i, loopState) =>
+            for (int i = 0; i < maxSpawnAttempts; i++)
             {
-                if (spawnPosition.HasValue)
-                    return;
+                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-                Vector3 randomSpawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
-
-                if (IsValidSpawnPosition(randomSpawnPosition))
+                if (IsValidSpawnPosition(spawnPosition))
                 {
-                    spawnPosition = randomSpawnPosition;
-                    loopState.Break();
+                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                    return spawnPosition;
                 }
-            });
+            }
 
-            return spawnPosition;
+            return null;
         }
 
         private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
