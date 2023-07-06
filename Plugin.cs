@@ -9,6 +9,7 @@ using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
+using static GClass1648;
 
 namespace Donuts
 {
@@ -80,6 +81,7 @@ namespace Donuts
         public static ConfigEntry<int> maxSpawnsBeforeCooldown;
         public static ConfigEntry<bool> ignoreTimerFirstSpawn;
         public static ConfigEntry<float> minSpawnDistanceFromPlayer;
+
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
 
@@ -325,7 +327,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2, CustomDrawer = UseDrawer }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2}));
 
             WriteToFileKey = Config.Bind(
                 "Save Settings",
@@ -333,17 +335,12 @@ namespace Donuts
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1, CustomDrawer = UseDrawer }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1}));
 
             //Patches
             new NewGamePatch().Enable();
         }
 
-        static void UseDrawer(BepInEx.Configuration.ConfigEntryBase entry)
-        {
-            // Make sure to use GUILayout.ExpandWidth(true) to use all available space
-            GUILayout.Label((GUIContent)entry.BoxedValue, GUILayout.ExpandWidth(true));
-        }
         private void Update()
         {
             if (CreateSpawnMarkerKey.Value.IsDown())
