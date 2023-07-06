@@ -455,7 +455,7 @@ namespace Donuts
             {
                 Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-                if (IsValidSpawnPosition(spawnPosition) && HasValidPath(spawnPosition))
+                if (IsValidSpawnPosition(spawnPosition, hotspot) && HasValidPath(spawnPosition))
                 {
                     Logger.LogDebug("Found spawn position at: " + spawnPosition);
                     return spawnPosition;
@@ -486,22 +486,22 @@ namespace Donuts
 
             return false;
         }
-        private bool IsValidSpawnPosition(Vector3 spawnPosition)
+        private bool IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
         {
             if (spawnPosition != null)
             {
-                return IsSpawnPositionInvalid(spawnPosition);
+                return IsSpawnPositionInvalid(spawnPosition, hotspot);
             }
             else
             {
                 return false;
             }
         }
-        private bool IsSpawnPositionInvalid(Vector3 spawnPosition)
+        private bool IsSpawnPositionInvalid(Vector3 spawnPosition, Entry hotspot)
         {
             return (IsSpawnPositionInsideWall(spawnPosition) ||
                 IsSpawnPositionInPlayerLineOfSight(spawnPosition) ||
-                IsSpawnInAir(spawnPosition));
+                IsSpawnInAir(spawnPosition)) || IsSpawnMinDistanceFromPlayer(spawnPosition, hotspot);
         }
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
@@ -558,6 +558,16 @@ namespace Donuts
             return true;
         }
 
+        private bool IsSpawnMinDistanceFromPlayer(Vector3 position, Entry hotspot)
+        {
+            //if distance between player and spawn position is less than the hotspot min distance
+            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) >= hotspot.MinSpawnDistanceFromPlayer)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         private StringBuilder DisplayedMarkerInfo = new StringBuilder();
         private StringBuilder PreviousMarkerInfo = new StringBuilder();
@@ -622,7 +632,7 @@ namespace Donuts
                                 DisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
                                 DisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
                                 DisplayedMarkerInfo.AppendLine($"Ignore Timer for First Spawn: {closestEntry.IgnoreTimerFirstSpawn}");
-
+                                DisplayedMarkerInfo.AppendLine($"Min Spawn Distance From Player: {closestEntry.MinSpawnDistanceFromPlayer}");
                                 string txt = DisplayedMarkerInfo.ToString();
 
                                 // Check if the marker info has changed since the last update
@@ -868,6 +878,11 @@ namespace Donuts
         }
 
         public bool IgnoreTimerFirstSpawn
+        {
+            get; set;
+        }
+
+        public float MinSpawnDistanceFromPlayer
         {
             get; set;
         }
