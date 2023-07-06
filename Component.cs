@@ -488,20 +488,14 @@ namespace Donuts
         }
         private bool IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
         {
-            if (spawnPosition != null)
+            if (spawnPosition != null && hotspot != null)
             {
-                return IsSpawnPositionInvalid(spawnPosition, hotspot);
+                return !IsSpawnPositionInsideWall(spawnPosition) &&
+                       !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
+                       !IsSpawnInAir(spawnPosition) &&
+                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
             }
-            else
-            {
-                return false;
-            }
-        }
-        private bool IsSpawnPositionInvalid(Vector3 spawnPosition, Entry hotspot)
-        {
-            return (IsSpawnPositionInsideWall(spawnPosition) ||
-                IsSpawnPositionInPlayerLineOfSight(spawnPosition) ||
-                IsSpawnInAir(spawnPosition)) || IsSpawnMinDistanceFromPlayer(spawnPosition, hotspot);
+            return false;
         }
         private bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
@@ -558,10 +552,10 @@ namespace Donuts
             return true;
         }
 
-        private bool IsSpawnMinDistanceFromPlayer(Vector3 position, Entry hotspot)
+        private bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
         {
             //if distance between player and spawn position is less than the hotspot min distance
-            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) >= hotspot.MinSpawnDistanceFromPlayer)
+            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) < hotspot.MinSpawnDistanceFromPlayer)
             {
                 return true;
             }
