@@ -300,7 +300,7 @@ namespace Donuts
 
 
                 // Setup bot details
-                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, 1f, new GClass614 { TriggerType = SpawnTriggerType.interactObject });
+                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass614 { TriggerType = SpawnTriggerType.none });
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
