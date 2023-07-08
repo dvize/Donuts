@@ -501,14 +501,17 @@ namespace Donuts
 
         private bool HasValidPath(Vector3 spawnPosition)
         {
-            NavMeshPath path = new NavMeshPath();
-            Vector3 anchorLocation = new Vector3(NavmeshLocations.Anchors[0].Position.x, NavmeshLocations.Anchors[0].Position.y, NavmeshLocations.Anchors[0].Position.z);
-
-            if (NavMesh.CalculatePath(spawnPosition, anchorLocation, NavMesh.AllAreas, path))
+            if (anchorLoaded)
             {
-                if (path.status == NavMeshPathStatus.PathComplete)
+                NavMeshPath path = new NavMeshPath();
+                Vector3 anchorLocation = new Vector3(NavmeshLocations.Anchors[0].Position.x, NavmeshLocations.Anchors[0].Position.y, NavmeshLocations.Anchors[0].Position.z);
+
+                if (NavMesh.CalculatePath(spawnPosition, anchorLocation, NavMesh.AllAreas, path))
                 {
-                    return true;
+                    if (path.status == NavMeshPathStatus.PathComplete)
+                    {
+                        return true;
+                    }
                 }
             }
 
