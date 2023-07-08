@@ -35,7 +35,6 @@ namespace Donuts
         private static int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
-        private static Coroutine updateCoroutine;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
@@ -104,8 +103,6 @@ namespace Donuts
             }
             SetupBotLimit();
             Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
-
-            updateCoroutine = StartCoroutine(UpdateCoroutine());
         }
 
         private void SetupBotLimit()
@@ -203,9 +200,9 @@ namespace Donuts
             }
         }
 
-        private IEnumerator UpdateCoroutine()
+        private void Update()
         {
-            while (DonutsPlugin.PluginEnabled.Value && fileLoaded)
+            if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
                 foreach (var hotspotTimer in hotspotTimers)
                 {
@@ -234,7 +231,7 @@ namespace Donuts
                             }
 
                             Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                            yield return SpawnBotsCoroutine(hotspotTimer, coordinate);
+                            StartCoroutine(SpawnBotsCoroutine(hotspotTimer, coordinate));
                             hotspotTimer.timesSpawned++;
 
                             //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -255,8 +252,6 @@ namespace Donuts
                 {
                     StartCoroutine(DespawnFurthestBotCoroutine());
                 }
-
-                yield return null;
             }
         }
 
@@ -294,6 +289,7 @@ namespace Donuts
                 if (!spawnPosition.HasValue)
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
+                    Logger.LogDebug($"Actually Failed to get a valid spawn position after {maxSpawnAttempts}, moving on to next bot anyways");
                     count++;
                     continue;
                 }
@@ -310,7 +306,7 @@ namespace Donuts
 
 
                 count++;
-                yield return new WaitForSeconds(0.01f);
+                yield return new WaitForSeconds(0.16f);
             }
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
@@ -445,9 +441,8 @@ namespace Donuts
                     furthestBot.Dispose();
                     Destroy(furthestBot);
                 }
-
-                yield return new WaitForSeconds(0.01f);
             }
+            yield return new WaitForSeconds(0.01f);
         }
         private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
@@ -484,6 +479,7 @@ namespace Donuts
                 }
             }
 
+            Logger.LogDebug("No valid NavMesh path found for spawn position: " + spawnPosition);
             return false;
         }
         private bool IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
