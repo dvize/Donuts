@@ -34,10 +34,7 @@ namespace Donuts
         internal List<WildSpawnType> validDespawnList = new List<WildSpawnType>()
         {
             WildSpawnType.assault,
-            WildSpawnType.assaultGroup,
             WildSpawnType.cursedAssault,
-            WildSpawnType.pmcBot,
-            WildSpawnType.marksman,
             (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
             (WildSpawnType)AkiBotsPrePatcher.sptBearValue
         };
