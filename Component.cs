@@ -32,7 +32,7 @@ namespace Donuts
 
         private bool fileLoaded = false;
         public static string maplocation;
-        private static int AbsBotLimit = 0;
+        private int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
 
@@ -251,7 +251,7 @@ namespace Donuts
 
                 if (DonutsPlugin.DespawnEnabled.Value)
                 {
-                    StartCoroutine(DespawnFurthestBotCoroutine());
+                    DespawnFurthestBot();
                 }
             }
         }
@@ -410,7 +410,7 @@ namespace Donuts
             }
         }
 
-        private IEnumerator DespawnFurthestBotCoroutine()
+        private void DespawnFurthestBot()
         {
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
@@ -446,7 +446,6 @@ namespace Donuts
                     Destroy(furthestBot);
                 }
             }
-            yield return new WaitForSeconds(0.01f);
         }
         private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
