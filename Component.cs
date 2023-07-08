@@ -216,7 +216,7 @@ namespace Donuts
                         if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                         {
                             // Check if passes hotspot.spawnChance
-                            if (UnityEngine.Random.Range(0, 100) > hotspot.SpawnChance)
+                            if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
                             {
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
                                 hotspotTimer.ResetTimer();
