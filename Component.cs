@@ -30,11 +30,17 @@ namespace Donuts
             Locations = new List<Entry>()
         };
 
+        internal static AnchorLocations NavmeshLocations = new AnchorLocations()
+        {
+            Anchors = new List<MapAnchorLocation>()
+        };
+
         private bool fileLoaded = false;
         public static string maplocation;
         private static int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
+        private bool anchorLoaded = false;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
@@ -101,6 +107,7 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
+            LoadAnchorLocations();
             SetupBotLimit();
             Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
         }
@@ -198,6 +205,30 @@ namespace Donuts
 
                 fileLoaded = true;
             }
+        }
+
+        private void LoadAnchorLocations()
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+
+            //get specific file NavmeshAnchors.json from directory and deserialize
+            string jsonFilePath = Path.Combine(directoryPath, "NavmeshAnchors.json");
+            NavmeshLocations = JsonConvert.DeserializeObject<AnchorLocations>(File.ReadAllText(jsonFilePath));
+
+            Logger.LogDebug("Loaded " + NavmeshLocations.Anchors.Count + " Anchors");
+
+            //filter anchors for maplocation
+            NavmeshLocations.Anchors.RemoveAll(x => x.MapName != maplocation);
+
+            if (NavmeshLocations.Anchors.Count == 0)
+            {
+                Logger.LogError("No Anchors found in JSON files, disabling plugin");
+                Debug.Break();
+            }
+
+            Logger.LogDebug("Valid Anchors For Current Map: " + NavmeshLocations.Anchors.Count);
+            anchorLoaded = true;
         }
 
         private void Update()
@@ -471,7 +502,9 @@ namespace Donuts
         private bool HasValidPath(Vector3 spawnPosition)
         {
             NavMeshPath path = new NavMeshPath();
-            if (NavMesh.CalculatePath(spawnPosition, gameWorld.MainPlayer.Transform.position, NavMesh.AllAreas, path))
+            Vector3 anchorLocation = new Vector3(NavmeshLocations.Anchors[0].Position.x, NavmeshLocations.Anchors[0].Position.y, NavmeshLocations.Anchors[0].Position.z);
+
+            if (NavMesh.CalculatePath(spawnPosition, anchorLocation, NavMesh.AllAreas, path))
             {
                 if (path.status == NavMeshPathStatus.PathComplete)
                 {
@@ -902,4 +935,23 @@ namespace Donuts
         }
     }
 
+    public class AnchorLocations
+    {
+           public List<MapAnchorLocation> Anchors
+           {
+                get; set;
+           }
+    }
+
+    public class MapAnchorLocation
+    {
+        public string MapName
+        {
+            get; set;
+        }
+        public Position Position
+        {
+            get; set;
+        }
+    }
 }
