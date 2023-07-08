@@ -35,7 +35,6 @@ namespace Donuts
         private static int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
-        private bool anchorLoaded = false;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
         private Dictionary<string, object> fieldCache;
