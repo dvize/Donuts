@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
@@ -30,8 +31,16 @@ namespace Donuts
             Locations = new List<Entry>()
         };
 
-        internal static List<WildSpawnType> validDespawnList = new List<WildSpawnType>();
-       
+        internal List<WildSpawnType> validDespawnList = new List<WildSpawnType>()
+        {
+            WildSpawnType.assault,
+            WildSpawnType.assaultGroup,
+            WildSpawnType.cursedAssault,
+            WildSpawnType.pmcBot,
+            WildSpawnType.marksman,
+            (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
+            (WildSpawnType)AkiBotsPrePatcher.sptBearValue
+        };
                 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -40,7 +49,6 @@ namespace Donuts
         private static BotSpawnerClass botSpawnerClass;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
-        private static Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
         private static MethodInfo displayMessageNotificationMethod;
 
@@ -65,13 +73,7 @@ namespace Donuts
 
         public void Awake()
         {
-            fieldCache = new Dictionary<string, object>();
             methodCache = new Dictionary<string, MethodInfo>();
-
-            // Cache the field and method lookups
-            Type wildSpawnTypeEnum = typeof(EFT.WildSpawnType);
-            var wildSpawnTypeInstance = Activator.CreateInstance(wildSpawnTypeEnum);
-            var fieldInfos = wildSpawnTypeEnum.GetFields();
 
             // Retrieve displayMessageNotification MethodInfo
             var displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
@@ -81,28 +83,12 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            foreach (var fieldInfo in fieldInfos)
-            {
-                fieldCache[fieldInfo.Name] = fieldInfo.GetValue(wildSpawnTypeInstance);
-            }
-
             var methodInfo = typeof(BotSpawnerClass).GetMethod("method_12", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (methodInfo != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
             }
-
-            //populate valid despawn list
-            validDespawnList = new List<WildSpawnType> {
-                WildSpawnType.assault,
-                WildSpawnType.assaultGroup,
-                WildSpawnType.cursedAssault,
-                WildSpawnType.pmcBot,
-                WildSpawnType.marksman,
-                (WildSpawnType)fieldCache["sptUsec"],
-                (WildSpawnType)fieldCache["sptBear"]
-            };
         }
         private void Start()
         {
@@ -326,9 +312,6 @@ namespace Donuts
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
         {
-            //define spt wildspawn
-            WildSpawnType sptUsec = (WildSpawnType)fieldCache["sptUsec"];
-            WildSpawnType sptBear = (WildSpawnType)fieldCache["sptBear"];
 
             switch (spawnType.ToLower())
             {
@@ -383,13 +366,13 @@ namespace Donuts
                 case "sectantwarrior":
                     return WildSpawnType.sectantWarrior;
                 case "usec":
-                    return sptUsec;
+                    return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
                 case "bear":
-                    return sptBear;
+                    return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
                 case "sptusec":
-                    return sptUsec;
+                    return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
                 case "sptbear":
-                    return sptBear;
+                    return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
                 case "followerbigpipe":
                     return WildSpawnType.followerBigPipe;
                 case "followerbirdeye":
@@ -398,7 +381,7 @@ namespace Donuts
                     return WildSpawnType.bossKnight;
                 case "pmc":
                     //random wildspawntype is either assigned sptusec or sptbear at 50/50 chance
-                    return (UnityEngine.Random.Range(0, 2) == 0) ? sptUsec : sptBear;
+                    return (UnityEngine.Random.Range(0, 2) == 0) ? (WildSpawnType)AkiBotsPrePatcher.sptUsecValue : (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
                 default:
                     return WildSpawnType.assault;
             }
@@ -407,8 +390,8 @@ namespace Donuts
         private EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
         {
             //define spt wildspawn
-            WildSpawnType sptUsec = (WildSpawnType)fieldCache["sptUsec"];
-            WildSpawnType sptBear = (WildSpawnType)fieldCache["sptBear"];
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
             if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
             {
