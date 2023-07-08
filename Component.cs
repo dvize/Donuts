@@ -30,11 +30,6 @@ namespace Donuts
             Locations = new List<Entry>()
         };
 
-        internal static AnchorLocations NavmeshLocations = new AnchorLocations()
-        {
-            Anchors = new List<MapAnchorLocation>()
-        };
-
         private bool fileLoaded = false;
         public static string maplocation;
         private static int AbsBotLimit = 0;
@@ -107,7 +102,6 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
-            LoadAnchorLocations();
             SetupBotLimit();
             Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
         }
@@ -207,29 +201,6 @@ namespace Donuts
             }
         }
 
-        private void LoadAnchorLocations()
-        {
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
-
-            //get specific file NavmeshAnchors.json from directory and deserialize
-            string jsonFilePath = Path.Combine(directoryPath, "NavmeshAnchors.json");
-            NavmeshLocations = JsonConvert.DeserializeObject<AnchorLocations>(File.ReadAllText(jsonFilePath));
-
-            Logger.LogDebug("Loaded " + NavmeshLocations.Anchors.Count + " Anchors");
-
-            //filter anchors for maplocation
-            NavmeshLocations.Anchors.RemoveAll(x => x.MapName != maplocation);
-
-            if (NavmeshLocations.Anchors.Count == 0)
-            {
-                Logger.LogError("No Anchors found in JSON files, disabling plugin");
-                Debug.Break();
-            }
-
-            Logger.LogDebug("Valid Anchors For Current Map: " + NavmeshLocations.Anchors.Count);
-            anchorLoaded = true;
-        }
 
         private void Update()
         {
@@ -448,14 +419,17 @@ namespace Donuts
             {
                 float maxDistance = -1f;
                 Player furthestBot = null;
-
+                
                 foreach (Player bot in bots)
                 {
-                    float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
-                    if (distance > maxDistance)
+                    if (!bot.IsYourPlayer)
                     {
-                        maxDistance = distance;
-                        furthestBot = bot;
+                        float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
+                        if (distance > maxDistance)
+                        {
+                            maxDistance = distance;
+                            furthestBot = bot;
+                        }
                     }
                 }
 
@@ -481,10 +455,15 @@ namespace Donuts
             {
                 Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-                if (IsValidSpawnPosition(spawnPosition, hotspot) && HasValidPath(spawnPosition))
+                if (NavMesh.SamplePosition(spawnPosition, out var navHit, 2f, NavMesh.AllAreas))
                 {
-                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
-                    return spawnPosition;
+                    spawnPosition = navHit.position;
+
+                    if (IsValidSpawnPosition(spawnPosition, hotspot))
+                    {
+                        Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                        return spawnPosition;
+                    }
                 }
             }
 
@@ -497,26 +476,6 @@ namespace Donuts
             float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
 
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
-        }
-
-        private bool HasValidPath(Vector3 spawnPosition)
-        {
-            if (anchorLoaded)
-            {
-                NavMeshPath path = new NavMeshPath();
-                Vector3 anchorLocation = new Vector3(NavmeshLocations.Anchors[0].Position.x, NavmeshLocations.Anchors[0].Position.y, NavmeshLocations.Anchors[0].Position.z);
-
-                if (NavMesh.CalculatePath(spawnPosition, anchorLocation, NavMesh.AllAreas, path))
-                {
-                    if (path.status == NavMeshPathStatus.PathComplete)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            Logger.LogDebug("No valid NavMesh path found for spawn position: " + spawnPosition);
-            return false;
         }
         private bool IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
         {
@@ -938,23 +897,4 @@ namespace Donuts
         }
     }
 
-    public class AnchorLocations
-    {
-           public List<MapAnchorLocation> Anchors
-           {
-                get; set;
-           }
-    }
-
-    public class MapAnchorLocation
-    {
-        public string MapName
-        {
-            get; set;
-        }
-        public Position Position
-        {
-            get; set;
-        }
-    }
 }
