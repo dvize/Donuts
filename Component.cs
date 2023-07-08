@@ -30,6 +30,9 @@ namespace Donuts
             Locations = new List<Entry>()
         };
 
+        internal static List<WildSpawnType> validDespawnList = new List<WildSpawnType>();
+       
+                
         private bool fileLoaded = false;
         public static string maplocation;
         private int AbsBotLimit = 0;
@@ -37,7 +40,7 @@ namespace Donuts
         private static BotSpawnerClass botSpawnerClass;
 
         internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
-        private Dictionary<string, object> fieldCache;
+        private static Dictionary<string, object> fieldCache;
         private Dictionary<string, MethodInfo> methodCache;
         private static MethodInfo displayMessageNotificationMethod;
 
@@ -89,6 +92,17 @@ namespace Donuts
             {
                 methodCache[methodInfo.Name] = methodInfo;
             }
+
+            //populate valid despawn list
+            validDespawnList = new List<WildSpawnType> {
+                WildSpawnType.assault,
+                WildSpawnType.assaultGroup,
+                WildSpawnType.cursedAssault,
+                WildSpawnType.pmcBot,
+                WildSpawnType.marksman,
+                (WildSpawnType)fieldCache["sptUsec"],
+                (WildSpawnType)fieldCache["sptBear"]
+            };
         }
         private void Start()
         {
@@ -414,21 +428,23 @@ namespace Donuts
         {
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
-            if (bots.Count >= AbsBotLimit)
+
+            if ((bots.Count - 1) >= AbsBotLimit)
             {
                 float maxDistance = -1f;
                 Player furthestBot = null;
-                
+
+                //filter out bots that are not in the valid despawnable list or is your own player
+                bots = bots.Where(x => !validDespawnList.Contains(x.Profile.Info.Settings.Role) || !x.IsYourPlayer).ToList();
+
+                //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
-                    if (!bot.IsYourPlayer)
+                    float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
+                    if (distance > maxDistance)
                     {
-                        float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
-                        if (distance > maxDistance)
-                        {
-                            maxDistance = distance;
-                            furthestBot = bot;
-                        }
+                        maxDistance = distance;
+                        furthestBot = bot;
                     }
                 }
 
