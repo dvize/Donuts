@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,6 +30,9 @@ namespace Donuts
             Locations = new List<Entry>()
         };
 
+        internal List<List<Entry>> groupedFightLocations = new List<List<Entry>>();
+        internal static Dictionary<int, List<HotspotTimer>> groupedHotspotTimers = new Dictionary<int, List<HotspotTimer>>();
+
         internal List<WildSpawnType> validDespawnList = new List<WildSpawnType>()
         {
             WildSpawnType.assault,
@@ -38,7 +40,7 @@ namespace Donuts
             (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
             (WildSpawnType)AkiBotsPrePatcher.sptBearValue
         };
-                
+
         private bool fileLoaded = false;
         public static string maplocation;
         private int AbsBotLimit = 0;
@@ -153,12 +155,26 @@ namespace Donuts
 
         private void InitializeHotspotTimers()
         {
-            foreach (var hotspot in fightLocations.Locations)
+            // Group the fight locations by groupNum
+            foreach (var listHotspots in groupedFightLocations)
             {
-                var hotspotTimer = new HotspotTimer(hotspot);
-                hotspotTimers.Add(hotspotTimer);
+                foreach (var hotspot in listHotspots)
+                {
+                    var hotspotTimer = new HotspotTimer(hotspot);
 
+                    int groupNum = hotspot.GroupNum;
+
+                    if (!groupedHotspotTimers.ContainsKey(groupNum))
+                    {
+                        groupedHotspotTimers[groupNum] = new List<HotspotTimer>();
+                    }
+
+                    groupedHotspotTimers[groupNum].Add(hotspotTimer);
+                }
             }
+
+            // Assign the groupedHotspotTimers dictionary back to hotspotTimers
+            hotspotTimers = groupedHotspotTimers.SelectMany(kv => kv.Value).ToList();
         }
         private void LoadFightLocations()
         {
@@ -195,6 +211,26 @@ namespace Donuts
 
                 fileLoaded = true;
             }
+
+            //group fightLocations by groupnum
+            foreach (Entry entry in fightLocations.Locations)
+            {
+                bool groupExists = false;
+                foreach (List<Entry> group in groupedFightLocations)
+                {
+                    if (group.Count > 0 && group.First().GroupNum == entry.GroupNum)
+                    {
+                        group.Add(entry);
+                        groupExists = true;
+                        break;
+                    }
+                }
+
+                if (!groupExists)
+                {
+                    groupedFightLocations.Add(new List<Entry> { entry });
+                }
+            }
         }
 
 
@@ -202,44 +238,73 @@ namespace Donuts
         {
             if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
+                //every hotspottimer should be updated every frame
                 foreach (var hotspotTimer in hotspotTimers)
                 {
                     hotspotTimer.UpdateTimer();
+                }
 
-                    if (hotspotTimer.ShouldSpawn())
+                if (groupedHotspotTimers.Count > 0)
+                {
+                    foreach (var groupHotspotTimers in groupedHotspotTimers.Values)
                     {
-                        var hotspot = hotspotTimer.Hotspot;
-                        var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-
-                        if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
+                        //check if randomIndex is possible
+                        if (!(groupHotspotTimers.Count > 0))
                         {
-                            // Check if passes hotspot.spawnChance
-                            if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
-                            {
-                                Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
-                                hotspotTimer.ResetTimer();
-                                Logger.LogDebug("Resetting Regular Spawn Timer (because failed chance): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-                                continue;
-                            }
+                            continue;
+                        }
+                        
+                        // Get a random hotspotTimer from the group (grouped by groupNum}
+                        var randomIndex = UnityEngine.Random.Range(0, (groupHotspotTimers.Count - 1));
+                        var hotspotTimer = groupHotspotTimers[randomIndex];
+                        
 
-                            if (hotspotTimer.inCooldown)
-                            {
-                                Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
-                                continue;
-                            }
+                        if (hotspotTimer.ShouldSpawn())
+                        {
+                            var hotspot = hotspotTimer.Hotspot;
+                            var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                            Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                            StartCoroutine(SpawnBotsCoroutine(hotspotTimer, coordinate));
-                            hotspotTimer.timesSpawned++;
-
-                            //make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
-                            if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
+                            if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                             {
-                                hotspotTimer.inCooldown = true;
-                                Logger.LogWarning("Hotspot: " + hotspot.Name + " is now in cooldown");
+                                // Check if passes hotspot.spawnChance
+                                if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
+                                {
+                                    Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
+
+                                    //reset timer if spawn chance fails for all hotspots with same groupNum
+                                    foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
+                                    {
+                                        timer.ResetTimer();
+                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+                                    }
+                                    continue;
+                                }
+
+                                if (hotspotTimer.inCooldown)
+                                {
+                                    Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
+                                    continue;
+                                }
+
+                                Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
+                                StartCoroutine(SpawnBotsCoroutine(hotspotTimer, coordinate));
+                                hotspotTimer.timesSpawned++;
+
+                                // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
+                                if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
+                                {
+                                    hotspotTimer.inCooldown = true;
+                                    Logger.LogWarning("Hotspot: " + hotspot.Name + " is now in cooldown");
+                                }
+                                Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+
+                                //reset timer if spawn chance passes for all hotspots with same groupNum
+                                foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
+                                {
+                                    timer.ResetTimer();
+                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+                                }
                             }
-                            Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-                            hotspotTimer.ResetTimer();
                         }
                     }
                 }
@@ -603,6 +668,7 @@ namespace Donuts
                                 DisplayedMarkerInfo.Clear();
 
                                 DisplayedMarkerInfo.AppendLine("Donuts: Marker Info");
+                                DisplayedMarkerInfo.AppendLine($"GroupNum: {closestEntry.GroupNum}");
                                 DisplayedMarkerInfo.AppendLine($"Name: {closestEntry.Name}");
                                 DisplayedMarkerInfo.AppendLine($"SpawnType: {closestEntry.WildSpawnType}");
                                 DisplayedMarkerInfo.AppendLine($"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}");
@@ -808,6 +874,10 @@ namespace Donuts
     public class Entry
     {
         public string MapName
+        {
+            get; set;
+        }
+        public int GroupNum
         {
             get; set;
         }

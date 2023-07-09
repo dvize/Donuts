@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -42,7 +43,9 @@ namespace Donuts
 
         //menu vars
         public static ConfigEntry<string> spawnName;
-
+        public static ConfigEntry<int> groupNum;
+        //make groupList of numbers 1-20
+        public static int[] groupList = Enumerable.Range(1, 30).ToArray();
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
         {
@@ -152,7 +155,15 @@ namespace Donuts
                 "Spawn Name Here",
                 new ConfigDescription("Name used to identify the spawn marker",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 13 }));
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 14 }));
+
+            groupNum = Config.Bind(
+                "4. Spawn Point Maker",
+                "Group Number",
+                1,
+                new ConfigDescription("Group Number used to identify the spawn marker",
+                new AcceptableValueList<int>(groupList),
+                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 13 }));
 
             wildSpawns = Config.Bind(
                 "4. Spawn Point Maker",
@@ -200,7 +211,7 @@ namespace Donuts
                 2,
                 new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7}));
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
 
             spawnChance = Config.Bind(
                 "4. Spawn Point Maker",
@@ -331,7 +342,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2}));
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             WriteToFileKey = Config.Bind(
                 "5. Save Settings",
@@ -339,7 +350,7 @@ namespace Donuts
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1}));
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
 
             //Patches
             new NewGamePatch().Enable();
@@ -376,6 +387,12 @@ namespace Donuts
                 //temporarily combine fightLocations and sessionLocations so i can find the closest entry
                 var combinedLocations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList();
 
+                // if for some reason its empty already return
+                if (combinedLocations.Count == 0)
+                {
+                    return;
+                }
+
                 // Get the closest spawn marker to the player
                 var closestEntry = combinedLocations.OrderBy(x => Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(x.Position.x, x.Position.y, x.Position.z))).FirstOrDefault();
 
@@ -395,15 +412,36 @@ namespace Donuts
                 if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
                 {
                     // check which list the entry is in and remove it from that list
-                    if (Donuts.DonutComponent.fightLocations.Locations.Contains(closestEntry))
+                    if (Donuts.DonutComponent.fightLocations.Locations.Count > 0 && 
+                        Donuts.DonutComponent.fightLocations.Locations.Contains(closestEntry))
                     {
-
                         Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
                     }
-                    else if (Donuts.DonutComponent.sessionLocations.Locations.Contains(closestEntry))
+                    else if (Donuts.DonutComponent.sessionLocations.Locations.Count > 0 && 
+                        Donuts.DonutComponent.sessionLocations.Locations.Contains(closestEntry))
                     {
-
                         Donuts.DonutComponent.sessionLocations.Locations.Remove(closestEntry);
+                    }
+
+                    // Remove the timer if it exists from the list of hotspotTimer in DonutComponent.groupedHotspotTimers[closestEntry.GroupNum]
+                    if (Donuts.DonutComponent.groupedHotspotTimers.ContainsKey(closestEntry.GroupNum))
+                    {
+                        var timerList = Donuts.DonutComponent.groupedHotspotTimers[closestEntry.GroupNum];
+                        var timer = timerList.FirstOrDefault(x => x.Hotspot == closestEntry);
+
+                        if (timer != null)
+                        {
+                            timerList.Remove(timer);
+                        }
+                        else
+                        {
+                            // Handle the case where no timer was found
+                            Logger.LogDebug("Donuts: No matching timer found to delete.");
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogDebug("Donuts: GroupNum does not exist in groupedHotspotTimers.");
                     }
 
                     // Display a message to the player
@@ -443,6 +481,7 @@ namespace Donuts
             Entry newEntry = new Entry
             {
                 Name = spawnName.Value,
+                GroupNum = groupNum.Value,
                 MapName = DonutComponent.maplocation,
                 WildSpawnType = wildSpawns.Value,
                 MinDistance = minSpawnDist.Value,
@@ -473,9 +512,16 @@ namespace Donuts
 
             DonutComponent.sessionLocations.Locations.Add(newEntry);
 
-            // make it testable immediately by adding the timer needed
-            var hotspotTimer = new HotspotTimer(newEntry);
-            DonutComponent.hotspotTimers.Add(hotspotTimer);
+            // make it testable immediately by adding the timer needed to the groupnum in DonutComponent.groupedHotspotTimers
+            if (!DonutComponent.groupedHotspotTimers.ContainsKey(newEntry.GroupNum))
+            {
+                //create a new list for the groupnum and add the timer to it
+                DonutComponent.groupedHotspotTimers.Add(newEntry.GroupNum, new List<HotspotTimer>());
+            }
+
+            //create a new timer for the entry and add it to the list
+            var timer = new HotspotTimer(newEntry);
+            DonutComponent.groupedHotspotTimers[newEntry.GroupNum].Add(timer);
 
             var txt = $"Donuts: Wrote Entry for {newEntry.Name}\n SpawnType: {newEntry.WildSpawnType}\n Position: {newEntry.Position.x}, {newEntry.Position.y}, {newEntry.Position.z}";
             var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
