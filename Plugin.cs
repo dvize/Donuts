@@ -45,7 +45,7 @@ namespace Donuts
         public static ConfigEntry<string> spawnName;
         public static ConfigEntry<int> groupNum;
         //make groupList of numbers 1-20
-        public static int[] groupList = Enumerable.Range(1, 30).ToArray();
+        public static int[] groupList = Enumerable.Range(1, 100).ToArray();
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
         {

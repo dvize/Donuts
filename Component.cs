@@ -275,7 +275,14 @@ namespace Donuts
                                     foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
                                     {
                                         timer.ResetTimer();
-                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+
+                                        if (timer.Hotspot.IgnoreTimerFirstSpawn)
+                                        {
+                                            timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                                        }
+
+                                        timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
                                     }
                                     continue;
                                 }
@@ -302,7 +309,13 @@ namespace Donuts
                                 foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
                                 {
                                     timer.ResetTimer();
-                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+
+                                    if (timer.Hotspot.IgnoreTimerFirstSpawn)
+                                    {
+                                        timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                                    }
+
+                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
                                 }
                             }
                         }
@@ -334,12 +347,6 @@ namespace Donuts
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
-
-            // If hotspotTimer.hotspot IgnoreTimerFirstSpawn is true then we set it false since we're doing the first spawn.
-            if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
-            {
-                hotspotTimer.Hotspot.IgnoreTimerFirstSpawn = false;
-            }
 
             // Moved outside so all spawns for a point are on the same side
             EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
