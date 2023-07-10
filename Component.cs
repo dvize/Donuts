@@ -281,7 +281,6 @@ namespace Donuts
                                             timer.Hotspot.IgnoreTimerFirstSpawn = false;
                                         }
 
-                                        timer.Hotspot.IgnoreTimerFirstSpawn = false;
                                         Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
                                     }
                                     continue;
