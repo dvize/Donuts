@@ -20,18 +20,11 @@ namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
-        internal static FightLocations fightLocations = new FightLocations()
-        {
-            Locations = new List<Entry>()
-        };
+        internal static FightLocations fightLocations;
+        internal static FightLocations sessionLocations;
 
-        internal static FightLocations sessionLocations = new FightLocations()
-        {
-            Locations = new List<Entry>()
-        };
-
-        internal List<List<Entry>> groupedFightLocations = new List<List<Entry>>();
-        internal static Dictionary<int, List<HotspotTimer>> groupedHotspotTimers = new Dictionary<int, List<HotspotTimer>>();
+        internal static List<List<Entry>> groupedFightLocations;
+        internal static Dictionary<int, List<HotspotTimer>> groupedHotspotTimers;
 
         internal List<WildSpawnType> validDespawnList = new List<WildSpawnType>()
         {
@@ -47,14 +40,14 @@ namespace Donuts
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
 
-        internal static List<HotspotTimer> hotspotTimers = new List<HotspotTimer>();
+        internal static List<HotspotTimer> hotspotTimers;
         private Dictionary<string, MethodInfo> methodCache;
         private static MethodInfo displayMessageNotificationMethod;
 
         //gizmo stuff
         private bool isGizmoEnabled = false;
-        internal static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
-        internal static List<GameObject> gizmoSpheres = new List<GameObject>();
+        internal static HashSet<Vector3> drawnCoordinates;
+        internal static List<GameObject> gizmoSpheres;
         private static Coroutine gizmoUpdateCoroutine;
         protected static ManualLogSource Logger
         {
@@ -92,7 +85,7 @@ namespace Donuts
         private void Start()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
-
+            InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             Logger.LogDebug("Setup maplocation: " + maplocation);
             LoadFightLocations();
@@ -103,7 +96,25 @@ namespace Donuts
             SetupBotLimit();
             Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
         }
+        private void InitializeStaticVariables()
+        {
+            fightLocations = new FightLocations()
+            {
+                Locations = new List<Entry>()
+            };
 
+            sessionLocations = new FightLocations()
+            {
+                Locations = new List<Entry>()
+            };
+
+            groupedHotspotTimers = new Dictionary<int, List<HotspotTimer>>();
+            groupedFightLocations = new List<List<Entry>>();
+            hotspotTimers = new List<HotspotTimer>();
+
+            drawnCoordinates = new HashSet<Vector3>();
+            gizmoSpheres = new List<GameObject>();
+        }
         private void SetupBotLimit()
         {
             switch (maplocation)
@@ -275,7 +286,13 @@ namespace Donuts
                                     foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
                                     {
                                         timer.ResetTimer();
-                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+
+                                        if (timer.Hotspot.IgnoreTimerFirstSpawn)
+                                        {
+                                            timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                                        }
+
+                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
                                     }
                                     continue;
                                 }
@@ -302,7 +319,13 @@ namespace Donuts
                                 foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
                                 {
                                     timer.ResetTimer();
-                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {hotspot.Name} at time: {timer.GetTimer()}");
+
+                                    if (timer.Hotspot.IgnoreTimerFirstSpawn)
+                                    {
+                                        timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                                    }
+
+                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
                                 }
                             }
                         }
@@ -334,12 +357,6 @@ namespace Donuts
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
-
-            // If hotspotTimer.hotspot IgnoreTimerFirstSpawn is true then we set it false since we're doing the first spawn.
-            if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
-            {
-                hotspotTimer.Hotspot.IgnoreTimerFirstSpawn = false;
-            }
 
             // Moved outside so all spawns for a point are on the same side
             EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
