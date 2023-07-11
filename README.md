@@ -1,6 +1,6 @@
 # Donuts Rules
 
-1. Bots will only spawn in same level as the spawn marker
+1. Bots will only spawn in same level/height as the spawn marker
 2. Bots will only spawn in maximum distance (radius) around the spawn marker
 3. One random spawn marker will be picked in a group
  - if the timer is passed its eligible to spawn (Unless IgnoreTimerFirstSpawn is true for the point. It will be set to false after a successful spawn)
