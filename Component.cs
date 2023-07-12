@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -532,12 +531,13 @@ namespace Donuts
 
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
 
-                    
+
                     // Access the SAINBotController instance
-                    if (sainbotController == null) {
+                    if (sainbotController == null)
+                    {
                         sainbotController = FindObjectOfType<SAINBotController>();
                     }
-                    
+
                     // Access the Bots dictionary
                     botsDictionary = sainbotController.Bots;
 
