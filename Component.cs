@@ -46,7 +46,7 @@ namespace Donuts
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
         private float despawnCooldown = 0f;
-        private float despawnCooldownDuration = 5f;
+        private float despawnCooldownDuration = 10f;
 
         internal static List<HotspotTimer> hotspotTimers;
         private Dictionary<string, MethodInfo> methodCache;
@@ -543,13 +543,13 @@ namespace Donuts
 
                     // find the SAINComponent who has a SAINBot with the same botOwner and player as furthest then remove them from the dictionary
 
-                    List<string> botToRemove = new List<string>();
+                    string botToRemove = string.Empty;
 
                     foreach (KeyValuePair<string, SAINComponent> bot in botsDictionary)
                     {
                         if (bot.Value.BotOwner == botOwner && bot.Value.Player == furthestBot)
                         {
-                            botToRemove.Add(bot.Key);
+                            botToRemove = bot.Key;
 
                             //grab the BotSpawnerController component
                             if (bot.Value.BotOwner.TryGetComponent<SAINComponent>(out var component))
@@ -557,28 +557,30 @@ namespace Donuts
                                 //unsubscribe from OnLeave event and remove reference to Remove
                                 component.BotOwner.LeaveData.OnLeave -= sainbotController.BotSpawnController.RemoveBot;
                                 component.Dispose();
+                                Destroy(component);
                             }
                             break;
                         }
                     }
 
-                    // Remove the bot
-                    foreach (string key in botToRemove)
-                    {
-                        botsDictionary.Remove(key);
-                    }
 
-                    BotControllerClass botControllerClass = botOwner.BotsController;
+                    botsDictionary.Remove(botToRemove);
+
+
+                    /*BotControllerClass botControllerClass = botOwner.BotsController;
                     botControllerClass.BotDied(botOwner);
-                    botControllerClass.DestroyInfo(furthestBot);
+                    botControllerClass.DestroyInfo(furthestBot);*/
+
+                    var botgame = Singleton<IBotGame>.Instance;
+                    botgame.BotUnspawn(botOwner);
 
                     botOwner.Dispose();
                     Destroy(botOwner.gameObject);
                     Destroy(botOwner);
 
-                    furthestBot.Dispose();
-                    Destroy(furthestBot.gameObject);
-                    Destroy(furthestBot);
+                    //furthestBot.Dispose();
+                    //Destroy(furthestBot.gameObject);
+                    //Destroy(furthestBot);
 
                     // Reset the despawn timer
                     despawnCooldown = Time.time;

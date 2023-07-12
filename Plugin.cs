@@ -5,6 +5,7 @@ using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using dvize.Donuts;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
@@ -280,7 +281,7 @@ namespace Donuts
             laboratoryBotLimit = Config.Bind(
                "2. Bot Limits Before Despawn",
                "Laboratory Max Bot Count",
-               18,
+               16,
                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                null,
                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
@@ -353,6 +354,7 @@ namespace Donuts
 
             //Patches
             new NewGamePatch().Enable();
+            new PatchBodySound().Enable();
         }
 
         private void Update()

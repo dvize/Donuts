@@ -137,6 +137,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PatchBodySound.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
@@ -149,12 +150,12 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).dll"
+    <PostBuildEvent>copy "$(TargetPath)" "F:\SPT-AKI\BepInEx\plugins\dvize.Donuts\$(TargetName).dll"
 
 if $(ConfigurationName) == Debug (
-    copy "$(TargetDir)$(TargetName).pdb" "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
+    copy "$(TargetDir)$(TargetName).pdb" "F:\SPT-AKI\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
 ) else (
-    del "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
+    del "F:\SPT-AKI\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
 )
 </PostBuildEvent>
   </PropertyGroup>
