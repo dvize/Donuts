@@ -522,7 +522,8 @@ namespace Donuts
                 foreach (Player bot in bots)
                 {
                     float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
-                    if (distance > maxDistance)
+                    if (distance > maxDistance &&
+                        bot.AIData.BotOwner.BotState  == EBotState.Active)
                     {
                         maxDistance = distance;
                         furthestBot = bot;
