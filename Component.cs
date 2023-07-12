@@ -45,6 +45,8 @@ namespace Donuts
         private int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
+        private float despawnCooldown = 0f;
+        private float despawnCooldownDuration = 5f;
 
         internal static List<HotspotTimer> hotspotTimers;
         private Dictionary<string, MethodInfo> methodCache;
@@ -496,6 +498,11 @@ namespace Donuts
 
         private void DespawnFurthestBot()
         {
+            if (Time.time - despawnCooldown < despawnCooldownDuration)
+            {
+                return; // Exit the method without despawning
+            }
+
             //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
 
@@ -511,8 +518,7 @@ namespace Donuts
                 foreach (Player bot in bots)
                 {
                     float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
-                    if (distance > maxDistance &&
-                        bot.AIData.BotOwner.BotState == EBotState.Active)
+                    if (distance > maxDistance)
                     {
                         maxDistance = distance;
                         furthestBot = bot;
@@ -526,10 +532,7 @@ namespace Donuts
 
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
 
-                    BotControllerClass botControllerClass = botOwner.BotsController;
-                    botControllerClass.BotDied(botOwner);
-                    botControllerClass.DestroyInfo(furthestBot);
-
+                    
                     // Access the SAINBotController instance
                     if (sainbotController == null) {
                         sainbotController = FindObjectOfType<SAINBotController>();
@@ -540,13 +543,15 @@ namespace Donuts
 
                     // find the SAINComponent who has a SAINBot with the same botOwner and player as furthest then remove them from the dictionary
 
+                    List<string> botToRemove = new List<string>();
+
                     foreach (KeyValuePair<string, SAINComponent> bot in botsDictionary)
                     {
                         if (bot.Value.BotOwner == botOwner && bot.Value.Player == furthestBot)
                         {
-                            botsDictionary.Remove(bot.Key);
-                            //grab the BotSpawnerController component
+                            botToRemove.Add(bot.Key);
 
+                            //grab the BotSpawnerController component
                             if (bot.Value.BotOwner.TryGetComponent<SAINComponent>(out var component))
                             {
                                 //unsubscribe from OnLeave event and remove reference to Remove
@@ -557,6 +562,16 @@ namespace Donuts
                         }
                     }
 
+                    // Remove the bot
+                    foreach (string key in botToRemove)
+                    {
+                        botsDictionary.Remove(key);
+                    }
+
+                    BotControllerClass botControllerClass = botOwner.BotsController;
+                    botControllerClass.BotDied(botOwner);
+                    botControllerClass.DestroyInfo(furthestBot);
+
                     botOwner.Dispose();
                     Destroy(botOwner.gameObject);
                     Destroy(botOwner);
@@ -564,6 +579,9 @@ namespace Donuts
                     furthestBot.Dispose();
                     Destroy(furthestBot.gameObject);
                     Destroy(furthestBot);
+
+                    // Reset the despawn timer
+                    despawnCooldown = Time.time;
                 }
             }
         }
