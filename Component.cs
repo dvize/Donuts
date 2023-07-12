@@ -516,7 +516,7 @@ namespace Donuts
                 Player furthestBot = null;
 
                 //filter out bots that are not in the valid despawnable list or is your own player
-                bots = bots.Where(x => !validDespawnList.Contains(x.Profile.Info.Settings.Role) || !x.IsYourPlayer).ToList();
+                bots = bots.Where(x => validDespawnList.Contains(x.Profile.Info.Settings.Role) && !x.IsYourPlayer).ToList();
 
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
