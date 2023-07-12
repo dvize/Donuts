@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -16,7 +17,6 @@ using HarmonyLib;
 using Newtonsoft.Json;
 using SAIN.Components;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Donuts
 {
@@ -39,6 +39,14 @@ namespace Donuts
         //sain related vars
         private static SAINBotController sainbotController;
         private static Dictionary<string, SAINComponent> botsDictionary;
+        
+        internal List<string> invalidWallNames = new List<string>()
+        {
+            "WALL", // wall in general
+            "TUBE", //factory tunnel tube
+            "TUNE", //factory tunnel wall
+            "WOLK", //factory main wall
+        };
 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -83,7 +91,7 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_12", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (methodInfo != null)
             {
@@ -255,7 +263,7 @@ namespace Donuts
         }
 
 
-        private void Update()
+        private async void Update()
         {
             if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
             {
@@ -314,7 +322,7 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                StartCoroutine(SpawnBotsCoroutine(hotspotTimer, coordinate));
+                                SpawnBotsAsync(hotspotTimer, coordinate);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -363,7 +371,7 @@ namespace Donuts
 
             return false;
         }
-        private IEnumerator SpawnBotsCoroutine(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async Task SpawnBotsAsync(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
@@ -386,17 +394,28 @@ namespace Donuts
 
 
                 // Setup bot details
-                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass614 { TriggerType = SpawnTriggerType.none });
+                //var bot = new GClass626(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass614 { TriggerType = SpawnTriggerType.none });
+
+                var ginterface17_0 = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+
+                GClass626 bot = await GClass626.Create(new GClass627(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass616 { TriggerType = SpawnTriggerType.none }), ginterface17_0, 1, botSpawnerClass);
+                bot.AddPosition((Vector3)spawnPosition);
+
+                //set isspawnonstart methodgroup to true if its set to ignore first spawn.
+                if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
+                {
+                    AccessTools.Field(typeof(GClass626), "IsSpawnOnStart").SetValue(bot, true);
+                }
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
-                methodCache["method_12"].Invoke(botSpawnerClass, new object[] { (Vector3)spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
+                methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
 
 
                 count++;
-                yield return new WaitForSeconds(0.16f);
+
             }
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
@@ -593,25 +612,23 @@ namespace Donuts
             {
                 Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
 
-                if (NavMesh.SamplePosition(spawnPosition, out var navHit, 2f, NavMesh.AllAreas))
+                if (IsValidSpawnPosition(spawnPosition, hotspot))
                 {
-                    spawnPosition = navHit.position;
-
-                    if (IsValidSpawnPosition(spawnPosition, hotspot))
-                    {
-                        Logger.LogDebug("Found spawn position at: " + spawnPosition);
-                        return spawnPosition;
-                    }
+                    Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                    return spawnPosition;
                 }
+
             }
 
             return null;
         }
-
         private Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
         {
-            float randomX = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-            float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            float randomAngle = UnityEngine.Random.Range(0f, 2f * Mathf.PI);
+            float randomRadius = UnityEngine.Random.Range(0f, hotspot.MaxDistance);
+
+            float randomX = randomRadius * Mathf.Cos(randomAngle);
+            float randomZ = randomRadius * Mathf.Sin(randomAngle);
 
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
@@ -649,7 +666,7 @@ namespace Donuts
         private bool IsSpawnPositionInsideWall(Vector3 position)
         {
             // Check if any game object parent has the name "WALLS" in it
-            Vector3 boxSize = new Vector3(1f, 1f, 1f);
+            Vector3 boxSize = new Vector3(1.2f, 1.2f, 1.2f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
 
             foreach (var collider in colliders)
@@ -657,7 +674,7 @@ namespace Donuts
                 Transform currentTransform = collider.transform;
                 while (currentTransform != null)
                 {
-                    if (currentTransform.gameObject.name.ToUpper().Contains("WALLS"))
+                    if (invalidWallNames.Contains(currentTransform.gameObject.name.ToUpper()))
                     {
                         return true;
                     }
