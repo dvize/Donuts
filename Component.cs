@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,6 +14,7 @@ using EFT;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
+using SAIN.Components;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -33,6 +35,10 @@ namespace Donuts
             (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
             (WildSpawnType)AkiBotsPrePatcher.sptBearValue
         };
+
+        //sain related vars
+        private static SAINBotController sainbotController;
+        private static Dictionary<string, SAINComponent> botsDictionary;
 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -114,6 +120,8 @@ namespace Donuts
 
             drawnCoordinates = new HashSet<Vector3>();
             gizmoSpheres = new List<GameObject>();
+            sainbotController = FindObjectOfType<SAINBotController>();
+            botsDictionary = new Dictionary<string, SAINComponent>();
         }
         private void SetupBotLimit()
         {
@@ -264,11 +272,11 @@ namespace Donuts
                         {
                             continue;
                         }
-                        
+
                         // Get a random hotspotTimer from the group (grouped by groupNum}
                         var randomIndex = UnityEngine.Random.Range(0, (groupHotspotTimers.Count - 1));
                         var hotspotTimer = groupHotspotTimers[randomIndex];
-                        
+
 
                         if (hotspotTimer.ShouldSpawn())
                         {
@@ -504,7 +512,7 @@ namespace Donuts
                 {
                     float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
                     if (distance > maxDistance &&
-                        bot.AIData.BotOwner.BotState  == EBotState.Active)
+                        bot.AIData.BotOwner.BotState == EBotState.Active)
                     {
                         maxDistance = distance;
                         furthestBot = bot;
@@ -517,11 +525,44 @@ namespace Donuts
                     Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
 
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
+
                     BotControllerClass botControllerClass = botOwner.BotsController;
                     botControllerClass.BotDied(botOwner);
                     botControllerClass.DestroyInfo(furthestBot);
+
+                    // Access the SAINBotController instance
+                    if (sainbotController == null) {
+                        sainbotController = FindObjectOfType<SAINBotController>();
+                    }
+                    
+                    // Access the Bots dictionary
+                    botsDictionary = sainbotController.Bots;
+
+                    // find the SAINComponent who has a SAINBot with the same botOwner and player as furthest then remove them from the dictionary
+
+                    foreach (KeyValuePair<string, SAINComponent> bot in botsDictionary)
+                    {
+                        if (bot.Value.BotOwner == botOwner && bot.Value.Player == furthestBot)
+                        {
+                            botsDictionary.Remove(bot.Key);
+                            //grab the BotSpawnerController component
+
+                            if (bot.Value.BotOwner.TryGetComponent<SAINComponent>(out var component))
+                            {
+                                //unsubscribe from OnLeave event and remove reference to Remove
+                                component.BotOwner.LeaveData.OnLeave -= sainbotController.BotSpawnController.RemoveBot;
+                                component.Dispose();
+                            }
+                            break;
+                        }
+                    }
+
                     botOwner.Dispose();
+                    Destroy(botOwner.gameObject);
+                    Destroy(botOwner);
+
                     furthestBot.Dispose();
+                    Destroy(furthestBot.gameObject);
                     Destroy(furthestBot);
                 }
             }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -412,12 +411,12 @@ namespace Donuts
                 if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
                 {
                     // check which list the entry is in and remove it from that list
-                    if (Donuts.DonutComponent.fightLocations.Locations.Count > 0 && 
+                    if (Donuts.DonutComponent.fightLocations.Locations.Count > 0 &&
                         Donuts.DonutComponent.fightLocations.Locations.Contains(closestEntry))
                     {
                         Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
                     }
-                    else if (Donuts.DonutComponent.sessionLocations.Locations.Count > 0 && 
+                    else if (Donuts.DonutComponent.sessionLocations.Locations.Count > 0 &&
                         Donuts.DonutComponent.sessionLocations.Locations.Contains(closestEntry))
                     {
                         Donuts.DonutComponent.sessionLocations.Locations.Remove(closestEntry);
