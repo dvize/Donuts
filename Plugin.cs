@@ -355,6 +355,7 @@ namespace Donuts
             //Patches
             new NewGamePatch().Enable();
             new PatchBodySound().Enable();
+            new MatchEndPlayerDisposePatch().Enable();
         }
 
         private void Update()
