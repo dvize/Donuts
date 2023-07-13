@@ -416,8 +416,8 @@ namespace Donuts
                     return WildSpawnType.bossZryachiy;
                 case "cursedassault":
                     return WildSpawnType.cursedAssault;
-                case "exusec":
-                    return WildSpawnType.pmcBot;
+                case "exusec-rogues":
+                    return WildSpawnType.exUsec;
                 case "followerbully":
                     return WildSpawnType.followerBully;
                 case "followergluharassault":
@@ -440,7 +440,7 @@ namespace Donuts
                     return WildSpawnType.gifter;
                 case "marksman":
                     return WildSpawnType.marksman;
-                case "pmcbot":
+                case "raiders":
                     return WildSpawnType.pmcBot;
                 case "sectantpriest":
                     return WildSpawnType.sectantPriest;
