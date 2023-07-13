@@ -13,7 +13,6 @@ using EFT;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
-using SAIN.Components;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -34,10 +33,6 @@ namespace Donuts
             (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
             (WildSpawnType)AkiBotsPrePatcher.sptBearValue
         };
-
-        //sain related vars
-        private static SAINBotController sainbotController;
-        private static Dictionary<string, SAINComponent> botsDictionary;
 
         private bool fileLoaded = false;
         public static string maplocation;
@@ -121,8 +116,6 @@ namespace Donuts
 
             drawnCoordinates = new HashSet<Vector3>();
             gizmoSpheres = new List<GameObject>();
-            sainbotController = FindObjectOfType<SAINBotController>();
-            botsDictionary = new Dictionary<string, SAINComponent>();
         }
         private void SetupBotLimit()
         {
@@ -511,7 +504,7 @@ namespace Donuts
                 Player furthestBot = null;
 
                 //filter out bots that are not in the valid despawnable list or is your own player
-                bots = bots.Where(x => validDespawnList.Contains(x.Profile.Info.Settings.Role) && !x.IsYourPlayer).ToList();
+                bots = bots.Where(x => validDespawnList.Contains(x.Profile.Info.Settings.Role) && !x.IsYourPlayer && x.AIData.BotOwner.BotState == EBotState.Active).ToList();
 
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
@@ -527,62 +520,16 @@ namespace Donuts
                 if (furthestBot != null)
                 {
                     // Despawn the bot
-                    Logger.LogDebug("Despawning bot: " + furthestBot.Profile.Info.Nickname);
+                    Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
 
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
 
-
-                    // Access the SAINBotController instance
-                    if (sainbotController == null)
-                    {
-                        sainbotController = FindObjectOfType<SAINBotController>();
-                    }
-
-                    // Access the Bots dictionary
-                    botsDictionary = sainbotController.Bots;
-
-                    // find the SAINComponent who has a SAINBot with the same botOwner and player as furthest then remove them from the dictionary
-
-                    string botToRemove = string.Empty;
-
-                    foreach (KeyValuePair<string, SAINComponent> bot in botsDictionary)
-                    {
-                        if (bot.Value.BotOwner == botOwner && bot.Value.Player == furthestBot)
-                        {
-                            botToRemove = bot.Key;
-
-                            //grab the BotSpawnerController component
-                            if (bot.Value.BotOwner.TryGetComponent<SAINComponent>(out var component))
-                            {
-                                //unsubscribe from OnLeave event and remove reference to Remove
-                                component.BotOwner.LeaveData.OnLeave -= sainbotController.BotSpawnController.RemoveBot;
-                                component.Dispose();
-                                Destroy(component);
-                            }
-                            break;
-                        }
-                    }
-
-
-                    botsDictionary.Remove(botToRemove);
-
-
-                    /*BotControllerClass botControllerClass = botOwner.BotsController;
-                    botControllerClass.BotDied(botOwner);
-                    botControllerClass.DestroyInfo(furthestBot);*/
-
                     var botgame = Singleton<IBotGame>.Instance;
-                    botgame.BotUnspawn(botOwner);
-
+                    botOwner.Deactivate();
                     botOwner.Dispose();
-                    Destroy(botOwner.gameObject);
+                    botgame.BotUnspawn(botOwner);
                     Destroy(botOwner);
 
-                    //furthestBot.Dispose();
-                    //Destroy(furthestBot.gameObject);
-                    //Destroy(furthestBot);
-
-                    // Reset the despawn timer
                     despawnCooldown = Time.time;
                 }
             }
