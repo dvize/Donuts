@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +9,7 @@ using BepInEx.Configuration;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;
+using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -29,6 +31,11 @@ namespace Donuts
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
+        
+        //Add folder scenarios
+        internal static List<Folder> scenarios = new List<Folder>();
+        public static ConfigEntry<string> scenarioSelection;
+        public string[] scenarioValues = new string[] {};
 
         //bot limits setup
         public static ConfigEntry<int> factoryBotLimit;
@@ -113,7 +120,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
@@ -121,7 +128,7 @@ namespace Donuts
                 180f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 3 }));
 
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
@@ -129,7 +136,9 @@ namespace Donuts
                 10,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            
 
             //Debugging 
             DebugGizmos = Config.Bind(
@@ -356,6 +365,54 @@ namespace Donuts
             new NewGamePatch().Enable();
             new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
+
+            SetupScenariosUI();
+        }
+
+        private void SetupScenariosUI()
+        {
+            // populate the list of scenarios
+            LoadDonutsFolders();
+
+            List<string> scenarioValuesList = new List<string>(scenarioValues);
+            scenarioValuesList.Add("Random");
+
+            // Add folder.Name to the scenarioValuesList
+            foreach (Folder folder in scenarios)
+            {
+                Logger.LogWarning("Adding scenario: " + folder.Name);
+                scenarioValuesList.Add(folder.Name);
+            }
+
+            scenarioValues = scenarioValuesList.ToArray();
+
+            scenarioSelection = Config.Bind(
+                "1. Main Settings",
+                "Scenario Selection",
+                "Default",
+                new ConfigDescription("Select a scenario to use for spawning",
+                new AcceptableValueList<string>(scenarioValues),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+        }
+        private void LoadDonutsFolders()
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+
+            string filePath = Path.Combine(directoryPath, "ScenarioConfig.json");
+
+            Logger.LogWarning("Found file at: " + filePath);
+
+            string file = File.ReadAllText(filePath);
+            scenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
+
+            if (scenarios.Count == 0)
+            {
+                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
+                Debug.Break();
+            }
+
+            Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
         }
 
         private void Update()
@@ -590,6 +647,15 @@ namespace Donuts
         [PatchPrefix]
         public static void PatchPrefix() => DonutComponent.Enable();
     }
-
-
+    internal class Folder
+    {
+        public string Name
+        {
+            get; set;
+        }
+        public int Weight
+        {
+            get; set;
+        }
+    }
 }

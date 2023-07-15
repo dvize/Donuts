@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
 using EFT.Communications;
+using EFT.Interactive;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -51,6 +53,8 @@ namespace Donuts
         internal static HashSet<Vector3> drawnCoordinates;
         internal static List<GameObject> gizmoSpheres;
         private static Coroutine gizmoUpdateCoroutine;
+
+        
         protected static ManualLogSource Logger
         {
             get; private set;
@@ -87,6 +91,8 @@ namespace Donuts
         private void Start()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
+
+            // setup the rest of donuts for the selected folder
             InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             Logger.LogDebug("Setup maplocation: " + maplocation);
@@ -189,6 +195,8 @@ namespace Donuts
             // Assign the groupedHotspotTimers dictionary back to hotspotTimers
             hotspotTimers = groupedHotspotTimers.SelectMany(kv => kv.Value).ToList();
         }
+
+        
         private void LoadFightLocations()
         {
             if (!fileLoaded)
@@ -197,7 +205,19 @@ namespace Donuts
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
                 string jsonFolderPath = Path.Combine(directoryPath, "patterns");
-                string[] jsonFiles = Directory.GetFiles(jsonFolderPath, "*.json");
+
+                //in SelectedPatternFolderPath, grab the folder name from DonutsPlugin.scenarioSelection.Value
+
+                var selectionName = runWeightedScenarioSelection();
+
+                if(selectionName == null)
+                {
+                    Logger.LogError("No valid scenario selection found for map");
+                    return;
+                }
+
+                string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
+                string[] jsonFiles = Directory.GetFiles(PatternFolderPath, "*.json");
 
                 List<Entry> combinedLocations = new List<Entry>();
 
@@ -246,6 +266,40 @@ namespace Donuts
             }
         }
 
+        private string runWeightedScenarioSelection()
+        {
+            if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
+            {
+                return DonutsPlugin.scenarioSelection.Value;
+            }
+
+            int totalWeight = DonutsPlugin.scenarios.Sum(folder => folder.Weight);
+
+            int randomWeight = UnityEngine.Random.Range(0, totalWeight);
+
+            // Select the folder based on the random weight
+            Folder selectedFolder = null;
+            int accumulatedWeight = 0;
+
+            foreach (Folder folder in DonutsPlugin.scenarios)
+            {
+                accumulatedWeight += folder.Weight;
+                if (randomWeight <= accumulatedWeight)
+                {
+                    selectedFolder = folder;
+                    break;
+                }
+            }
+
+            // Use the selected folder
+            if (selectedFolder != null)
+            {
+                Logger.LogDebug("Selected Folder: " + selectedFolder.Name);
+                return selectedFolder.Name;
+            }
+
+            return null;
+        }
 
         private void Update()
         {
@@ -986,5 +1040,6 @@ namespace Donuts
             get; set;
         }
     }
+
 
 }
