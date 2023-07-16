@@ -271,6 +271,18 @@ namespace Donuts
 
                 //filter fightLocations for maplocation
                 fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
+
+                if(fightLocations.Locations.Count == 0)
+                {
+                    //show error message so user knows why donuts is not working
+                    var txt = "Donuts Plugin: There are no valid Spawn Marker Entries for the current map. Disabling the plugin for this raid.";
+                    Logger.LogError(txt);
+                    EFT.UI.ConsoleScreen.LogError(txt);
+                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    fileLoaded = false;
+                    return;
+                }
+
                 Logger.LogDebug("Valid Bot Fight Entries For Current Map: " + fightLocations.Locations.Count);
 
                 fileLoaded = true;
