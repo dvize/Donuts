@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,7 +8,6 @@ using BepInEx.Configuration;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;
-using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -31,11 +29,11 @@ namespace Donuts
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
-        
+
         //Add folder scenarios
         internal static List<Folder> scenarios = new List<Folder>();
         public static ConfigEntry<string> scenarioSelection;
-        public string[] scenarioValues = new string[] {};
+        public string[] scenarioValues = new string[] { };
 
         //bot limits setup
         public static ConfigEntry<int> factoryBotLimit;
@@ -138,7 +136,7 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
-            
+
 
             //Debugging 
             DebugGizmos = Config.Bind(
@@ -659,7 +657,7 @@ namespace Donuts
         }
         public bool RandomSelection
         {
-           get; set;
+            get; set;
         }
     }
 }

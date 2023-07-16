@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,7 +11,6 @@ using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
 using EFT.Communications;
-using EFT.Interactive;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -54,7 +52,7 @@ namespace Donuts
         internal static List<GameObject> gizmoSpheres;
         private static Coroutine gizmoUpdateCoroutine;
 
-        
+
         protected static ManualLogSource Logger
         {
             get; private set;
@@ -196,11 +194,14 @@ namespace Donuts
             hotspotTimers = groupedHotspotTimers.SelectMany(kv => kv.Value).ToList();
         }
 
-        
+
         private void LoadFightLocations()
         {
             if (!fileLoaded)
             {
+                MethodInfo displayMessageNotificationMethod;
+                methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod);
+                
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
@@ -210,9 +211,12 @@ namespace Donuts
 
                 var selectionName = runWeightedScenarioSelection();
 
-                if(selectionName == null)
+                if (selectionName == null)
                 {
-                    Logger.LogError("No valid scenario selection found for map");
+                    var txt = "Donuts Plugin: No valid Scenario Selection found for map";
+                    Logger.LogError(txt);
+                    EFT.UI.ConsoleScreen.LogError(txt);
+                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
                     return;
                 }
 
@@ -229,7 +233,10 @@ namespace Donuts
 
                 if (combinedLocations.Count == 0)
                 {
-                    Logger.LogError("No Bot Fight Entries found in JSON files, disabling plugin for raid");
+                    var txt = "Donuts Plugin: No Entries found in JSON files, disabling plugin for raid.";
+                    Logger.LogError(txt);
+                    EFT.UI.ConsoleScreen.LogError(txt);
+                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
                     fileLoaded = false;
                     return;
                 }
