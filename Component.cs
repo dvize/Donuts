@@ -273,17 +273,17 @@ namespace Donuts
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
+            //filter out folders where folder.RandomSelection is false
+            var filteredFolders = DonutsPlugin.scenarios.Where(folder => folder.RandomSelection);
+
             // Calculate the total weight of all folders minus the ones where folder.RandomSelection is false
-            int totalWeight = DonutsPlugin.scenarios.Where(folder => folder.RandomSelection).Sum(folder => folder.Weight);
+            int totalWeight = filteredFolders.Sum(folder => folder.Weight);
 
             int randomWeight = UnityEngine.Random.Range(0, totalWeight);
 
             // Select the folder based on the random weight
             Folder selectedFolder = null;
             int accumulatedWeight = 0;
-
-            //filter out folders where folder.RandomSelection is false
-            var filteredFolders = DonutsPlugin.scenarios.Where(folder => folder.RandomSelection);
 
             foreach (Folder folder in filteredFolders)
             {
