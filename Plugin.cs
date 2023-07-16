@@ -657,5 +657,10 @@ namespace Donuts
         {
             get; set;
         }
+
+        public bool RandomSelection
+        {
+           get; set;
+        }
     }
 }
