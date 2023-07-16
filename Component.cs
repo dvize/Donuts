@@ -229,8 +229,9 @@ namespace Donuts
 
                 if (combinedLocations.Count == 0)
                 {
-                    Logger.LogError("No Bot Fight Entries found in JSON files, disabling plugin");
-                    Debug.Break();
+                    Logger.LogError("No Bot Fight Entries found in JSON files, disabling plugin for raid");
+                    fileLoaded = false;
+                    return;
                 }
 
                 Logger.LogDebug("Loaded " + combinedLocations.Count + " Bot Fight Entries");

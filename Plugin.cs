@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.0.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.1.0")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
@@ -657,7 +657,6 @@ namespace Donuts
         {
             get; set;
         }
-
         public bool RandomSelection
         {
            get; set;
