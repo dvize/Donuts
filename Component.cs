@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -221,7 +222,29 @@ namespace Donuts
                 }
 
                 string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
+
+                // Check if the folder exists
+                if (!Directory.Exists(PatternFolderPath))
+                {
+                    var txt = ("Donuts Plugin: Folder from ScenarioConfig.json does not actually exist: " + PatternFolderPath + "\nDisabling the donuts plugin for this raid.");
+                    Logger.LogError(txt);
+                    EFT.UI.ConsoleScreen.LogError(txt);
+                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    fileLoaded = false;
+                    return;
+                }
+
                 string[] jsonFiles = Directory.GetFiles(PatternFolderPath, "*.json");
+
+                if (jsonFiles.Length == 0)
+                {
+                    var txt = ("Donuts Plugin: No JSON Pattern files found in folder: " + PatternFolderPath + "\nDisabling the donuts plugin for this raid.");
+                    Logger.LogError(txt);
+                    EFT.UI.ConsoleScreen.LogError(txt);
+                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    fileLoaded = false;
+                    return;
+                }
 
                 List<Entry> combinedLocations = new List<Entry>();
 
