@@ -272,7 +272,7 @@ namespace Donuts
             factoryBotLimit = Config.Bind(
                "2. Bot Limits Before Despawn",
                "Factory Max Bot Count",
-               10,
+               12,
                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                null,
                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
@@ -288,7 +288,7 @@ namespace Donuts
             laboratoryBotLimit = Config.Bind(
                "2. Bot Limits Before Despawn",
                "Laboratory Max Bot Count",
-               16,
+               14,
                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                null,
                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
@@ -296,7 +296,7 @@ namespace Donuts
             lighthouseBotLimit = Config.Bind(
                "2. Bot Limits Before Despawn",
                "Lighthouse Max Bot Count",
-               18,
+               20,
                new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
                null,
                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
