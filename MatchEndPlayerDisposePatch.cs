@@ -16,7 +16,7 @@ namespace dvize.Donuts
         {
             // Method used by SPT for finding BaseLocalGame
             return PatchConstants.EftTypes.Single(x => x.Name == "LocalGame").BaseType // BaseLocalGame
-                .GetMethod("smethod_3", BindingFlags.FlattenHierarchy | BindingFlags.NonPublic | BindingFlags.Static);
+                .GetMethod("smethod_4", BindingFlags.FlattenHierarchy | BindingFlags.NonPublic | BindingFlags.Static);
         }
 
         [PatchPrefix]
