@@ -131,7 +131,7 @@ namespace Donuts
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
                 "Max Spawn Tries Per Bot",
-                10,
+                20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));

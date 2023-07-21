@@ -81,7 +81,7 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_12", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (methodInfo != null)
             {
@@ -463,12 +463,13 @@ namespace Donuts
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             // Moved outside so all spawns for a point are on the same side
-            EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
-            WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
+            WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
+            
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
-                Vector3? spawnPosition = GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = await GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
                 if (!spawnPosition.HasValue)
                 {
@@ -480,22 +481,17 @@ namespace Donuts
 
                 var ginterface17_0 = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
 
-                GClass626 bot = await GClass626.Create(new GClass627(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass616 { TriggerType = SpawnTriggerType.none }), ginterface17_0, 1, botSpawnerClass);
+                GClass626 bot = await GClass626.Create(new GClass627(side, wildSpawnType, BotDifficulty.normal, 0f, null), ginterface17_0, 1, botSpawnerClass);
                 bot.AddPosition((Vector3)spawnPosition);
-
-                //set isspawnonstart methodgroup to true if its set to ignore first spawn.
-                if (hotspotTimer.Hotspot.IgnoreTimerFirstSpawn)
-                {
-                    AccessTools.Field(typeof(GClass626), "IsSpawnOnStart").SetValue(bot, true);
-                }
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
+                //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
                 methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
 
-
+                    
                 count++;
             }
         }
@@ -642,7 +638,7 @@ namespace Donuts
                 }
             }
         }
-        private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private async Task <Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
@@ -658,6 +654,8 @@ namespace Donuts
                         return spawnPosition;
                     }
                 }
+
+                await Task.Delay(1); 
             }
 
             return null;
