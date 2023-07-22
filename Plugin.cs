@@ -363,6 +363,7 @@ namespace Donuts
             new NewGamePatch().Enable();
             new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
+            new PatchStandbyTeleport().Enable();
 
             SetupScenariosUI();
         }
