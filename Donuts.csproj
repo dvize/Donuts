@@ -137,8 +137,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MatchEndPlayerDisposePatch.cs" />
     <Compile Include="PatchBodySound.cs" />
+    <Compile Include="PatchStandbyTeleport.cs" />
+    <Compile Include="MatchEndPlayerDisposePatch.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
