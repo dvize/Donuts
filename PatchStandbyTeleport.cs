@@ -16,7 +16,6 @@ namespace dvize.Donuts
     {
         protected override MethodBase GetTargetMethod()
         {
-            // Method used by SPT for finding BaseLocalGame
             return AccessTools.Method(typeof(GClass351), "UpdateNode");
         }
 
