@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -202,7 +201,7 @@ namespace Donuts
             {
                 MethodInfo displayMessageNotificationMethod;
                 methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod);
-                
+
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
@@ -272,7 +271,7 @@ namespace Donuts
                 //filter fightLocations for maplocation
                 fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
 
-                if(fightLocations.Locations.Count == 0)
+                if (fightLocations.Locations.Count == 0)
                 {
                     //show error message so user knows why donuts is not working
                     var txt = "Donuts Plugin: There are no valid Spawn Marker Entries for the current map. Disabling the plugin for this raid.";
