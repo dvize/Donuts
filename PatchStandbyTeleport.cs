@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using Aki.Reflection.Patching;
 using EFT;
 using HarmonyLib;
@@ -7,24 +8,22 @@ namespace dvize.Donuts
 {
     internal class PatchStandbyTeleport : ModulePatch
     {
+        private static MethodInfo _method1;
+
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass351), "UpdateNode");
+            Type standbyClassType = typeof(GClass351);
+            _method1 = AccessTools.Method(standbyClassType, "method_1");
+
+            return AccessTools.Method(standbyClassType, "UpdateNode");
         }
 
         [PatchPrefix]
-        public static bool Prefix(GClass351 __instance, BotStandByType ___botStandByType_0)
+        public static bool Prefix(GClass351 __instance, BotStandByType ___botStandByType_0, BotOwner ___botOwner_0)
         {
-            FieldInfo botOwnerField = AccessTools.Field(typeof(GClass294), "botOwner_0");
-
-            if (botOwnerField != null)
+            if (!___botOwner_0.Settings.FileSettings.Mind.CAN_STAND_BY)
             {
-                BotOwner botOwner = botOwnerField.GetValue(__instance) as BotOwner;
-
-                if (!botOwner.Settings.FileSettings.Mind.CAN_STAND_BY)
-                {
-                    return false;
-                }
+                return false;
             }
 
             if (!__instance.CanDoStandBy)
@@ -34,11 +33,7 @@ namespace dvize.Donuts
 
             if (___botStandByType_0 == BotStandByType.goToSave)
             {
-                MethodInfo method1 = AccessTools.Method(typeof(GClass351), "method_1");
-                if (method1 != null)
-                {
-                    method1.Invoke(__instance, new object[] { });
-                }
+                _method1.Invoke(__instance, new object[] { });
             }
 
             return false;
