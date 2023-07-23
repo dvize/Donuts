@@ -313,6 +313,7 @@ namespace Donuts
         {
             if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
             {
+                Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
