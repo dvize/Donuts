@@ -24,9 +24,7 @@ namespace dvize.Donuts
                     __instance.BotsGroup.AddPointToSearch(obj, 80f, __instance, true);
                 }
             }
-            catch (Exception ex)
-            {
-            }
+            catch { }
 
             return false;
         }
