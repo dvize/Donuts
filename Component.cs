@@ -70,6 +70,7 @@ namespace Donuts
 
         public void Awake()
         {
+            botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             methodCache = new Dictionary<string, MethodInfo>();
 
             // Retrieve displayMessageNotification MethodInfo
@@ -86,11 +87,34 @@ namespace Donuts
             {
                 methodCache[methodInfo.Name] = methodInfo;
             }
+
+            // Remove despawned bots from bot EnemyInfos list.
+            botSpawnerClass.OnBotRemoved += removedBot =>
+            {
+                // Clear the enemy list, and memory about the main player
+                removedBot.Memory.DeleteInfoAboutEnemy(gameWorld.MainPlayer);
+                removedBot.EnemiesController.EnemyInfos.Clear();
+
+                // Loop through the rest of the bots on the map, andd clear this bot from its memory/group info
+                foreach (var player in gameWorld.AllAlivePlayersList)
+                {
+                    if (!player.IsAI)
+                    {
+                        continue;
+                    }
+
+                    // Clear the bot from all other bots enemy info
+                    var botOwner = player.AIData.BotOwner;
+                    botOwner.Memory.DeleteInfoAboutEnemy(removedBot);
+                    botOwner.BotsGroup.RemoveInfo(removedBot);
+                    botOwner.BotsGroup.RemoveEnemy(removedBot);
+                    botOwner.BotsGroup.RemoveAlly(removedBot);
+                }
+            };
         }
+
         private void Start()
         {
-            botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
-
             // setup the rest of donuts for the selected folder
             InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
