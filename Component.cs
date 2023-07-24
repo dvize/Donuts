@@ -14,6 +14,7 @@ using EFT;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
+using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -631,13 +632,22 @@ namespace Donuts
                 float maxDistance = -1f;
                 Player furthestBot = null;
 
-                //filter out bots that are not in the valid despawnable list or is your own player
-                bots = bots.Where(x => validDespawnList.Contains(x.Profile.Info.Settings.Role) && !x.IsYourPlayer && x.AIData.BotOwner.BotState == EBotState.Active).ToList();
-
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
-                    float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
+                    // Ignore bots on the invalid despawn list, and the player
+                    if (bot.IsYourPlayer || !validDespawnList.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
+                    {
+                        continue;
+                    }
+
+                    // Don't include bots that have spawned within the last 10 seconds
+                    if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
+                    {
+                        continue;
+                    }
+
+                    float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
                     if (distance > maxDistance)
                     {
                         maxDistance = distance;
@@ -653,9 +663,12 @@ namespace Donuts
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
 
                     var botgame = Singleton<IBotGame>.Instance;
+                    Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
                     botOwner.Deactivate();
                     botOwner.Dispose();
-                    botgame.BotUnspawn(botOwner);
+                    botgame.BotsController.BotDied(botOwner);
+                    botgame.BotsController.DestroyInfo(botOwner.GetPlayer);
+                    DestroyImmediate(botOwner.gameObject);
                     Destroy(botOwner);
 
                     despawnCooldown = Time.time;
