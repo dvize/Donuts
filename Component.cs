@@ -13,6 +13,7 @@ using EFT;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
+using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -648,6 +649,7 @@ namespace Donuts
                     BotOwner botOwner = furthestBot.AIData.BotOwner;
 
                     var botgame = Singleton<IBotGame>.Instance;
+                    Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
                     botOwner.Deactivate();
                     botOwner.Dispose();
                     botgame.BotsController.BotDied(botOwner);
