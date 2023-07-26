@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.1.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.1.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
