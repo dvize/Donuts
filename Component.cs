@@ -506,7 +506,7 @@ namespace Donuts
 
                 var ginterface17_0 = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
 
-                GClass626 bot = await GClass626.Create(new GClass627(side, wildSpawnType, BotDifficulty.normal, 0f, null), ginterface17_0, 1, botSpawnerClass);
+                GClass628 bot = await GClass628.Create(new GClass629(side, wildSpawnType, BotDifficulty.normal, 0f, null), ginterface17_0, 1, botSpawnerClass);
                 bot.AddPosition((Vector3)spawnPosition);
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
