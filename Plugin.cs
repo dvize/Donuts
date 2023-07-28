@@ -54,7 +54,7 @@ namespace Donuts
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
         {
-            "arenafighter",
+            "arenafighterevent",
             "assault",
             "assaultgroup",
             "bossbully",

@@ -525,8 +525,8 @@ namespace Donuts
 
             switch (spawnType.ToLower())
             {
-                case "arenafighter":
-                    return WildSpawnType.arenaFighter;
+                case "arenafighterevent":
+                    return WildSpawnType.arenaFighterEvent;
                 case "assault":
                     return WildSpawnType.assault;
                 case "assaultgroup":
