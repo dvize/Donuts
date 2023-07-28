@@ -54,6 +54,7 @@ namespace Donuts
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
         {
+            "arenafighter",
             "assault",
             "assaultgroup",
             "bossbully",
@@ -64,6 +65,7 @@ namespace Donuts
             "bosssanitar",
             "bosstagilla",
             "bosszryachiy",
+            "crazyassaultevent",
             "cursedassault",
             "exusec",
             "followerbigpipe",

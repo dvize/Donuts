@@ -525,6 +525,8 @@ namespace Donuts
 
             switch (spawnType.ToLower())
             {
+                case "arenafighter":
+                    return WildSpawnType.arenaFighter;
                 case "assault":
                     return WildSpawnType.assault;
                 case "assaultgroup":
@@ -543,6 +545,8 @@ namespace Donuts
                     return WildSpawnType.bossTagilla;
                 case "bosszryachiy":
                     return WildSpawnType.bossZryachiy;
+                case "crazyassaultevent":
+                    return WildSpawnType.crazyAssaultEvent;
                 case "cursedassault":
                     return WildSpawnType.cursedAssault;
                 case "exusec-rogues":
