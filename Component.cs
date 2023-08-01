@@ -1203,7 +1203,8 @@ namespace Donuts
 
             var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-            DonutComponent.Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+            DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                $"of side: {bot.Side} and difficulty: {botdifficulty}");
 
             //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
             DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
