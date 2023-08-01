@@ -6,7 +6,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Aki.Common.Http;
 using Aki.PrePatch;
+using Aki.Reflection.Patching;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
@@ -41,11 +43,12 @@ namespace Donuts
         private int AbsBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
+        private static botClass myBotClass;
         private float despawnCooldown = 0f;
         private float despawnCooldownDuration = 10f;
 
         internal static List<HotspotTimer> hotspotTimers;
-        private Dictionary<string, MethodInfo> methodCache;
+        internal static Dictionary<string, MethodInfo> methodCache;
         private static MethodInfo displayMessageNotificationMethod;
 
         //gizmo stuff
@@ -53,9 +56,9 @@ namespace Donuts
         internal static HashSet<Vector3> drawnCoordinates;
         internal static List<GameObject> gizmoSpheres;
         private static Coroutine gizmoUpdateCoroutine;
+        internal static IBotCreator ibotCreator;
 
-
-        protected static ManualLogSource Logger
+        internal static ManualLogSource Logger
         {
             get; private set;
         }
@@ -147,6 +150,8 @@ namespace Donuts
 
             drawnCoordinates = new HashSet<Vector3>();
             gizmoSpheres = new List<GameObject>();
+            ibotCreator = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+            myBotClass = new botClass();
         }
         private void SetupBotLimit()
         {
@@ -491,7 +496,7 @@ namespace Donuts
             // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-            
+
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
@@ -505,19 +510,20 @@ namespace Donuts
                     continue;
                 }
 
-                var ginterface17_0 = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+                /*GClass628 bot = await GClass628.Create(new GClass629(side, wildSpawnType, BotDifficulty.normal, 0f, null), ibotCreator, 1, botSpawnerClass);
+                bot.AddPosition((Vector3)spawnPosition);*/
 
-                GClass628 bot = await GClass628.Create(new GClass629(side, wildSpawnType, BotDifficulty.normal, 0f, null), ginterface17_0, 1, botSpawnerClass);
-                bot.AddPosition((Vector3)spawnPosition);
 
-                var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+                /*var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
                 //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
-                methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
+                methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });*/
 
-                    
+                await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition);
+
+
                 count++;
             }
         }
@@ -680,7 +686,7 @@ namespace Donuts
                 }
             }
         }
-        private async Task <Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private async Task<Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
@@ -697,7 +703,7 @@ namespace Donuts
                     }
                 }
 
-                await Task.Delay(1); 
+                await Task.Delay(1);
             }
 
             return null;
@@ -1135,5 +1141,99 @@ namespace Donuts
         }
     }
 
+    //Thanks ARI - taken from SPAWN
+    class HttpClient
+    {
+        public static Profile[] GetBots(List<WaveInfo> conditions)
+        {
+            var s = new ConditionsWrapper();
+            s.conditions = conditions;
 
+            var p = RequestHandler.PostJson("/client/game/bot/generate", s.ToJson());
+            return p.ParseJsonTo<BotsResponseWrapper>().data;
+        }
+
+        struct ConditionsWrapper
+        {
+            public List<WaveInfo> conditions;
+        }
+
+        struct BotsResponseWrapper
+        {
+            public Profile[] data;
+        }
+    }
+
+    // UseAKIHTTPForBotLoadingPatch overrides the normal Diz.Jobs-based
+    // loading, which creates a ton of garbage due to how that background
+    // job manager is implemented.
+    class UseAKIHTTPForBotLoadingPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.TypeByName("Class222").GetMethod("LoadBots");
+        }
+
+        [PatchPrefix]
+        public static bool Prefix(ref Task<Profile[]> __result, List<WaveInfo> conditions)
+        {
+            TaskCompletionSource<Profile[]> tcs = new TaskCompletionSource<Profile[]>();
+            __result = tcs.Task;
+
+            Task.Factory.StartNew(() =>
+            {
+                Logger.LogWarning($"Loading a new bot from the server: {conditions.ToJson()}");
+                var p = HttpClient.GetBots(conditions);
+                // TODO: error handling.
+                tcs.SetResult(p);
+            });
+
+            return false;
+        }
+    }
+
+    internal class botClass
+    {
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition)
+        {
+            var botdifficulty = grabBotDifficulty();
+            IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
+            GClass628 bot = await GClass628.Create(botData, ibotCreator, 1, botSpawnerClass);
+            bot.AddPosition((Vector3)spawnPosition);
+
+            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+            var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
+            DonutComponent.Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+
+            //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
+            DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
+        }
+
+        public BotDifficulty grabBotDifficulty()
+        {
+            switch (DonutsPlugin.botDifficulties.Value.ToLower())
+            {
+                case "asonline":
+                    //return random difficulty from array of easy, normal, hard
+                    BotDifficulty[] randomDifficulty = {
+                        BotDifficulty.easy, 
+                        BotDifficulty.normal, 
+                        BotDifficulty.hard
+                    };
+                    var diff = UnityEngine.Random.Range(0, 2);
+                    return randomDifficulty[diff];
+                case "easy":
+                    return BotDifficulty.easy;
+                case "normal":
+                    return BotDifficulty.normal;
+                case "hard":
+                    return BotDifficulty.hard;
+                case "impossible":
+                    return BotDifficulty.impossible;
+                default: 
+                    return BotDifficulty.normal;
+            }
+
+        }
+    }
 }

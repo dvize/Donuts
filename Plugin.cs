@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.1")]
     [BepInDependency("com.spt-aki.core", "3.6.0")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -46,6 +46,10 @@ namespace Donuts
         public static ConfigEntry<int> woodsBotLimit;
         public static ConfigEntry<int> customsBotLimit;
         public static ConfigEntry<int> tarkovstreetsBotLimit;
+
+        //bot difficulty
+        public static ConfigEntry<string> botDifficulties;
+        public string[] botDiffList = new string[] {"AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -139,7 +143,13 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
-
+            botDifficulties = Config.Bind(
+                "1. Main Settings",
+                "Donuts Spawn Difficulty",
+                "AsOnline",
+                new ConfigDescription("Difficulty Setting for All Donut Related Spawns",
+                new AcceptableValueList<string>(botDiffList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 1 }));
 
             //Debugging 
             DebugGizmos = Config.Bind(
