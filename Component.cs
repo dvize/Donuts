@@ -401,7 +401,7 @@ namespace Donuts
                         }
 
                         // Get a random hotspotTimer from the group (grouped by groupNum}
-                        var randomIndex = UnityEngine.Random.Range(0, (groupHotspotTimers.Count - 1));
+                        var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
                         var hotspotTimer = groupHotspotTimers[randomIndex];
 
 
@@ -498,7 +498,7 @@ namespace Donuts
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
 
 
-            while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
+            while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1))
             {
                 Vector3? spawnPosition = await GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
