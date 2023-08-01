@@ -1221,7 +1221,7 @@ namespace Donuts
                         BotDifficulty.normal, 
                         BotDifficulty.hard
                     };
-                    var diff = UnityEngine.Random.Range(0, 2);
+                    var diff = UnityEngine.Random.Range(0, 3);
                     return randomDifficulty[diff];
                 case "easy":
                     return BotDifficulty.easy;
