@@ -92,9 +92,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SAIN-3.5.8">
-      <HintPath>F:\SPT-AKI\BepInEx\plugins\SAIN-3.5.8.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />

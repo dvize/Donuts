@@ -97,6 +97,7 @@ namespace Donuts
                 removedBot.EnemiesController.EnemyInfos.Clear();
 
                 // Loop through the rest of the bots on the map, andd clear this bot from its memory/group info
+
                 foreach (var player in gameWorld.AllAlivePlayersList)
                 {
                     if (!player.IsAI)
