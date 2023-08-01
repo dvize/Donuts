@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -81,7 +82,7 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_12", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (methodInfo != null)
             {
@@ -96,7 +97,8 @@ namespace Donuts
                 removedBot.EnemiesController.EnemyInfos.Clear();
 
                 // Loop through the rest of the bots on the map, andd clear this bot from its memory/group info
-                foreach (var player in gameWorld.AllPlayers)
+
+                foreach (var player in gameWorld.AllAlivePlayersList)
                 {
                     if (!player.IsAI)
                     {
@@ -112,6 +114,7 @@ namespace Donuts
                 }
             };
         }
+
         private void Start()
         {
             // setup the rest of donuts for the selected folder
@@ -336,6 +339,7 @@ namespace Donuts
         {
             if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
             {
+                Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
@@ -430,7 +434,7 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                StartCoroutine(SpawnBotsCoroutine(hotspotTimer, coordinate));
+                                SpawnBots(hotspotTimer, coordinate);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -479,18 +483,19 @@ namespace Donuts
 
             return false;
         }
-        private IEnumerator SpawnBotsCoroutine(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             // Moved outside so all spawns for a point are on the same side
-            EPlayerSide side = GetSideForWildSpawnType(GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType));
-            WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType.ToLower());
+            WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
+            
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots))
             {
-                Vector3? spawnPosition = GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
+                Vector3? spawnPosition = await GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
                 if (!spawnPosition.HasValue)
                 {
@@ -500,19 +505,20 @@ namespace Donuts
                     continue;
                 }
 
+                var ginterface17_0 = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
 
-                // Setup bot details
-                var bot = new GClass624(side, wildSpawnType, BotDifficulty.normal, -1f, new GClass614 { TriggerType = SpawnTriggerType.none });
+                GClass628 bot = await GClass628.Create(new GClass629(side, wildSpawnType, BotDifficulty.normal, 0f, null), ginterface17_0, 1, botSpawnerClass);
+                bot.AddPosition((Vector3)spawnPosition);
 
                 var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                 Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
 
-                methodCache["method_12"].Invoke(botSpawnerClass, new object[] { (Vector3)spawnPosition, closestBotZone, bot, null, cancellationToken.Token });
+                //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
+                methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
 
-
+                    
                 count++;
-                yield return new WaitForSeconds(0.16f);
             }
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
@@ -520,6 +526,8 @@ namespace Donuts
 
             switch (spawnType.ToLower())
             {
+                case "arenafighterevent":
+                    return WildSpawnType.arenaFighterEvent;
                 case "assault":
                     return WildSpawnType.assault;
                 case "assaultgroup":
@@ -538,6 +546,8 @@ namespace Donuts
                     return WildSpawnType.bossTagilla;
                 case "bosszryachiy":
                     return WildSpawnType.bossZryachiy;
+                case "crazyassaultevent":
+                    return WildSpawnType.crazyAssaultEvent;
                 case "cursedassault":
                     return WildSpawnType.cursedAssault;
                 case "exusec-rogues":
@@ -627,13 +637,22 @@ namespace Donuts
                 float maxDistance = -1f;
                 Player furthestBot = null;
 
-                //filter out bots that are not in the valid despawnable list or is your own player
-                bots = bots.Where(x => validDespawnList.Contains(x.Profile.Info.Settings.Role) && !x.IsYourPlayer && x.AIData.BotOwner.BotState == EBotState.Active).ToList();
-
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
-                    float distance = Vector3.Distance(bot.Position, gameWorld.MainPlayer.Position);
+                    // Ignore bots on the invalid despawn list, and the player
+                    if (bot.IsYourPlayer || !validDespawnList.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
+                    {
+                        continue;
+                    }
+
+                    // Don't include bots that have spawned within the last 10 seconds
+                    if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
+                    {
+                        continue;
+                    }
+
+                    float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
                     if (distance > maxDistance)
                     {
                         maxDistance = distance;
@@ -661,7 +680,7 @@ namespace Donuts
                 }
             }
         }
-        private Vector3? GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        private async Task <Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
@@ -677,6 +696,8 @@ namespace Donuts
                         return spawnPosition;
                     }
                 }
+
+                await Task.Delay(1); 
             }
 
             return null;

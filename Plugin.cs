@@ -14,7 +14,8 @@ using UnityEngine;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.1.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.0")]
+    [BepInDependency("com.spt-aki.core", "3.6.0")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
@@ -54,6 +55,7 @@ namespace Donuts
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
         {
+            "arenafighterevent",
             "assault",
             "assaultgroup",
             "bossbully",
@@ -64,6 +66,7 @@ namespace Donuts
             "bosssanitar",
             "bosstagilla",
             "bosszryachiy",
+            "crazyassaultevent",
             "cursedassault",
             "exusec",
             "followerbigpipe",
@@ -131,7 +134,7 @@ namespace Donuts
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
                 "Max Spawn Tries Per Bot",
-                10,
+                20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
