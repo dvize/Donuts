@@ -379,6 +379,7 @@ namespace Donuts
             new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
+            new UseAKIHTTPForBotLoadingPatch().Enable();
 
             SetupScenariosUI();
         }
