@@ -30,6 +30,7 @@ namespace Donuts
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
+        public static ConfigEntry<bool> ShowRandomFolderChoice;
 
         //Add folder scenarios
         internal static List<Folder> scenarios = new List<Folder>();
@@ -117,7 +118,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
 
             DespawnEnabled = Config.Bind(
                 "1. Main Settings",
@@ -125,7 +126,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
@@ -133,7 +134,7 @@ namespace Donuts
                 180f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
 
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
@@ -141,7 +142,7 @@ namespace Donuts
                 20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
             botDifficulties = Config.Bind(
                 "1. Main Settings",
@@ -149,7 +150,15 @@ namespace Donuts
                 "AsOnline",
                 new ConfigDescription("Difficulty Setting for All Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+
+            ShowRandomFolderChoice = Config.Bind(
+                "1. Main Settings",
+                "Show Random Scenario Selection",
+                false,
+                new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             //Debugging 
             DebugGizmos = Config.Bind(

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -373,7 +374,19 @@ namespace Donuts
             // Use the selected folder
             if (selectedFolder != null)
             {
-                Logger.LogDebug("Selected Folder: " + selectedFolder.Name);
+                Console.WriteLine("Donuts: Random Selected Folder: " + selectedFolder.Name);
+
+                if (DonutsPlugin.ShowRandomFolderChoice.Value)
+                {
+                    MethodInfo displayMessageNotificationMethod;
+                    if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                    {
+                        var txt = $"Donuts Random Selected Folder: {selectedFolder.Name}";
+                        EFT.UI.ConsoleScreen.Log(txt);
+                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                    }
+                }
+                
                 return selectedFolder.Name;
             }
 
