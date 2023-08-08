@@ -14,8 +14,8 @@ using UnityEngine;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.1")]
-    [BepInDependency("com.spt-aki.core", "3.6.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.2")]
+    [BepInDependency("com.spt-aki.core", "3.6.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
@@ -50,7 +50,7 @@ namespace Donuts
 
         //bot difficulty
         public static ConfigEntry<string> botDifficulties;
-        public string[] botDiffList = new string[] {"AsOnline", "Easy", "Normal", "Hard", "Impossible" };
+        public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -382,14 +382,14 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
 
             //Patches
-            new NewGamePatch().Enable();
+            new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
             new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new UseAKIHTTPForBotLoadingPatch().Enable();
-
+            new BotProfilePreparationHook().Enable();
             SetupScenariosUI();
         }
 
@@ -664,7 +664,16 @@ namespace Donuts
     }
 
     //re-initializes each new game
-    internal class NewGamePatch : ModulePatch
+    internal class BotProfilePreparationHook : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod() => typeof(BotControllerClass).GetMethod(nameof(BotControllerClass.AddActivePLayer));
+
+        [PatchPrefix]
+        public static void PatchPrefix() => DonutsBotPrep.Enable();
+    }
+
+    //re-initializes each new game
+    internal class NewGameDonutsPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod() => typeof(GameWorld).GetMethod(nameof(GameWorld.OnGameStarted));
 
