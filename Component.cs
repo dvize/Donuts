@@ -89,10 +89,11 @@ namespace Donuts
             }
 
             var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (methodInfo != null)
+            var methodInfo2 = typeof(BotSpawnerClass).GetMethod("method_2", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (methodInfo != null && methodInfo2 != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
+                methodCache[methodInfo2.Name] = methodInfo2;
             }
 
             // Remove despawned bots from bot EnemyInfos list.
@@ -524,22 +525,24 @@ namespace Donuts
                     count++;
                     continue;
                 }
-                
+
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
-                var existingProfile = DonutsBotPrep.GetWildSpawnArray(wildSpawnType)[0];
-                if (existingProfile != null)
+                var botdifficulty = botClass.grabBotDifficulty();
+                var GClass628Data = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                if (GClass628Data != null)
                 {
                     var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
+                    GClass628Data.AddPosition((Vector3)spawnPosition);
 
-                    await ibotCreator.ActivateBot(existingProfile, (Vector3)spawnPosition, closestBotZone, false, null, null, cancellationToken.Token);
+                    DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass628Data, null, cancellationToken.Token });
 
+                    //method_2(Profile profile, Vector3 position, Action<BotOwner> callback, bool isLocalGame, CancellationToken cancellationToken)
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                        $"of side: {existingProfile.Side} and difficulty: {existingProfile.Info.Settings.BotDifficulty}");
+                        $"of side: {GClass628Data.Side} and difficulty: {botdifficulty}");
 
-                    if (DonutsBotPrep.GetWildSpawnArray(wildSpawnType).Contains(existingProfile))
-                    {
-                        DonutsBotPrep.GetWildSpawnArray(wildSpawnType).Remove(existingProfile);
-                    }
+                    var spawnpointInternalList = AccessTools.Field(typeof(List<GClass628.Class266>), "list_0").GetValue(GClass628Data);
+                    //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
+                    //this.list_0.Add(new GClass628.Class266(spawnPointPosition, false));
                 }
                 else
                 {
@@ -1230,7 +1233,7 @@ namespace Donuts
             DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
 
-        public BotDifficulty grabBotDifficulty()
+        public static BotDifficulty grabBotDifficulty()
         {
             switch (DonutsPlugin.botDifficulties.Value.ToLower())
             {

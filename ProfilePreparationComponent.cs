@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Security.Policy;
 using System.Threading;
 using System.Threading.Tasks;
 using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
+using EFT.Bots;
 using HarmonyLib;
 using UnityEngine;
 
@@ -27,19 +29,21 @@ namespace Donuts
         private int scavBotCount = 5;
         private int bossBotCount = 1;
 
-        internal static List<Profile> sptbear;
-        internal static List<Profile> sptusec;
-        internal static List<Profile> assault;
-        internal static List<Profile> bossbully;
-        internal static List<Profile> bossgluhar;
-        internal static List<Profile> bosskilla;
-        internal static List<Profile> bosskojaniy;
-        internal static List<Profile> bosssanitar;
-        internal static List<Profile> bosstagilla;
-        internal static List<Profile> bosszryachiy;
-        internal static List<Profile> followerbigpipe;
-        internal static List<Profile> followerbirdeye;
-        internal static List<Profile> bossknight;
+        internal static GClass628 sptbearEasy;
+        internal static GClass628 sptbearNormal;
+        internal static GClass628 sptbearHard;
+        internal static GClass628 sptbearImpossible;
+
+        internal static GClass628 sptusecEasy;
+        internal static GClass628 sptusecNormal;
+        internal static GClass628 sptusecHard;
+        internal static GClass628 sptusecImpossible;
+
+        internal static GClass628 assaultEasy;
+        internal static GClass628 assaultNormal;
+        internal static GClass628 assaultHard;
+        internal static GClass628 assaultImpossible;
+
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -70,46 +74,43 @@ namespace Donuts
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
-            sptbear = new List<Profile>();
-            sptusec = new List<Profile>();
-            assault = new List<Profile>();
-            bossbully = new List<Profile>();
-            bossgluhar = new List<Profile>();
-            bosskilla = new List<Profile>();
-            bosskojaniy = new List<Profile>();
-            bosssanitar = new List<Profile>();
-            bosstagilla = new List<Profile>();
-            bosszryachiy = new List<Profile>();
-            followerbigpipe = new List<Profile>();
-            followerbirdeye = new List<Profile>();
-            bossknight = new List<Profile>();
+            IBotData sptUsecDataEasy = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.easy, 0f, null);
+            sptusecEasy = await GClass628.Create(sptUsecDataEasy, botCreator, 5, botSpawnerClass);
 
-            //generate the starting profiles needed
-            for (int i = 0; i < pmcBotCount; i++)
-            {
-                await FillProfile(sptUsec);
-                await FillProfile(sptBear);
-            }
-            for (int i = 0; i < scavBotCount; i++)
-            {
-                await FillProfile(WildSpawnType.assault);
-            }
+            IBotData sptUsecDataNormal = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
+            sptusecNormal = await GClass628.Create(sptUsecDataNormal, botCreator, 5, botSpawnerClass);
 
-            for (int i = 0; i < bossBotCount; i++)
-            {
-                await FillProfile(WildSpawnType.bossBully);
-                await FillProfile(WildSpawnType.bossGluhar);
-                await FillProfile(WildSpawnType.bossKilla);
-                await FillProfile(WildSpawnType.bossKojaniy);
-                await FillProfile(WildSpawnType.bossSanitar);
-                await FillProfile(WildSpawnType.bossTagilla);
-                await FillProfile(WildSpawnType.bossZryachiy);
-                await FillProfile(WildSpawnType.followerBigPipe);
-                await FillProfile(WildSpawnType.followerBirdEye);
-                await FillProfile(WildSpawnType.bossKnight);
-            }
+            IBotData sptUsecDataHard = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 0f, null);
+            sptusecHard = await GClass628.Create(sptUsecDataHard, botCreator, 5, botSpawnerClass);
+
+            IBotData sptUsecDataImpossible = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, 0f, null);
+            sptusecImpossible = await GClass628.Create(sptUsecDataImpossible, botCreator, 5, botSpawnerClass);
+
+            IBotData sptBearDataEasy = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.easy, 0f, null);
+            sptbearEasy = await GClass628.Create(sptBearDataEasy, botCreator, 5, botSpawnerClass);
+
+            IBotData sptBearDataNormal = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
+            sptbearNormal = await GClass628.Create(sptBearDataNormal, botCreator, 5, botSpawnerClass);
+
+            IBotData sptBearDataHard = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.hard, 0f, null);
+            sptbearHard = await GClass628.Create(sptBearDataHard, botCreator, 5, botSpawnerClass);
+
+            IBotData sptBearDataImpossible = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.impossible, 0f, null);
+            sptbearImpossible = await GClass628.Create(sptBearDataImpossible, botCreator, 5, botSpawnerClass);
+
+            IBotData assaultDataEasy = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, 0f, null);
+            assaultEasy = await GClass628.Create(assaultDataEasy, botCreator, 4, botSpawnerClass);
+
+            IBotData assaultDataNormal = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
+            assaultNormal = await GClass628.Create(assaultDataNormal, botCreator, 4, botSpawnerClass);
+
+            IBotData assaultDataHard = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 0f, null);
+            assaultHard = await GClass628.Create(assaultDataHard, botCreator, 3, botSpawnerClass);
+
+            IBotData assaultDataImpossible = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, 0f, null);
+            assaultImpossible = await GClass628.Create(assaultDataImpossible, botCreator, 3, botSpawnerClass);
         }
-        private async Task FillProfile(WildSpawnType wildSpawnType)
+        /*private async Task FillProfile(WildSpawnType wildSpawnType)
         {
             //assumes limits were checked so just generate a profile to be used
             var botdifficulty = grabBotDifficulty();
@@ -118,7 +119,7 @@ namespace Donuts
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             GClass628 bot = await GClass628.Create(botData, botCreator, 1, botSpawnerClass);
 
-            var profile = await botCreator.GenerateProfile(bot, cancellationToken.Token, false);
+            var profile = await botCreator.GenerateProfile(bot, cancellationToken.Token, true);
 
             Logger.LogDebug("Generating Profile: " + profile.Info.Settings.Role + " and side: " + side);
             GetWildSpawnArray(wildSpawnType).Add(profile);
@@ -131,22 +132,11 @@ namespace Donuts
             if (timeSinceLastProfileGeneration >= profileGenerationInterval)
             {
                 timeSinceLastProfileGeneration = 0.0f;
-                //check what profiles are low and add to queue to generate profile every 20 seconds?
                 await CheckAndGenerateProfiles(sptbear, pmcBotCount);
                 await CheckAndGenerateProfiles(sptusec, pmcBotCount);
                 await CheckAndGenerateProfiles(assault, scavBotCount);
 
-                //don't care after initial spawn for now
-                /*await CheckAndGenerateProfiles(bossbully, bossBotCount);
-                await CheckAndGenerateProfiles(bossgluhar, bossBotCount);
-                await CheckAndGenerateProfiles(bosskilla, bossBotCount);
-                await CheckAndGenerateProfiles(bosskojaniy, bossBotCount);
-                await CheckAndGenerateProfiles(bosssanitar, bossBotCount);
-                await CheckAndGenerateProfiles(bosstagilla, bossBotCount);
-                await CheckAndGenerateProfiles(bosszryachiy, bossBotCount);
-                await CheckAndGenerateProfiles(followerbigpipe, bossBotCount);
-                await CheckAndGenerateProfiles(followerbirdeye, bossBotCount);
-                await CheckAndGenerateProfiles(bossknight, bossBotCount);*/
+                
             }
 
             //need to check if its not in raid and then destroy the component for second raid
@@ -169,52 +159,73 @@ namespace Donuts
                     await FillProfile(WildSpawnType.assault);
                 }
             }
-        }
+        }*/
 
-        internal static List<Profile> GetWildSpawnArray(WildSpawnType spawnType)
+        internal static GClass628 GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
-            switch (spawnType)
+            switch (botDifficulty)
             {
-                case WildSpawnType.assault:
-                    return assault;
-                case WildSpawnType.bossBully:
-                    return bossbully;
-                case WildSpawnType.bossGluhar:
-                    return bossgluhar;
-                case WildSpawnType.bossKilla:
-                    return bosskilla;
-                case WildSpawnType.bossKojaniy:
-                    return bosskojaniy;
-                case WildSpawnType.bossSanitar:
-                    return bosssanitar;
-                case WildSpawnType.bossTagilla:
-                    return bosstagilla;
-                case WildSpawnType.bossZryachiy:
-                    return bosszryachiy;
-                case WildSpawnType.followerBigPipe:
-                    return followerbigpipe;
-                case WildSpawnType.followerBirdEye:
-                    return followerbirdeye;
-                case WildSpawnType.bossKnight:
-                    return bossknight;
-                default:
-                    if (spawnType == sptUsec)
+                case BotDifficulty.easy:
+                    if(spawnType == WildSpawnType.assault)
                     {
-                        return sptusec;
+                        return assaultEasy;
                     }
-                    else if (spawnType == sptBear)
+                    else if (spawnType == sptUsec)
                     {
-                        return sptbear;
-                    }
-                    else if (spawnType == WildSpawnType.pmcBot)
-                    {
-                        return sptusec;
+                        return sptusecEasy;
                     }
                     else
                     {
-                        return assault;
+                        return sptbearEasy;
                     }
+
+                case BotDifficulty.normal:
+                    if (spawnType == WildSpawnType.assault)
+                    {
+                        return assaultNormal;
+                    }
+                    else if (spawnType == sptUsec)
+                    {
+                        return sptusecNormal;
+                    }
+                    else
+                    {
+                        return sptbearNormal;
+                    }
+
+                case BotDifficulty.hard:
+                    if (spawnType == WildSpawnType.assault)
+                    {
+                        return assaultHard;
+                    }
+                    else if (spawnType == sptUsec)
+                    {
+                        return sptusecHard;
+                    }
+                    else
+                    {
+                        return sptbearHard;
+                    }
+
+                case BotDifficulty.impossible:
+                    if (spawnType == WildSpawnType.assault)
+                    {
+                        return assaultImpossible;
+                    }
+                    else if (spawnType == sptUsec)
+                    {
+                        return sptusecImpossible;
+                    }
+                    else
+                    {
+                        return sptbearImpossible;
+                    }
+
+                default:
+                    return null;
             }
+            
+            
         }
 
         private WildSpawnType GetWildSpawnType(string spawnType)
