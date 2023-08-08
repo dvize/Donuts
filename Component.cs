@@ -14,6 +14,7 @@ using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
+using EFT.Bots;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -531,6 +532,9 @@ namespace Donuts
                     var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
 
                     await ibotCreator.ActivateBot(existingProfile, (Vector3)spawnPosition, closestBotZone, false, null, null, cancellationToken.Token);
+
+                    DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                        $"of side: {existingProfile.Side} and difficulty: {existingProfile.Info.Settings.BotDifficulty}");
 
                     if (DonutsBotPrep.GetWildSpawnArray(wildSpawnType).Contains(existingProfile))
                     {

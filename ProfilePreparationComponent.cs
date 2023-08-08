@@ -23,8 +23,8 @@ namespace Donuts
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        private int pmcBotCount = 15;
-        private int scavBotCount = 10;
+        private int pmcBotCount = 7;
+        private int scavBotCount = 5;
         private int bossBotCount = 1;
 
         internal static List<Profile> sptbear;
