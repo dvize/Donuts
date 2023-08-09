@@ -31,22 +31,31 @@ namespace Donuts
         internal static List<List<Entry>> groupedFightLocations;
         internal static Dictionary<int, List<HotspotTimer>> groupedHotspotTimers;
 
-        internal List<WildSpawnType> validDespawnList = new List<WildSpawnType>()
+        internal List<WildSpawnType> validDespawnListPMC = new List<WildSpawnType>()
         {
-            WildSpawnType.assault,
-            WildSpawnType.cursedAssault,
             (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
             (WildSpawnType)AkiBotsPrePatcher.sptBearValue
         };
 
+        internal List<WildSpawnType> validDespawnListScav = new List<WildSpawnType>()
+        {
+            WildSpawnType.assault,
+            WildSpawnType.cursedAssault
+        };
+
         private bool fileLoaded = false;
         public static string maplocation;
-        private int AbsBotLimit = 0;
+        private int PMCBotLimit = 0;
+        private int SCAVBotLimit = 0;
         public static GameWorld gameWorld;
         private static BotSpawnerClass botSpawnerClass;
         private static botClass myBotClass;
-        private float despawnCooldown = 0f;
-        private float despawnCooldownDuration = 10f;
+
+        private float PMCdespawnCooldown = 0f;
+        private float PMCdespawnCooldownDuration = 10f;
+
+        private float SCAVdespawnCooldown = 0f;
+        private float SCAVdespawnCooldownDuration = 10f;
 
         internal static List<HotspotTimer> hotspotTimers;
         internal static Dictionary<string, MethodInfo> methodCache;
@@ -131,7 +140,8 @@ namespace Donuts
                 InitializeHotspotTimers();
             }
             SetupBotLimit();
-            Logger.LogDebug("Setup bot limit: " + AbsBotLimit);
+            Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
+            Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
         }
         private void InitializeStaticVariables()
         {
@@ -160,34 +170,44 @@ namespace Donuts
             {
                 case "factory4_day":
                 case "factory4_night":
-                    AbsBotLimit = DonutsPlugin.factoryBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.factoryPMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.factoryscavBotLimit.Value;
                     break;
                 case "bigmap":
-                    AbsBotLimit = DonutsPlugin.customsBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.customsPMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.customsscavBotLimit.Value;
                     break;
                 case "interchange":
-                    AbsBotLimit = DonutsPlugin.interchangeBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.interchangePMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.interchangescavBotLimit.Value;
                     break;
                 case "rezervbase":
-                    AbsBotLimit = DonutsPlugin.reserveBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.reservePMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.reservescavBotLimit.Value;
                     break;
                 case "laboratory":
-                    AbsBotLimit = DonutsPlugin.laboratoryBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.laboratoryPMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.laboratoryscavBotLimit.Value;
                     break;
                 case "lighthouse":
-                    AbsBotLimit = DonutsPlugin.lighthouseBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.lighthousePMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.lighthousescavBotLimit.Value;
                     break;
                 case "shoreline":
-                    AbsBotLimit = DonutsPlugin.shorelineBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.shorelinePMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.shorelinescavBotLimit.Value;
                     break;
                 case "woods":
-                    AbsBotLimit = DonutsPlugin.woodsBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.woodsPMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.woodsscavBotLimit.Value;
                     break;
                 case "tarkovstreets":
-                    AbsBotLimit = DonutsPlugin.tarkovstreetsBotLimit.Value;
+                    PMCBotLimit = DonutsPlugin.tarkovstreetsPMCBotLimit.Value;
+                    SCAVBotLimit = DonutsPlugin.tarkovstreetsscavBotLimit.Value;
                     break;
                 default:
-                    AbsBotLimit = 18;
+                    PMCBotLimit = 8;
+                    SCAVBotLimit = 5;
                     break;
             }
         }
@@ -484,7 +504,8 @@ namespace Donuts
 
                 if (DonutsPlugin.DespawnEnabled.Value)
                 {
-                    DespawnFurthestBot();
+                    DespawnFurthestBot("pmc");
+                    DespawnFurthestBot("scav");
                 }
             }
         }
@@ -518,7 +539,7 @@ namespace Donuts
                 if (!spawnPosition.HasValue)
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
-                    Logger.LogDebug($"Actually Failed to get a valid spawn position after {maxSpawnAttempts}, moving on to next bot anyways");
+                    Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
                     count++;
                     continue;
                 }
@@ -641,26 +662,24 @@ namespace Donuts
             }
         }
 
-        private void DespawnFurthestBot()
+        private void DespawnFurthestBot(string bottype)
         {
-            if (Time.time - despawnCooldown < despawnCooldownDuration)
-            {
-                return; // Exit the method without despawning
-            }
-
-            //grab furthest bot in comparison to gameWorld.MainPlayer.Position and the bots position from registered players list in gameWorld
             var bots = gameWorld.RegisteredPlayers;
+            float maxDistance = -1f;
+            Player furthestBot = null;
 
-            if ((bots.Count - 1) >= AbsBotLimit)
+            if (bottype == "pmc")
             {
-                float maxDistance = -1f;
-                Player furthestBot = null;
+                if (Time.time - PMCdespawnCooldown < PMCdespawnCooldownDuration)
+                {
+                    return; // Exit the method without despawning
+                }
 
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
                     // Ignore bots on the invalid despawn list, and the player
-                    if (bot.IsYourPlayer || !validDespawnList.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
+                    if (bot.IsYourPlayer || !validDespawnListPMC.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
                     {
                         continue;
                     }
@@ -679,25 +698,63 @@ namespace Donuts
                     }
                 }
 
-                if (furthestBot != null)
+            }
+            else if(bottype == "scav")
+            {
+                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration) { 
+                    return;
+                }
+
+                //don't know distances so have to loop through all bots
+                foreach (Player bot in bots)
                 {
-                    // Despawn the bot
-                    Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
+                    // Ignore bots on the invalid despawn list, and the player
+                    if (bot.IsYourPlayer || !validDespawnListScav.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
+                    {
+                        continue;
+                    }
 
-                    BotOwner botOwner = furthestBot.AIData.BotOwner;
+                    // Don't include bots that have spawned within the last 10 seconds
+                    if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
+                    {
+                        continue;
+                    }
 
-                    var botgame = Singleton<IBotGame>.Instance;
-                    Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
-                    botOwner.Deactivate();
-                    botOwner.Dispose();
-                    botgame.BotsController.BotDied(botOwner);
-                    botgame.BotsController.DestroyInfo(botOwner.GetPlayer);
-                    DestroyImmediate(botOwner.gameObject);
-                    Destroy(botOwner);
-
-                    despawnCooldown = Time.time;
+                    float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
+                    if (distance > maxDistance)
+                    {
+                        maxDistance = distance;
+                        furthestBot = bot;
+                    }
                 }
             }
+
+            if (furthestBot != null)
+            {
+                // Despawn the bot
+                Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
+
+                BotOwner botOwner = furthestBot.AIData.BotOwner;
+
+                var botgame = Singleton<IBotGame>.Instance;
+                Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
+                botOwner.Deactivate();
+                botOwner.Dispose();
+                botgame.BotsController.BotDied(botOwner);
+                botgame.BotsController.DestroyInfo(botOwner.GetPlayer);
+                DestroyImmediate(botOwner.gameObject);
+                Destroy(botOwner);
+
+                if (bottype == "pmc")
+                {
+                    PMCdespawnCooldown = Time.time;
+                }
+                else
+                { 
+                    SCAVdespawnCooldown = Time.time;
+                }
+            }
+            
         }
         private async Task<Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
