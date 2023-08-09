@@ -667,6 +667,7 @@ namespace Donuts
             var bots = gameWorld.RegisteredPlayers;
             float maxDistance = -1f;
             Player furthestBot = null;
+            var tempBotCount = 0;
 
             if (bottype == "pmc")
             {
@@ -684,6 +685,7 @@ namespace Donuts
                         continue;
                     }
 
+
                     // Don't include bots that have spawned within the last 10 seconds
                     if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
                     {
@@ -696,7 +698,11 @@ namespace Donuts
                         maxDistance = distance;
                         furthestBot = bot;
                     }
+
+                    //add bots that match criteria but distance doesn't matter
+                    tempBotCount++;
                 }
+
 
             }
             else if(bottype == "scav")
@@ -726,11 +732,23 @@ namespace Donuts
                         maxDistance = distance;
                         furthestBot = bot;
                     }
+
+                    //add bots that match criteria but distance doesn't matter
+                    tempBotCount++;
                 }
             }
 
             if (furthestBot != null)
             {
+                if(bottype == "pmc" && tempBotCount <= PMCBotLimit)
+                {
+                    return;
+                }
+                else if (bottype == "scav" && tempBotCount <= SCAVBotLimit)
+                {
+                    return;
+                }
+
                 // Despawn the bot
                 Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
 
@@ -749,7 +767,7 @@ namespace Donuts
                 {
                     PMCdespawnCooldown = Time.time;
                 }
-                else
+                else if (bottype == "scav")
                 { 
                     SCAVdespawnCooldown = Time.time;
                 }
