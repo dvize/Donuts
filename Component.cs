@@ -139,7 +139,7 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
-            SetupBotLimit();
+            
             Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
         }
@@ -164,46 +164,47 @@ namespace Donuts
             ibotCreator = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
             myBotClass = new botClass();
         }
-        private void SetupBotLimit()
+        private void SetupBotLimit(string folderName)
         {
+            Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
             switch (maplocation)
             {
                 case "factory4_day":
                 case "factory4_night":
-                    PMCBotLimit = DonutsPlugin.factoryPMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.factoryscavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.FactoryBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.FactoryBotLimit;
                     break;
                 case "bigmap":
-                    PMCBotLimit = DonutsPlugin.customsPMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.customsscavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.CustomsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.CustomsBotLimit;
                     break;
                 case "interchange":
-                    PMCBotLimit = DonutsPlugin.interchangePMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.interchangescavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.InterchangeBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.InterchangeBotLimit;
                     break;
                 case "rezervbase":
-                    PMCBotLimit = DonutsPlugin.reservePMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.reservescavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ReserveBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ReserveBotLimit;
                     break;
                 case "laboratory":
-                    PMCBotLimit = DonutsPlugin.laboratoryPMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.laboratoryscavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LaboratoryBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LaboratoryBotLimit;
                     break;
                 case "lighthouse":
-                    PMCBotLimit = DonutsPlugin.lighthousePMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.lighthousescavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LighthouseBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LighthouseBotLimit;
                     break;
                 case "shoreline":
-                    PMCBotLimit = DonutsPlugin.shorelinePMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.shorelinescavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ShorelineBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ShorelineBotLimit;
                     break;
                 case "woods":
-                    PMCBotLimit = DonutsPlugin.woodsPMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.woodsscavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.WoodsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.WoodsBotLimit;
                     break;
                 case "tarkovstreets":
-                    PMCBotLimit = DonutsPlugin.tarkovstreetsPMCBotLimit.Value;
-                    SCAVBotLimit = DonutsPlugin.tarkovstreetsscavBotLimit.Value;
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
                     break;
                 default:
                     PMCBotLimit = 8;
@@ -263,6 +264,8 @@ namespace Donuts
                 //in SelectedPatternFolderPath, grab the folder name from DonutsPlugin.scenarioSelection.Value
 
                 var selectionName = runWeightedScenarioSelection();
+
+                SetupBotLimit(selectionName);
 
                 if (selectionName == null)
                 {
@@ -366,6 +369,7 @@ namespace Donuts
             if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
             {
                 Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
+                
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
@@ -406,7 +410,7 @@ namespace Donuts
                         displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
                     }
                 }
-                
+
                 return selectedFolder.Name;
             }
 

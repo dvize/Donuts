@@ -15,7 +15,7 @@ using UnityEngine;
 namespace Donuts
 {
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.1")]
-    [BepInDependency("com.spt-aki.core", "3.6.0")]
+    [BepInDependency("com.spt-aki.core", "3.6.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
@@ -36,27 +36,6 @@ namespace Donuts
         internal static List<Folder> scenarios = new List<Folder>();
         public static ConfigEntry<string> scenarioSelection;
         public string[] scenarioValues = new string[] { };
-
-        //bot limits setup
-        public static ConfigEntry<int> factoryPMCBotLimit;
-        public static ConfigEntry<int> interchangePMCBotLimit;
-        public static ConfigEntry<int> laboratoryPMCBotLimit;
-        public static ConfigEntry<int> lighthousePMCBotLimit;
-        public static ConfigEntry<int> reservePMCBotLimit;
-        public static ConfigEntry<int> shorelinePMCBotLimit;
-        public static ConfigEntry<int> woodsPMCBotLimit;
-        public static ConfigEntry<int> customsPMCBotLimit;
-        public static ConfigEntry<int> tarkovstreetsPMCBotLimit;
-
-        public static ConfigEntry<int> factoryscavBotLimit;
-        public static ConfigEntry<int> interchangescavBotLimit;
-        public static ConfigEntry<int> laboratoryscavBotLimit;
-        public static ConfigEntry<int> lighthousescavBotLimit;
-        public static ConfigEntry<int> reservescavBotLimit;
-        public static ConfigEntry<int> shorelinescavBotLimit;
-        public static ConfigEntry<int> woodsscavBotLimit;
-        public static ConfigEntry<int> customsscavBotLimit;
-        public static ConfigEntry<int> tarkovstreetsscavBotLimit;
 
         //bot difficulty
         public static ConfigEntry<string> botDifficulties;
@@ -172,7 +151,7 @@ namespace Donuts
 
             //Debugging 
             DebugGizmos = Config.Bind(
-                "4. Debugging",
+                "2. Debugging",
                 "Enable Debug Markers",
                 false,
                 new ConfigDescription("When enabled, draws debug spheres on set spawn from json",
@@ -180,7 +159,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             gizmoRealSize = Config.Bind(
-                "4. Debugging",
+                "2. Debugging",
                 "Debug Sphere Real Size",
                 false,
                 new ConfigDescription("When enabled, debug spheres will be the real size of the spawn radius",
@@ -189,7 +168,7 @@ namespace Donuts
 
             // Spawn Point Maker
             spawnName = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Name",
                 "Spawn Name Here",
                 new ConfigDescription("Name used to identify the spawn marker",
@@ -197,7 +176,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 14 }));
 
             groupNum = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Group Number",
                 1,
                 new ConfigDescription("Group Number used to identify the spawn marker",
@@ -205,7 +184,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 13 }));
 
             wildSpawns = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Wild Spawn Type",
                 "pmc",
                 new ConfigDescription("Select an option.",
@@ -213,7 +192,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 12 }));
 
             minSpawnDist = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Min Spawn Distance",
                 1f,
                 new ConfigDescription("Min Distance Bots will Spawn From Marker You Set.",
@@ -221,7 +200,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 11 }));
 
             maxSpawnDist = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Max Spawn Distance",
                 20f,
                 new ConfigDescription("Max Distance Bots will Spawn From Marker You Set.",
@@ -229,7 +208,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 10 }));
 
             botTriggerDistance = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Bot Spawn Trigger Distance",
                 150f,
                 new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
@@ -237,7 +216,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 9 }));
 
             botTimerTrigger = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Bot Spawn Timer Trigger",
                 180f,
                 new ConfigDescription("In seconds before it spawns next wave while player in the fight zone area",
@@ -245,7 +224,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 8 }));
 
             maxRandNumBots = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Max Random Bots",
                 2,
                 new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
@@ -253,7 +232,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
 
             spawnChance = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Spawn Chance for Marker",
                 50,
                 new ConfigDescription("Chance bot will be spawn here after timer is reached",
@@ -261,7 +240,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 6 }));
 
             maxSpawnsBeforeCooldown = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Max Spawns Before Cooldown",
                 5,
                 new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
@@ -269,7 +248,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
 
             ignoreTimerFirstSpawn = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Ignore Timer for First Spawn",
                 false,
                 new ConfigDescription("When enabled for this point, it will still spawn even if timer is not ready for first spawn only",
@@ -277,7 +256,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
             minSpawnDistanceFromPlayer = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Min Spawn Distance From Player",
                 40f,
                 new ConfigDescription("How far the random selected spawn near the spawn marker needs to be from player",
@@ -285,7 +264,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 3 }));
 
             CreateSpawnMarkerKey = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
@@ -293,161 +272,16 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
-                "5. Spawn Point Maker",
+                "3. Spawn Point Maker",
                 "Delete Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
 
-            // Bot Limit Menu
-            factoryPMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Factory Max PMC Bot Count",
-               12,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 20 }));
-
-            interchangePMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Interchange Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 19 }));
-
-            laboratoryPMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Laboratory Max PMC Bot Count",
-               14,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 18 }));
-
-            lighthousePMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Lighthouse Max PMC Bot Count",
-               20,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 17 }));
-
-            reservePMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Reserve Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 16 }));
-
-            shorelinePMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Shoreline Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
-
-            woodsPMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Woods Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 14 }));
-
-            customsPMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Customs Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 13 }));
-
-            tarkovstreetsPMCBotLimit = Config.Bind(
-               "2. PMC Bot Limits Before Despawn",
-               "Streets Max PMC Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
-
-            factoryscavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Factory Max Scav Bot Count",
-               12,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
-
-            interchangescavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Interchange Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
-
-            laboratoryscavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Laboratory Max Scav Bot Count",
-               14,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
-
-            lighthousescavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Lighthouse Max Scav Bot Count",
-               20,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
-
-            reservescavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Reserve Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
-
-            shorelinescavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Shoreline Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
-
-            woodsscavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Woods Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
-
-            customsscavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Customs Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
-
-            tarkovstreetsscavBotLimit = Config.Bind(
-               "3. Scav Bot Limits Before Despawn",
-               "Streets Max Scav Bot Count",
-               18,
-               new ConfigDescription("It will stop spawning scav bots over your maxbotcap limit once it hits this.",
-               null,
-               new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
-
             //Save Settings
             saveNewFileOnly = Config.Bind(
-                "6. Save Settings",
+                "4. Save Settings",
                 "Save New Locations Only",
                 false,
                 new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
@@ -455,7 +289,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             WriteToFileKey = Config.Bind(
-                "6. Save Settings",
+                "4. Save Settings",
                 "Create Temp Json File",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",
@@ -518,6 +352,11 @@ namespace Donuts
             }
 
             Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
+        }
+
+        internal static Folder GrabDonutsFolder(string folderName)
+        {
+            return scenarios.FirstOrDefault(temp => temp.Name == folderName);
         }
 
         private void Update()
@@ -795,6 +634,96 @@ namespace Donuts
             get; set;
         }
         public bool RandomSelection
+        {
+            get; set;
+        }
+
+        public PMCBotLimitPresets PMCBotLimitPresets
+        {
+            get; set; 
+        }
+
+        public SCAVBotLimitPresets SCAVBotLimitPresets
+        {
+            get; set; 
+        }
+    }
+
+    internal class PMCBotLimitPresets
+    {
+        public int FactoryBotLimit
+        {
+            get; set;
+        }
+        public int InterchangeBotLimit
+        {
+            get; set;
+        }
+        public int LaboratoryBotLimit
+        {
+            get; set;
+        }
+        public int LighthouseBotLimit
+        {
+            get; set;
+        }
+        public int ReserveBotLimit
+        {
+            get; set;
+        }
+        public int ShorelineBotLimit
+        {
+            get; set;
+        }
+        public int WoodsBotLimit
+        {
+            get; set;
+        }
+        public int CustomsBotLimit
+        {
+            get; set;
+        }
+        public int TarkovStreetsBotLimit
+        {
+            get; set;
+        }
+    }
+
+    internal class SCAVBotLimitPresets
+    {
+        public int FactoryBotLimit
+        {
+            get; set;
+        }
+        public int InterchangeBotLimit
+        {
+            get; set;
+        }
+        public int LaboratoryBotLimit
+        {
+            get; set;
+        }
+        public int LighthouseBotLimit
+        {
+            get; set;
+        }
+        public int ReserveBotLimit
+        {
+            get; set;
+        }
+        public int ShorelineBotLimit
+        {
+            get; set;
+        }
+        public int WoodsBotLimit
+        {
+            get; set;
+        }
+        public int CustomsBotLimit
+        {
+            get; set;
+        }
+        public int TarkovStreetsBotLimit
         {
             get; set;
         }
