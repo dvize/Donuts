@@ -138,12 +138,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PatchBodySound.cs" />
-    <Compile Include="PatchStandbyTeleport.cs" />
-    <Compile Include="MatchEndPlayerDisposePatch.cs" />
+    <Compile Include="patches\PatchBodySound.cs" />
+    <Compile Include="patches\PatchStandbyTeleport.cs" />
+    <Compile Include="patches\MatchEndPlayerDisposePatch.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="ProfilePreparationComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -14,12 +14,14 @@ using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
+using EFT.Bots;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
+using static Streamer;
 
 namespace Donuts
 {
@@ -96,10 +98,11 @@ namespace Donuts
             }
 
             var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (methodInfo != null)
+            var methodInfo2 = typeof(BotSpawnerClass).GetMethod("method_2", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (methodInfo != null && methodInfo2 != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
+                methodCache[methodInfo2.Name] = methodInfo2;
             }
 
             // Remove despawned bots from bot EnemyInfos list.
@@ -534,7 +537,7 @@ namespace Donuts
             // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-
+            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1))
             {
@@ -548,26 +551,34 @@ namespace Donuts
                     continue;
                 }
 
-                /*GClass628 bot = await GClass628.Create(new GClass629(side, wildSpawnType, BotDifficulty.normal, 0f, null), ibotCreator, 1, botSpawnerClass);
-                bot.AddPosition((Vector3)spawnPosition);*/
+                //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
+                var botdifficulty = botClass.grabBotDifficulty();
+                var GClass628Data = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                if (GClass628Data != null)
+                {
+                    var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
+                    GClass628Data.AddPosition((Vector3)spawnPosition);
 
+                    DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass628Data, null, cancellationToken.Token });
 
-                /*var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
-                var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-                Logger.LogWarning("Spawning bot at distance to player of: " + Vector3.Distance((Vector3)spawnPosition, gameWorld.MainPlayer.Position) + " of side: " + bot.Side);
+                    //method_2(Profile profile, Vector3 position, Action<BotOwner> callback, bool isLocalGame, CancellationToken cancellationToken)
+                    DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                        $"of side: {GClass628Data.Side} and difficulty: {botdifficulty}");
 
-                //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
-                methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });*/
-
-                await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition);
-
+                    var spawnpointInternalList = AccessTools.Field(typeof(List<GClass628.Class266>), "list_0").GetValue(GClass628Data);
+                    //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
+                    //this.list_0.Add(new GClass628.Class266(spawnPointPosition, false));
+                }
+                else
+                {
+                    await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
+                }
 
                 count++;
             }
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
         {
-
             switch (spawnType.ToLower())
             {
                 case "arenafighterevent":
@@ -1286,31 +1297,30 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             var botdifficulty = grabBotDifficulty();
+            //IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             GClass628 bot = await GClass628.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
 
-            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                 $"of side: {bot.Side} and difficulty: {botdifficulty}");
 
-            //ginterface17_0.ActivateBot(bot, closestBotZone, false, null, null, cancellationToken.Token);
             DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
 
-        public BotDifficulty grabBotDifficulty()
+        public static BotDifficulty grabBotDifficulty()
         {
             switch (DonutsPlugin.botDifficulties.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
                     BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy, 
-                        BotDifficulty.normal, 
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
                         BotDifficulty.hard
                     };
                     var diff = UnityEngine.Random.Range(0, 3);
@@ -1323,7 +1333,7 @@ namespace Donuts
                     return BotDifficulty.hard;
                 case "impossible":
                     return BotDifficulty.impossible;
-                default: 
+                default:
                     return BotDifficulty.normal;
             }
 
