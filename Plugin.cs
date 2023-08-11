@@ -650,12 +650,12 @@ namespace Donuts
 
         public PMCBotLimitPresets PMCBotLimitPresets
         {
-            get; set; 
+            get; set;
         }
 
         public SCAVBotLimitPresets SCAVBotLimitPresets
         {
-            get; set; 
+            get; set;
         }
     }
 

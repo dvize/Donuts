@@ -14,13 +14,15 @@ using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
-using EFT.Bots;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
+
+//custom using
+using BotCacheClass = GClass628;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -143,7 +145,7 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
-            
+
             Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
         }
@@ -373,7 +375,7 @@ namespace Donuts
             if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
             {
                 Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
-                
+
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
@@ -571,7 +573,7 @@ namespace Donuts
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                         $"of side: {GClass628Data.Side} and difficulty: {botdifficulty}");
 
-                    
+
                     //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
                     //this.list_0.Add(new GClass628.Class266(spawnPointPosition, false));
                 }
@@ -726,9 +728,10 @@ namespace Donuts
 
 
             }
-            else if(bottype == "scav")
+            else if (bottype == "scav")
             {
-                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration) { 
+                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration)
+                {
                     return;
                 }
 
@@ -761,7 +764,7 @@ namespace Donuts
 
             if (furthestBot != null)
             {
-                if(bottype == "pmc" && tempBotCount <= PMCBotLimit)
+                if (bottype == "pmc" && tempBotCount <= PMCBotLimit)
                 {
                     return;
                 }
@@ -789,11 +792,11 @@ namespace Donuts
                     PMCdespawnCooldown = Time.time;
                 }
                 else if (bottype == "scav")
-                { 
+                {
                     SCAVdespawnCooldown = Time.time;
                 }
             }
-            
+
         }
         private async Task<Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
@@ -1308,7 +1311,7 @@ namespace Donuts
             var botdifficulty = grabBotDifficulty();
             //IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
-            GClass628 bot = await GClass628.Create(botData, ibotCreator, 1, botSpawnerClass);
+            BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);

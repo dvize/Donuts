@@ -1,17 +1,18 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Security.Policy;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
-using EFT.Bots;
 using HarmonyLib;
 using UnityEngine;
 
+//custom usings
+using BotCacheClass = GClass628;
+
 #pragma warning disable IDE0007, CS4014
+
 
 namespace Donuts
 {
@@ -25,21 +26,21 @@ namespace Donuts
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        internal static List<GClass628> bearsEasy;
-        internal static List<GClass628> usecEasy;
-        internal static List<GClass628> assaultEasy;
+        internal static List<BotCacheClass> bearsEasy;
+        internal static List<BotCacheClass> usecEasy;
+        internal static List<BotCacheClass> assaultEasy;
 
-        internal static List<GClass628> bearsNormal;
-        internal static List<GClass628> usecNormal;
-        internal static List<GClass628> assaultNormal;
+        internal static List<BotCacheClass> bearsNormal;
+        internal static List<BotCacheClass> usecNormal;
+        internal static List<BotCacheClass> assaultNormal;
 
-        internal static List<GClass628> bearsHard;
-        internal static List<GClass628> usecHard;
-        internal static List<GClass628> assaultHard;
+        internal static List<BotCacheClass> bearsHard;
+        internal static List<BotCacheClass> usecHard;
+        internal static List<BotCacheClass> assaultHard;
 
-        internal static List<GClass628> bearsImpossible;
-        internal static List<GClass628> usecImpossible;
-        internal static List<GClass628> assaultImpossible;
+        internal static List<BotCacheClass> bearsImpossible;
+        internal static List<BotCacheClass> usecImpossible;
+        internal static List<BotCacheClass> assaultImpossible;
 
         private float timeSinceLastReplenish;
         private int maxBotCount;
@@ -78,7 +79,7 @@ namespace Donuts
             replenishInterval = 60.0f;
         }
 
-        
+
 
         private async void Start()
         {
@@ -90,18 +91,18 @@ namespace Donuts
         {
             //init bots for diff difficulties
             //read the DonutsPlugin
-            bearsEasy = new List<GClass628>();
-            usecEasy = new List<GClass628>();
-            assaultEasy = new List<GClass628>();
-            bearsNormal = new List<GClass628>();
-            usecNormal = new List<GClass628>();
-            assaultNormal = new List<GClass628>();
-            bearsHard = new List<GClass628>();
-            usecHard = new List<GClass628>();
-            assaultHard = new List<GClass628>();
-            bearsImpossible = new List<GClass628>();
-            usecImpossible = new List<GClass628>();
-            assaultImpossible = new List<GClass628>();
+            bearsEasy = new List<BotCacheClass>();
+            usecEasy = new List<BotCacheClass>();
+            assaultEasy = new List<BotCacheClass>();
+            bearsNormal = new List<BotCacheClass>();
+            usecNormal = new List<BotCacheClass>();
+            assaultNormal = new List<BotCacheClass>();
+            bearsHard = new List<BotCacheClass>();
+            usecHard = new List<BotCacheClass>();
+            assaultHard = new List<BotCacheClass>();
+            bearsImpossible = new List<BotCacheClass>();
+            usecImpossible = new List<BotCacheClass>();
+            assaultImpossible = new List<BotCacheClass>();
 
             Logger.LogWarning("Profile Generation is Creating for Donuts Difficulty: " + DonutsPlugin.botDifficulties.Value.ToLower());
             if (DonutsPlugin.botDifficulties.Value.ToLower() == "asonline")
@@ -134,7 +135,7 @@ namespace Donuts
                 CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 5);
                 CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 5);
                 CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 5);
-                
+
             }
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "impossible")
             {
@@ -172,7 +173,7 @@ namespace Donuts
             }
         }
 
-        private async Task ReplenishBots(List<GClass628> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
+        private async Task ReplenishBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
         {
             int currentCount = botList.Count;
             int botsToAdd = maxBotCount - currentCount;
@@ -183,21 +184,21 @@ namespace Donuts
             }
         }
 
-        private async Task CreateBots(List<GClass628> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, int count = 1)
+        private async Task CreateBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, int count = 1)
         {
             for (int i = 0; i < count; i++)
             {
                 IBotData botData = new GClass629(side, spawnType, difficulty, 0f, null);
-                var bot = await GClass628.Create(botData, botCreator, 1, botSpawnerClass);
+                var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
                 botList.Add(bot);
             }
         }
-        internal static List<GClass628> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
+        internal static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
             switch (botDifficulty)
             {
                 case BotDifficulty.easy:
-                    if(spawnType == WildSpawnType.assault)
+                    if (spawnType == WildSpawnType.assault)
                     {
                         return assaultEasy;
                     }
@@ -255,8 +256,8 @@ namespace Donuts
                 default:
                     return null;
             }
-            
-            
+
+
         }
 
     }
