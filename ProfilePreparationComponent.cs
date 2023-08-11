@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Security.Policy;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,8 @@ using EFT;
 using EFT.Bots;
 using HarmonyLib;
 using UnityEngine;
+
+#pragma warning disable IDE0007, CS4014
 
 namespace Donuts
 {
@@ -37,6 +40,10 @@ namespace Donuts
         internal static List<GClass628> bearsImpossible;
         internal static List<GClass628> usecImpossible;
         internal static List<GClass628> assaultImpossible;
+
+        private float timeSinceLastReplenish;
+        private int maxBotCount;
+        private float replenishInterval;
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -66,208 +73,125 @@ namespace Donuts
             cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            timeSinceLastReplenish = 0f;
+            maxBotCount = 5;
+            replenishInterval = 60.0f;
+        }
 
+        
+
+        private async void Start()
+        {
+            // Initialize the bot pool at the beginning of the round
+            await InitializeBotPool();
+        }
+
+        private async Task InitializeBotPool()
+        {
+            //init bots for diff difficulties
             //read the DonutsPlugin
+            bearsEasy = new List<GClass628>();
+            usecEasy = new List<GClass628>();
+            assaultEasy = new List<GClass628>();
+            bearsNormal = new List<GClass628>();
+            usecNormal = new List<GClass628>();
+            assaultNormal = new List<GClass628>();
+            bearsHard = new List<GClass628>();
+            usecHard = new List<GClass628>();
+            assaultHard = new List<GClass628>();
+            bearsImpossible = new List<GClass628>();
+            usecImpossible = new List<GClass628>();
+            assaultImpossible = new List<GClass628>();
+
             Logger.LogWarning("Profile Generation is Creating for Donuts Difficulty: " + DonutsPlugin.botDifficulties.Value.ToLower());
             if (DonutsPlugin.botDifficulties.Value.ToLower() == "asonline")
             {
-                //create bears bots of normal difficulty
-                bearsNormal = new List<GClass628>();
-                for (int i = 0; i < 3; i++)
-                {
-                    IBotData sptBearDataNormal = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
-                    var sptbearNormal = await GClass628.Create(sptBearDataNormal, botCreator, 1, botSpawnerClass);
-
-                    bearsNormal.Add(sptbearNormal);
-                }
-
-                //create usec bots of normal difficulty
-                usecNormal = new List<GClass628>();
-                for (int i = 0; i < 3; i++)
-                {
-                    IBotData sptUsecDataNormal = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
-                    var sptusecNormal = await GClass628.Create(sptUsecDataNormal, botCreator, 1, botSpawnerClass);
-
-                    usecNormal.Add(sptusecNormal);
-                }
-
-                //create assault bots of normal difficulty
-                assaultNormal = new List<GClass628>();
-                for (int i = 0; i < 3; i++)
-                {
-                    IBotData assaultDataNormal = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
-                    var assaultNormal1 = await GClass628.Create(assaultDataNormal, botCreator, 1, botSpawnerClass);
-
-                    assaultNormal.Add(assaultNormal1);
-                }
-
-
-                //create bear bots of hard difficulty
-                bearsHard = new List<GClass628>();
-                for (int i = 0; i < 2; i++)
-                {
-                    IBotData sptBearDataHard = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.hard, 0f, null);
-                    var sptbearHard = await GClass628.Create(sptBearDataHard, botCreator, 1, botSpawnerClass);
-
-                    bearsHard.Add(sptbearHard);
-                }
-
-                //create usec bots of hard difficulty
-                usecHard = new List<GClass628>();
-                for (int i = 0; i < 2; i++)
-                {
-                    IBotData sptUsecDataHard = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 0f, null);
-                    var sptusecHard = await GClass628.Create(sptUsecDataHard, botCreator, 1, botSpawnerClass);
-
-                    usecHard.Add(sptusecHard);
-                }
-
-                //create assault bots of hard difficulty
-                assaultHard = new List<GClass628>();
-                for (int i = 0; i < 2; i++)
-                {
-                    IBotData assaultDataHard = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 0f, null);
-                    var assaultHard1 = await GClass628.Create(assaultDataHard, botCreator, 1, botSpawnerClass);
-
-                    assaultHard.Add(assaultHard1);
-                }
+                //create as online mix
+                CreateBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, 3);
+                CreateBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 3);
+                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 3);
+                CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 2);
+                CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 2);
+                CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 2);
             }
-            
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "easy")
             {
-                //create bears bots of easy difficulty
-                bearsEasy = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptBearDataEasy = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
-                    var sptbearEasy = await GClass628.Create(sptBearDataEasy, botCreator, 1, botSpawnerClass);
-
-                    bearsEasy.Add(sptbearEasy);
-                }
-
-                //create usec bots of easy difficulty
-                usecNormal = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptUsecDataEasy = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
-                    var sptusecEasy = await GClass628.Create(sptUsecDataEasy, botCreator, 1, botSpawnerClass);
-
-                    usecEasy.Add(sptusecEasy);
-                }
-
-                //create assault bots of easy difficulty
-                assaultEasy = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData assaultDataEasy = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
-                    var assaultEasy1 = await GClass628.Create(assaultDataEasy, botCreator, 1, botSpawnerClass);
-
-                    assaultEasy.Add(assaultEasy1);
-                }
+                //create Easy bots to spawn with
+                CreateBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy, 5);
+                CreateBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, 5);
+                CreateBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, 5);
             }
-
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "normal")
             {
                 //create bears bots of normal difficulty
-                bearsNormal = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptBearDataNormal = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
-                    var sptbearNormal = await GClass628.Create(sptBearDataNormal, botCreator, 1, botSpawnerClass);
-
-                    bearsNormal.Add(sptbearNormal);
-                }
-
-                //create usec bots of normal difficulty
-                usecNormal = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptUsecDataNormal = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
-                    var sptusecNormal = await GClass628.Create(sptUsecDataNormal, botCreator, 1, botSpawnerClass);
-
-                    usecNormal.Add(sptusecNormal);
-                }
-
-                //create assault bots of normal difficulty
-                assaultNormal = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData assaultDataNormal = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
-                    var assaultNormal1 = await GClass628.Create(assaultDataNormal, botCreator, 1, botSpawnerClass);
-
-                    assaultNormal.Add(assaultNormal1);
-                }
+                CreateBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, 5);
+                CreateBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 5);
+                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 5);
             }
-
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "hard")
             {
                 //create bears bots of hard difficulty
-                bearsHard = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptBearDataHard = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.hard, 0f, null);
-                    var sptbearHard = await GClass628.Create(sptBearDataHard, botCreator, 1, botSpawnerClass);
+                CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 5);
+                CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 5);
+                CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 5);
                 
-                    bearsHard.Add(sptbearHard);
-                }
-
-                //create usec bots of hard difficulty
-                usecHard = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptUsecDataHard = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 0f, null);
-                    var sptusecHard = await GClass628.Create(sptUsecDataHard, botCreator, 1, botSpawnerClass);
-                
-                    usecHard.Add(sptusecHard);
-                }
-
-                //create assault bots of hard difficulty
-                assaultHard = new List<GClass628>();
-                for(int i =0; i < 5; i++)
-                {
-                    IBotData assaultDataHard = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 0f, null);
-                    var assaultHard1 = await GClass628.Create(assaultDataHard, botCreator, 1, botSpawnerClass);
-
-                    assaultHard.Add(assaultHard1);
-                }
-
             }
-
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "impossible")
             {
                 //create bears bots of impossible difficulty
-                bearsImpossible = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptBearDataImpossible = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.impossible, 0f, null);
-                    var sptbearImpossible = await GClass628.Create(sptBearDataImpossible, botCreator, 1, botSpawnerClass);
-                
-                    bearsImpossible.Add(sptbearImpossible);
-                }
 
-                //create usec bots of impossible difficulty
-                usecImpossible = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData sptUsecDataImpossible = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, 0f, null);
-                    var sptusecImpossible = await GClass628.Create(sptUsecDataImpossible, botCreator, 1, botSpawnerClass);
-                               
-                    usecImpossible.Add(sptusecImpossible);
-                }
-
-                //create assault bots of impossible difficulty
-                assaultImpossible = new List<GClass628>();
-                for (int i = 0; i < 5; i++)
-                {
-                    IBotData assaultDataImpossible = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, 0f, null);
-                    var assaultImpossible1 = await GClass628.Create(assaultDataImpossible, botCreator, 1, botSpawnerClass);
-                
-                    assaultImpossible.Add(assaultImpossible1);
-                }
+                CreateBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible, 5);
+                CreateBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, 5);
+                CreateBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, 5);
             }
 
         }
+        private void Update()
+        {
+            timeSinceLastReplenish += Time.deltaTime;
 
+            if (timeSinceLastReplenish >= replenishInterval)
+            {
+                timeSinceLastReplenish = 0f;
+
+                ReplenishBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy);
+                ReplenishBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy);
+                ReplenishBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy);
+
+                ReplenishBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal);
+                ReplenishBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal);
+                ReplenishBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal);
+
+                ReplenishBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard);
+                ReplenishBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard);
+                ReplenishBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard);
+
+                ReplenishBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible);
+                ReplenishBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible);
+                ReplenishBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible);
+            }
+        }
+
+        private async Task ReplenishBots(List<GClass628> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
+        {
+            int currentCount = botList.Count;
+            int botsToAdd = maxBotCount - currentCount;
+
+            if (botsToAdd > 0)
+            {
+                await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
+            }
+        }
+
+        private async Task CreateBots(List<GClass628> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, int count = 1)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                IBotData botData = new GClass629(side, spawnType, difficulty, 0f, null);
+                var bot = await GClass628.Create(botData, botCreator, 1, botSpawnerClass);
+                botList.Add(bot);
+            }
+        }
         internal static List<GClass628> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
             switch (botDifficulty)
@@ -279,7 +203,7 @@ namespace Donuts
                     }
                     else if (spawnType == sptUsec)
                     {
-                        return usecNormal;
+                        return usecEasy;
                     }
                     else
                     {
@@ -333,129 +257,6 @@ namespace Donuts
             }
             
             
-        }
-
-        private WildSpawnType GetWildSpawnType(string spawnType)
-        {
-            switch (spawnType.ToLower())
-            {
-                case "arenafighterevent":
-                    return WildSpawnType.arenaFighterEvent;
-                case "assault":
-                    return WildSpawnType.assault;
-                case "assaultgroup":
-                    return WildSpawnType.assaultGroup;
-                case "bossbully":
-                    return WildSpawnType.bossBully;
-                case "bossgluhar":
-                    return WildSpawnType.bossGluhar;
-                case "bosskilla":
-                    return WildSpawnType.bossKilla;
-                case "bosskojaniy":
-                    return WildSpawnType.bossKojaniy;
-                case "bosssanitar":
-                    return WildSpawnType.bossSanitar;
-                case "bosstagilla":
-                    return WildSpawnType.bossTagilla;
-                case "bosszryachiy":
-                    return WildSpawnType.bossZryachiy;
-                case "crazyassaultevent":
-                    return WildSpawnType.crazyAssaultEvent;
-                case "cursedassault":
-                    return WildSpawnType.cursedAssault;
-                case "exusec-rogues":
-                    return WildSpawnType.exUsec;
-                case "followerbully":
-                    return WildSpawnType.followerBully;
-                case "followergluharassault":
-                    return WildSpawnType.followerGluharAssault;
-                case "followergluharscout":
-                    return WildSpawnType.followerGluharScout;
-                case "followergluharsecurity":
-                    return WildSpawnType.followerGluharSecurity;
-                case "followergluharsnipe":
-                    return WildSpawnType.followerGluharSnipe;
-                case "followerkojaniy":
-                    return WildSpawnType.followerKojaniy;
-                case "followersanitar":
-                    return WildSpawnType.followerSanitar;
-                case "followertagilla":
-                    return WildSpawnType.followerTagilla;
-                case "followerzryachiy":
-                    return WildSpawnType.followerZryachiy;
-                case "gifter":
-                    return WildSpawnType.gifter;
-                case "marksman":
-                    return WildSpawnType.marksman;
-                case "raiders":
-                    return WildSpawnType.pmcBot;
-                case "sectantpriest":
-                    return WildSpawnType.sectantPriest;
-                case "sectantwarrior":
-                    return WildSpawnType.sectantWarrior;
-                case "usec":
-                    return sptUsec;
-                case "bear":
-                    return sptBear;
-                case "sptusec":
-                    return sptUsec;
-                case "sptbear":
-                    return sptBear;
-                case "followerbigpipe":
-                    return WildSpawnType.followerBigPipe;
-                case "followerbirdeye":
-                    return WildSpawnType.followerBirdEye;
-                case "bossknight":
-                    return WildSpawnType.bossKnight;
-                case "pmc":
-                    //random wildspawntype is either assigned sptusec or sptbear at 50/50 chance
-                    return (UnityEngine.Random.Range(0, 2) == 0) ? sptUsec : sptBear;
-                default:
-                    return WildSpawnType.assault;
-            }
-
-        }
-        private EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
-        {
-            if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
-            {
-                return EPlayerSide.Usec;
-            }
-            else if (spawnType == sptBear)
-            {
-                return EPlayerSide.Bear;
-            }
-            else
-            {
-                return EPlayerSide.Savage;
-            }
-        }
-
-        private BotDifficulty grabBotDifficulty()
-        {
-            switch (DonutsPlugin.botDifficulties.Value.ToLower())
-            {
-                case "asonline":
-                    //return random difficulty from array of easy, normal, hard
-                    BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy,
-                        BotDifficulty.normal,
-                        BotDifficulty.hard
-                    };
-                    var diff = UnityEngine.Random.Range(0, 3);
-                    return randomDifficulty[diff];
-                case "easy":
-                    return BotDifficulty.easy;
-                case "normal":
-                    return BotDifficulty.normal;
-                case "hard":
-                    return BotDifficulty.hard;
-                case "impossible":
-                    return BotDifficulty.impossible;
-                default:
-                    return BotDifficulty.normal;
-            }
-
         }
 
     }

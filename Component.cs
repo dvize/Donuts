@@ -21,12 +21,13 @@ using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
-using static Streamer;
 
+#pragma warning disable IDE0007, IDE0044
 namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
+
         internal static FightLocations fightLocations;
         internal static FightLocations sessionLocations;
 
