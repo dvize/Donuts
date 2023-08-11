@@ -68,7 +68,7 @@ namespace Donuts
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
             //read the DonutsPlugin
-
+            Logger.LogWarning("Profile Generation is Creating for Donuts Difficulty: " + DonutsPlugin.botDifficulties.Value.ToLower());
             if (DonutsPlugin.botDifficulties.Value.ToLower() == "asonline")
             {
                 //create bears bots of normal difficulty
