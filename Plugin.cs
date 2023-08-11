@@ -15,12 +15,12 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.2")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.3")]
     [BepInDependency("com.spt-aki.core", "3.6.1")]
-    //[BepInDependency("xyz.drakia.bigbrain")]
-    //[BepInDependency("xyz.drakia.waypoints")]
-    //[BepInDependency("me.sol.sain")]
-    //[BepInDependency("me.skwizzy.lootingbots")]
+    [BepInDependency("xyz.drakia.bigbrain")]
+    [BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("me.sol.sain")]
+    [BepInDependency("me.skwizzy.lootingbots")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
