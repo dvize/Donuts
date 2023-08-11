@@ -135,34 +135,67 @@ namespace Donuts
             
             else if (DonutsPlugin.botDifficulties.Value.ToLower() == "easy")
             {
-                //create bears bots of normal difficulty
+                //create bears bots of easy difficulty
                 bearsEasy = new List<GClass628>();
                 for (int i = 0; i < 5; i++)
                 {
                     IBotData sptBearDataEasy = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
                     var sptbearEasy = await GClass628.Create(sptBearDataEasy, botCreator, 1, botSpawnerClass);
 
-                    bearsNormal.Add(sptbearEasy);
+                    bearsEasy.Add(sptbearEasy);
                 }
 
-                //create usec bots of normal difficulty
-                usecEasy = new List<GClass628>();
+                //create usec bots of easy difficulty
+                usecNormal = new List<GClass628>();
                 for (int i = 0; i < 5; i++)
                 {
                     IBotData sptUsecDataEasy = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
                     var sptusecEasy = await GClass628.Create(sptUsecDataEasy, botCreator, 1, botSpawnerClass);
 
-                    usecNormal.Add(sptusecEasy);
+                    usecEasy.Add(sptusecEasy);
                 }
 
-                //create assault bots of normal difficulty
+                //create assault bots of easy difficulty
                 assaultEasy = new List<GClass628>();
                 for (int i = 0; i < 5; i++)
                 {
                     IBotData assaultDataEasy = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
                     var assaultEasy1 = await GClass628.Create(assaultDataEasy, botCreator, 1, botSpawnerClass);
 
-                    assaultNormal.Add(assaultEasy1);
+                    assaultEasy.Add(assaultEasy1);
+                }
+            }
+
+            else if (DonutsPlugin.botDifficulties.Value.ToLower() == "normal")
+            {
+                //create bears bots of normal difficulty
+                bearsNormal = new List<GClass628>();
+                for (int i = 0; i < 5; i++)
+                {
+                    IBotData sptBearDataNormal = new GClass629(EPlayerSide.Bear, sptBear, BotDifficulty.normal, 0f, null);
+                    var sptbearNormal = await GClass628.Create(sptBearDataNormal, botCreator, 1, botSpawnerClass);
+
+                    bearsNormal.Add(sptbearNormal);
+                }
+
+                //create usec bots of normal difficulty
+                usecNormal = new List<GClass628>();
+                for (int i = 0; i < 5; i++)
+                {
+                    IBotData sptUsecDataNormal = new GClass629(EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 0f, null);
+                    var sptusecNormal = await GClass628.Create(sptUsecDataNormal, botCreator, 1, botSpawnerClass);
+
+                    usecNormal.Add(sptusecNormal);
+                }
+
+                //create assault bots of normal difficulty
+                assaultNormal = new List<GClass628>();
+                for (int i = 0; i < 5; i++)
+                {
+                    IBotData assaultDataNormal = new GClass629(EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 0f, null);
+                    var assaultNormal1 = await GClass628.Create(assaultDataNormal, botCreator, 1, botSpawnerClass);
+
+                    assaultNormal.Add(assaultNormal1);
                 }
             }
 
@@ -246,7 +279,7 @@ namespace Donuts
                     }
                     else if (spawnType == sptUsec)
                     {
-                        return usecEasy;
+                        return usecNormal;
                     }
                     else
                     {
