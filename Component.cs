@@ -553,19 +553,24 @@ namespace Donuts
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 var botdifficulty = botClass.grabBotDifficulty();
-                var GClass628Data = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
-                if (GClass628Data != null)
+                var GClass628DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                if (GClass628DataList != null && GClass628DataList.Count > 0)
                 {
+                    //splice data from GClass628DataList and assign it to GClass628Data
+                    var GClass628Data = GClass628DataList[0];
+                    GClass628DataList.RemoveAt(0);
+
                     var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
                     GClass628Data.AddPosition((Vector3)spawnPosition);
 
                     DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass628Data, null, cancellationToken.Token });
 
                     //method_2(Profile profile, Vector3 position, Action<BotOwner> callback, bool isLocalGame, CancellationToken cancellationToken)
+
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                         $"of side: {GClass628Data.Side} and difficulty: {botdifficulty}");
 
-                    var spawnpointInternalList = AccessTools.Field(typeof(List<GClass628.Class266>), "list_0").GetValue(GClass628Data);
+                    
                     //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
                     //this.list_0.Add(new GClass628.Class266(spawnPointPosition, false));
                 }
