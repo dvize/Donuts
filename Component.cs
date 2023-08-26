@@ -23,6 +23,7 @@ using UnityEngine.AI;
 
 //custom using
 using BotCacheClass = GClass513;
+using BotData = GClass514;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -556,26 +557,21 @@ namespace Donuts
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 var botdifficulty = botClass.grabBotDifficulty();
-                var GClass514DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
-                if (GClass514DataList != null && GClass514DataList.Count > 0)
+                var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                if (BotCacheDataList != null && BotCacheDataList.Count > 0)
                 {
                     //splice data from GClass628DataList and assign it to GClass628Data
-                    var GClass514Data = GClass514DataList[0];
-                    GClass514DataList.RemoveAt(0);
+                    var BotCacheElement = BotCacheDataList[0];
+                    BotCacheDataList.RemoveAt(0);
 
                     var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-                    GClass514Data.AddPosition((Vector3)spawnPosition);
+                    BotCacheElement.AddPosition((Vector3)spawnPosition);
 
-                    DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass514Data, null, cancellationToken.Token });
-
-                    //method_2(Profile profile, Vector3 position, Action<BotOwner> callback, bool isLocalGame, CancellationToken cancellationToken)
+                    DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, BotCacheElement, null, cancellationToken.Token });
 
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                        $"of side: {GClass514Data.Side} and difficulty: {botdifficulty}");
+                        $"of side: {BotCacheElement.Side} and difficulty: {botdifficulty}");
 
-
-                    //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
-                    //this.list_0.Add(new GClass628.Class266(spawnPointPosition, false));
                 }
                 else
                 {
@@ -1310,7 +1306,7 @@ namespace Donuts
         {
             var botdifficulty = grabBotDifficulty();
 
-            GClass514 botData = new GClass514(side, wildSpawnType, botdifficulty, 0f, null);
+            BotData botData = new BotData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
 

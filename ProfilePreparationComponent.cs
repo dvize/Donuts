@@ -10,6 +10,7 @@ using UnityEngine;
 
 //custom usings
 using BotCacheClass = GClass513;
+using BotData = GClass514;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -188,7 +189,7 @@ namespace Donuts
         {
             for (int i = 0; i < count; i++)
             {
-                GClass514 botData = new GClass514(side, spawnType, difficulty, 0f, null);
+                BotData botData = new BotData(side, spawnType, difficulty, 0f, null);
                 var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
                 botList.Add(bot);
             }
