@@ -22,7 +22,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 //custom using
-using BotCacheClass = GClass628;
+using BotCacheClass = GClass513;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -53,7 +53,7 @@ namespace Donuts
         private int PMCBotLimit = 0;
         private int SCAVBotLimit = 0;
         public static GameWorld gameWorld;
-        private static BotSpawnerClass botSpawnerClass;
+        private static BotSpawner botSpawnerClass;
         private static botClass myBotClass;
 
         private float PMCdespawnCooldown = 0f;
@@ -100,8 +100,8 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawnerClass).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
-            var methodInfo2 = typeof(BotSpawnerClass).GetMethod("method_2", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = typeof(BotSpawner).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo2 = typeof(BotSpawner).GetMethod("method_2", BindingFlags.Instance | BindingFlags.NonPublic);
             if (methodInfo != null && methodInfo2 != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
@@ -128,7 +128,7 @@ namespace Donuts
                     var botOwner = player.AIData.BotOwner;
                     botOwner.Memory.DeleteInfoAboutEnemy(removedBot);
                     botOwner.BotsGroup.RemoveInfo(removedBot);
-                    botOwner.BotsGroup.RemoveEnemy(removedBot);
+                    botOwner.BotsGroup.RemoveEnemy(removedBot, EBotEnemyCause.death);
                     botOwner.BotsGroup.RemoveAlly(removedBot);
                 }
             };
@@ -167,7 +167,7 @@ namespace Donuts
 
             drawnCoordinates = new HashSet<Vector3>();
             gizmoSpheres = new List<GameObject>();
-            ibotCreator = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+            ibotCreator = AccessTools.Field(typeof(BotSpawner), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
             myBotClass = new botClass();
         }
         private void SetupBotLimit(string folderName)
@@ -540,7 +540,7 @@ namespace Donuts
             // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-            var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+            var cancellationToken = AccessTools.Field(typeof(BotSpawner), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1))
             {
@@ -556,22 +556,22 @@ namespace Donuts
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 var botdifficulty = botClass.grabBotDifficulty();
-                var GClass628DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
-                if (GClass628DataList != null && GClass628DataList.Count > 0)
+                var GClass514DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                if (GClass514DataList != null && GClass514DataList.Count > 0)
                 {
                     //splice data from GClass628DataList and assign it to GClass628Data
-                    var GClass628Data = GClass628DataList[0];
-                    GClass628DataList.RemoveAt(0);
+                    var GClass514Data = GClass514DataList[0];
+                    GClass514DataList.RemoveAt(0);
 
                     var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-                    GClass628Data.AddPosition((Vector3)spawnPosition);
+                    GClass514Data.AddPosition((Vector3)spawnPosition);
 
-                    DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass628Data, null, cancellationToken.Token });
+                    DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, GClass514Data, null, cancellationToken.Token });
 
                     //method_2(Profile profile, Vector3 position, Action<BotOwner> callback, bool isLocalGame, CancellationToken cancellationToken)
 
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                        $"of side: {GClass628Data.Side} and difficulty: {botdifficulty}");
+                        $"of side: {GClass514Data.Side} and difficulty: {botdifficulty}");
 
 
                     //private List<GClass628.Class266> list_0 = new List<GClass628.Class266>();
@@ -1306,11 +1306,11 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             var botdifficulty = grabBotDifficulty();
-            //IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
-            IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
+
+            GClass514 botData = new GClass514(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
 

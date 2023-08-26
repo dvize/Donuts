@@ -9,7 +9,7 @@ using HarmonyLib;
 using UnityEngine;
 
 //custom usings
-using BotCacheClass = GClass628;
+using BotCacheClass = GClass513;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -20,7 +20,7 @@ namespace Donuts
     {
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
-        private static BotSpawnerClass botSpawnerClass;
+        private static BotSpawner botSpawnerClass;
         private static CancellationTokenSource cancellationToken;
 
         private static WildSpawnType sptUsec;
@@ -70,8 +70,8 @@ namespace Donuts
         {
             //init the main vars
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
-            botCreator = AccessTools.Field(typeof(BotSpawnerClass), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
-            cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+            botCreator = AccessTools.Field(typeof(BotSpawner), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+            cancellationToken = AccessTools.Field(typeof(BotSpawner), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             timeSinceLastReplenish = 0f;
@@ -188,7 +188,7 @@ namespace Donuts
         {
             for (int i = 0; i < count; i++)
             {
-                IBotData botData = new GClass629(side, spawnType, difficulty, 0f, null);
+                GClass514 botData = new GClass514(side, spawnType, difficulty, 0f, null);
                 var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
                 botList.Add(bot);
             }
