@@ -15,12 +15,12 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.4")]
-    [BepInDependency("com.spt-aki.core", "3.6.1")]
-    [BepInDependency("xyz.drakia.bigbrain")]
-    [BepInDependency("xyz.drakia.waypoints")]
-    [BepInDependency("me.sol.sain")]
-    [BepInDependency("me.skwizzy.lootingbots")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.0")]
+    [BepInDependency("com.spt-aki.core", "3.7.0")]
+    //[BepInDependency("xyz.drakia.bigbrain")]
+    //[BepInDependency("xyz.drakia.waypoints")]
+    //[BepInDependency("me.sol.sain")]
+    //[BepInDependency("me.skwizzy.lootingbots")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -319,10 +319,9 @@ namespace Donuts
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
-            new PatchBodySound().Enable();
+            //new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
-            new UseAKIHTTPForBotLoadingPatch().Enable();
             new BotProfilePreparationHook().Enable();
             SetupScenariosUI();
         }
@@ -605,7 +604,7 @@ namespace Donuts
     //re-initializes each new game
     internal class BotProfilePreparationHook : ModulePatch
     {
-        protected override MethodBase GetTargetMethod() => typeof(BotControllerClass).GetMethod(nameof(BotControllerClass.AddActivePLayer));
+        protected override MethodBase GetTargetMethod() => typeof(BotsController).GetMethod(nameof(BotsController.AddActivePLayer));
 
         [PatchPrefix]
         public static void PatchPrefix() => DonutsBotPrep.Enable();
@@ -623,7 +622,7 @@ namespace Donuts
     // Don't add invalid enemies
     internal class BotGroupAddEnemyPatch : ModulePatch
     {
-        protected override MethodBase GetTargetMethod() => typeof(BotGroupClass).GetMethod("AddEnemy");
+        protected override MethodBase GetTargetMethod() => typeof(BotsGroup).GetMethod("AddEnemy");
         [PatchPrefix]
         public static bool PatchPrefix(IAIDetails person)
         {
@@ -632,7 +631,7 @@ namespace Donuts
                 return false;
             }
 
-            return true;
+            return true; 
         }
     }
 
