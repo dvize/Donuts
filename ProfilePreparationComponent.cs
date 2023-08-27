@@ -71,8 +71,8 @@ namespace Donuts
         {
             //init the main vars
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
-            botCreator = AccessTools.Field(typeof(BotSpawner), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
-            cancellationToken = AccessTools.Field(typeof(BotSpawner), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+            botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
+            cancellationToken = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             timeSinceLastReplenish = 0f;
@@ -189,7 +189,7 @@ namespace Donuts
         {
             for (int i = 0; i < count; i++)
             {
-                BotData botData = new BotData(side, spawnType, difficulty, 0f, null);
+                var botData = new BotData(side, spawnType, difficulty, 0f, null);
                 var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
                 botList.Add(bot);
             }

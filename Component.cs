@@ -168,7 +168,7 @@ namespace Donuts
 
             drawnCoordinates = new HashSet<Vector3>();
             gizmoSpheres = new List<GameObject>();
-            ibotCreator = AccessTools.Field(typeof(BotSpawner), "ginterface17_0").GetValue(botSpawnerClass) as IBotCreator;
+            ibotCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             myBotClass = new botClass();
         }
         private void SetupBotLimit(string folderName)
@@ -541,7 +541,7 @@ namespace Donuts
             // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-            var cancellationToken = AccessTools.Field(typeof(BotSpawner), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
+            var cancellationToken = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
 
             while (count < UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1))
             {
@@ -1279,7 +1279,7 @@ namespace Donuts
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.TypeByName("Class222").GetMethod("LoadBots");
+            return AccessTools.TypeByName("Class234").GetMethod("LoadBots");
         }
 
         [PatchPrefix]

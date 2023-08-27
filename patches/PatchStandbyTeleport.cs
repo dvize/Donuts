@@ -19,7 +19,7 @@ namespace dvize.Donuts
         }
 
         [PatchPrefix]
-        public static bool Prefix(BotStandBy __instance, BotStandByType ___botStandByType_0, BotOwner ___botOwner_0)
+        public static bool Prefix(BotStandBy __instance, BotStandByType ___standByType, BotOwner ___botOwner_0)
         {
             if (!___botOwner_0.Settings.FileSettings.Mind.CAN_STAND_BY)
             {
@@ -31,7 +31,7 @@ namespace dvize.Donuts
                 return false;
             }
 
-            if (___botStandByType_0 == BotStandByType.goToSave)
+            if (___standByType == BotStandByType.goToSave)
             {
                 _method1.Invoke(__instance, new object[] { });
             }
