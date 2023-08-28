@@ -301,10 +301,9 @@ namespace Donuts
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
-            new PatchBodySound().Enable();
+            //new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
-            new UseAKIHTTPForBotLoadingPatch().Enable();
             new BotProfilePreparationHook().Enable();
             SetupScenariosUI();
         }

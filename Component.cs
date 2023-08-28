@@ -23,7 +23,7 @@ using UnityEngine.AI;
 
 //custom using
 using BotCacheClass = GClass513;
-using BotData = GClass514;
+using IProfileData = GClass514;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -101,12 +101,10 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawner).GetMethod("method_11", BindingFlags.Instance | BindingFlags.NonPublic);
-            var methodInfo2 = typeof(BotSpawner).GetMethod("method_2", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (methodInfo != null && methodInfo2 != null)
+            var methodInfo = typeof(BotSpawner).GetMethod("method_9", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (methodInfo != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
-                methodCache[methodInfo2.Name] = methodInfo2;
             }
 
             // Remove despawned bots from bot EnemyInfos list.
@@ -558,6 +556,7 @@ namespace Donuts
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 var botdifficulty = botClass.grabBotDifficulty();
                 var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                
                 if (BotCacheDataList != null && BotCacheDataList.Count > 0)
                 {
                     //splice data from GClass628DataList and assign it to GClass628Data
@@ -1249,64 +1248,14 @@ namespace Donuts
         }
     }
 
-    //Thanks ARI - taken from SPAWN
-    class HttpClient
-    {
-        public static Profile[] GetBots(List<WaveInfo> conditions)
-        {
-            var s = new ConditionsWrapper();
-            s.conditions = conditions;
-
-            var p = RequestHandler.PostJson("/client/game/bot/generate", s.ToJson());
-            return p.ParseJsonTo<BotsResponseWrapper>().data;
-        }
-
-        struct ConditionsWrapper
-        {
-            public List<WaveInfo> conditions;
-        }
-
-        struct BotsResponseWrapper
-        {
-            public Profile[] data;
-        }
-    }
-
-    // UseAKIHTTPForBotLoadingPatch overrides the normal Diz.Jobs-based
-    // loading, which creates a ton of garbage due to how that background
-    // job manager is implemented.
-    class UseAKIHTTPForBotLoadingPatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod()
-        {
-            return AccessTools.TypeByName("Class234").GetMethod("LoadBots");
-        }
-
-        [PatchPrefix]
-        public static bool Prefix(ref Task<Profile[]> __result, List<WaveInfo> conditions)
-        {
-            TaskCompletionSource<Profile[]> tcs = new TaskCompletionSource<Profile[]>();
-            __result = tcs.Task;
-
-            Task.Factory.StartNew(() =>
-            {
-                Logger.LogWarning($"Loading a new bot from the server: {conditions.ToJson()}");
-                var p = HttpClient.GetBots(conditions);
-                // TODO: error handling.
-                tcs.SetResult(p);
-            });
-
-            return false;
-        }
-    }
-
     internal class botClass
     {
+        //spawning bot without cache available
         public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             var botdifficulty = grabBotDifficulty();
 
-            BotData botData = new BotData(side, wildSpawnType, botdifficulty, 0f, null);
+            IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
 
@@ -1314,7 +1263,7 @@ namespace Donuts
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                 $"of side: {bot.Side} and difficulty: {botdifficulty}");
 
-            DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
+            DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
 
         public static BotDifficulty grabBotDifficulty()
