@@ -1288,8 +1288,15 @@ namespace Donuts
     {
         public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition)
         {
-            // if (wildSpawnType == "")
-            var botdifficulty = grabPMCDifficulty();
+            if (wildSpawnType == WildSpawnType.assault) {
+              var botdifficulty = grabSCAVDifficulty();
+            }
+            else if (wildSpawnType == sptUsec || wildSpawnType == sptBear) {
+              var botdifficulty = grabPMCDifficulty();
+            }
+            else {
+              var botdifficulty = grabOtherDifficulty();
+            }
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             GClass628 bot = await GClass628.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
@@ -1332,6 +1339,32 @@ namespace Donuts
         public BotDifficulty grabSCAVDifficulty()
         {
             switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            {
+                case "asonline":
+                    //return random difficulty from array of easy, normal, hard
+                    BotDifficulty[] randomDifficulty = {
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
+                        BotDifficulty.hard
+                    };
+                    var diff = UnityEngine.Random.Range(0, 3);
+                    return randomDifficulty[diff];
+                case "easy":
+                    return BotDifficulty.easy;
+                case "normal":
+                    return BotDifficulty.normal;
+                case "hard":
+                    return BotDifficulty.hard;
+                case "impossible":
+                    return BotDifficulty.impossible;
+                default:
+                    return BotDifficulty.normal;
+            }
+        }
+
+        public BotDifficulty grabOtherDifficulty()
+        {
+            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard

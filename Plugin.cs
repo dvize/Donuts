@@ -40,6 +40,7 @@ namespace Donuts
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
         public static ConfigEntry<string> botDifficultiesSCAV;
+        public static ConfigEntry<string> botDifficultiesOther;
         public string[] botDiffList = new string[] {"AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //menu vars
@@ -147,6 +148,14 @@ namespace Donuts
                 "Donuts SCAV Spawn Difficulty",
                 "AsOnline",
                 new ConfigDescription("Difficulty Setting for All SCAV Donut Related Spawns",
+                new AcceptableValueList<string>(botDiffList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+
+            botDifficultiesOther = Config.Bind(
+                "1. Main Settings",
+                "Donuts Other Bot Type Spawn Difficulty",
+                "AsOnline",
+                new ConfigDescription("Difficulty Setting for all other bot types, such as bosses, Rogues, Raiders, etc.",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
 
