@@ -139,7 +139,7 @@ namespace Donuts
             {
                 InitializeHotspotTimers();
             }
-            
+
             Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
         }
@@ -369,7 +369,7 @@ namespace Donuts
             if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
             {
                 Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
-                
+
                 return DonutsPlugin.scenarioSelection.Value;
             }
 
@@ -711,7 +711,7 @@ namespace Donuts
             }
             else if(bottype == "scav")
             {
-                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration) { 
+                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration) {
                     return;
                 }
 
@@ -772,11 +772,11 @@ namespace Donuts
                     PMCdespawnCooldown = Time.time;
                 }
                 else if (bottype == "scav")
-                { 
+                {
                     SCAVdespawnCooldown = Time.time;
                 }
             }
-            
+
         }
         private async Task<Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
         {
@@ -1288,7 +1288,8 @@ namespace Donuts
     {
         public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition)
         {
-            var botdifficulty = grabBotDifficulty();
+            // if (wildSpawnType == "")
+            var botdifficulty = grabPMCDifficulty();
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             GClass628 bot = await GClass628.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
@@ -1302,15 +1303,15 @@ namespace Donuts
             DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
 
-        public BotDifficulty grabBotDifficulty()
+        public BotDifficulty grabPMCDifficulty()
         {
-            switch (DonutsPlugin.botDifficulties.Value.ToLower())
+            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
                     BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy, 
-                        BotDifficulty.normal, 
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
                         BotDifficulty.hard
                     };
                     var diff = UnityEngine.Random.Range(0, 3);
@@ -1323,10 +1324,35 @@ namespace Donuts
                     return BotDifficulty.hard;
                 case "impossible":
                     return BotDifficulty.impossible;
-                default: 
+                default:
                     return BotDifficulty.normal;
             }
+        }
 
+        public BotDifficulty grabSCAVDifficulty()
+        {
+            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            {
+                case "asonline":
+                    //return random difficulty from array of easy, normal, hard
+                    BotDifficulty[] randomDifficulty = {
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
+                        BotDifficulty.hard
+                    };
+                    var diff = UnityEngine.Random.Range(0, 3);
+                    return randomDifficulty[diff];
+                case "easy":
+                    return BotDifficulty.easy;
+                case "normal":
+                    return BotDifficulty.normal;
+                case "hard":
+                    return BotDifficulty.hard;
+                case "impossible":
+                    return BotDifficulty.impossible;
+                default:
+                    return BotDifficulty.normal;
+            }
         }
     }
 }

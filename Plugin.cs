@@ -38,7 +38,8 @@ namespace Donuts
         public string[] scenarioValues = new string[] { };
 
         //bot difficulty
-        public static ConfigEntry<string> botDifficulties;
+        public static ConfigEntry<string> botDifficultiesPMC;
+        public static ConfigEntry<string> botDifficultiesSCAV;
         public string[] botDiffList = new string[] {"AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //menu vars
@@ -133,11 +134,19 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
-            botDifficulties = Config.Bind(
+            botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
-                "Donuts Spawn Difficulty",
+                "Donuts PMC Spawn Difficulty",
                 "AsOnline",
-                new ConfigDescription("Difficulty Setting for All Donut Related Spawns",
+                new ConfigDescription("Difficulty Setting for All PMC Donut Related Spawns",
+                new AcceptableValueList<string>(botDiffList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+
+            botDifficultiesSCAV = Config.Bind(
+                "1. Main Settings",
+                "Donuts SCAV Spawn Difficulty",
+                "AsOnline",
+                new ConfigDescription("Difficulty Setting for All SCAV Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
 
@@ -149,7 +158,7 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
-            //Debugging 
+            //Debugging
             DebugGizmos = Config.Bind(
                 "2. Debugging",
                 "Enable Debug Markers",
