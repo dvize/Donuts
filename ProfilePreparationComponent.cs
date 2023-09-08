@@ -104,45 +104,68 @@ namespace Donuts
             usecImpossible = new List<BotCacheClass>();
             assaultImpossible = new List<BotCacheClass>();
 
-            Logger.LogWarning("Profile Generation is Creating for Donuts Difficulty: " + DonutsPlugin.botDifficulties.Value.ToLower());
-            if (DonutsPlugin.botDifficulties.Value.ToLower() == "asonline")
+            Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
+            if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "asonline")
             {
                 //create as online mix
+                CreateBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy, 3);
+                CreateBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, 3);
                 CreateBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, 3);
                 CreateBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 3);
-                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 3);
                 CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 2);
                 CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 2);
-                CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 2);
             }
-            else if (DonutsPlugin.botDifficulties.Value.ToLower() == "easy")
+            else if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "easy")
             {
-                //create Easy bots to spawn with
+                //create pmc Easy bots to spawn with
                 CreateBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy, 5);
                 CreateBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, 5);
-                CreateBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, 5);
             }
-            else if (DonutsPlugin.botDifficulties.Value.ToLower() == "normal")
+            else if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "normal")
             {
-                //create bears bots of normal difficulty
+                //create pmc bots of normal difficulty
                 CreateBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, 5);
                 CreateBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 5);
-                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 5);
             }
-            else if (DonutsPlugin.botDifficulties.Value.ToLower() == "hard")
+            else if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "hard")
             {
-                //create bears bots of hard difficulty
+                //create pmc bots of hard difficulty
                 CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 5);
                 CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 5);
+
+            }
+            else if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "impossible")
+            {
+                //create pmc bots of impossible difficulty
+                CreateBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible, 5);
+                CreateBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, 5);
+            }
+
+            else if (DonutsPlugin.botDifficultiesSCAV.Value.ToLower() == "asonline") {
+                //create as online mix
+                CreateBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, 3);
+                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 3);
+                CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 3);
+            }
+            else if (DonutsPlugin.botDifficultiesSCAV.Value.ToLower() == "easy")
+            {
+                //create Easy bots to spawn with
+                CreateBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, 5);
+            }
+            else if (DonutsPlugin.botDifficultiesSCAV.Value.ToLower() == "normal")
+            {
+                //create scav bots of normal difficulty
+                CreateBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, 5);
+            }
+            else if (DonutsPlugin.botDifficultiesSCAV.Value.ToLower() == "hard")
+            {
+                //create scav bots of hard difficulty
                 CreateBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, 5);
 
             }
-            else if (DonutsPlugin.botDifficulties.Value.ToLower() == "impossible")
+            else if (DonutsPlugin.botDifficultiesSCAV.Value.ToLower() == "impossible")
             {
-                //create bears bots of impossible difficulty
-
-                CreateBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible, 5);
-                CreateBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, 5);
+                //create scav bots of impossible difficulty
                 CreateBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, 5);
             }
 

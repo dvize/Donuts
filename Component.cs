@@ -538,6 +538,7 @@ namespace Donuts
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             // Moved outside so all spawns for a point are on the same side
+            var actualType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
@@ -555,7 +556,7 @@ namespace Donuts
                 }
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
-                var botdifficulty = botClass.grabBotDifficulty();
+                var botdifficulty = botClass.grabOtherDifficulty();
                 var GClass628DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
                 if (GClass628DataList != null && GClass628DataList.Count > 0)
                 {
@@ -579,7 +580,7 @@ namespace Donuts
                 }
                 else
                 {
-                    await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
+                    await myBotClass.CreateBot(wildSpawnType, side, actualType, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
                 }
 
                 count++;
@@ -1306,9 +1307,15 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualType, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
-            var botdifficulty = grabBotDifficulty();
+            var botdifficulty = grabOtherDifficulty();
+            if (actualType == "assault") {
+              botdifficulty = grabSCAVDifficulty();
+            }
+            else if (actualType == "sptusec" || actualType == "sptbear" || actualType == "pmc") {
+              botdifficulty = grabPMCDifficulty();
+            }
             //IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
@@ -1321,9 +1328,9 @@ namespace Donuts
             DonutComponent.methodCache["method_11"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
 
-        public static BotDifficulty grabBotDifficulty()
+        public static BotDifficulty grabPMCDifficulty()
         {
-            switch (DonutsPlugin.botDifficulties.Value.ToLower())
+            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
@@ -1345,7 +1352,58 @@ namespace Donuts
                 default:
                     return BotDifficulty.normal;
             }
+        }
 
+        public static BotDifficulty grabSCAVDifficulty()
+        {
+            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            {
+                case "asonline":
+                    //return random difficulty from array of easy, normal, hard
+                    BotDifficulty[] randomDifficulty = {
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
+                        BotDifficulty.hard
+                    };
+                    var diff = UnityEngine.Random.Range(0, 3);
+                    return randomDifficulty[diff];
+                case "easy":
+                    return BotDifficulty.easy;
+                case "normal":
+                    return BotDifficulty.normal;
+                case "hard":
+                    return BotDifficulty.hard;
+                case "impossible":
+                    return BotDifficulty.impossible;
+                default:
+                    return BotDifficulty.normal;
+            }
+        }
+
+        public static BotDifficulty grabOtherDifficulty()
+        {
+            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
+            {
+                case "asonline":
+                    //return random difficulty from array of easy, normal, hard
+                    BotDifficulty[] randomDifficulty = {
+                        BotDifficulty.easy,
+                        BotDifficulty.normal,
+                        BotDifficulty.hard
+                    };
+                    var diff = UnityEngine.Random.Range(0, 3);
+                    return randomDifficulty[diff];
+                case "easy":
+                    return BotDifficulty.easy;
+                case "normal":
+                    return BotDifficulty.normal;
+                case "hard":
+                    return BotDifficulty.hard;
+                case "impossible":
+                    return BotDifficulty.impossible;
+                default:
+                    return BotDifficulty.normal;
+            }
         }
     }
 }
