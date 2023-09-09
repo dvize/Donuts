@@ -112,8 +112,8 @@ namespace Donuts
                 CreateBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, 3);
                 CreateBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, 3);
                 CreateBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, 3);
-                CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 2);
-                CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 2);
+                CreateBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, 3);
+                CreateBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, 3);
             }
             else if (DonutsPlugin.botDifficultiesPMC.Value.ToLower() == "easy")
             {
