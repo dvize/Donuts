@@ -154,9 +154,9 @@ namespace Donuts
 
             botDifficultiesOther = Config.Bind(
                 "1. Main Settings",
-                "Donuts Other Bot Type Spawn Difficulty",
+                "Other Bot Type Spawn Difficulty",
                 "AsOnline",
-                new ConfigDescription("Difficulty Setting for all other bot types, such as bosses, Rogues, Raiders, etc.",
+                new ConfigDescription("Difficulty Setting for all other bot types spawned with Donuts, such as bosses, Rogues, Raiders, etc.",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
 
