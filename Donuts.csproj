@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>dvize.Donuts</RootNamespace>
     <AssemblyName>dvize.Donuts</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -48,6 +49,9 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -138,12 +142,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PatchBodySound.cs" />
-    <Compile Include="PatchStandbyTeleport.cs" />
-    <Compile Include="MatchEndPlayerDisposePatch.cs" />
+    <Compile Include="patches\PatchBodySound.cs" />
+    <Compile Include="patches\PatchStandbyTeleport.cs" />
+    <Compile Include="patches\MatchEndPlayerDisposePatch.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="ProfilePreparationComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
