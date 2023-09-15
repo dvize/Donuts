@@ -482,7 +482,8 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                SpawnBots(hotspotTimer, coordinate);
+                                string actualBotType = hotspot.WildSpawnType
+                                SpawnBots(hotspotTimer, coordinate, actualBotType);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -532,13 +533,13 @@ namespace Donuts
 
             return false;
         }
-        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate, String actualBotType)
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             // Moved outside so all spawns for a point are on the same side
-            var actualType = hotspotTimer.Hotspot.WildSpawnType;
+            var actualBotType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationToken = AccessTools.Field(typeof(BotSpawnerClass), "cancellationTokenSource_0").GetValue(botSpawnerClass) as CancellationTokenSource;
@@ -556,7 +557,17 @@ namespace Donuts
                 }
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
-                var botdifficulty = botClass.grabOtherDifficulty();
+                BotDifficulty botdifficulty;
+                if (actualBotType == "assault") {
+                  botdifficulty = grabSCAVDifficulty();
+                }
+                else if (actualBotType == "sptusec" || actualBotType == "sptbear" || actualBotType == "pmc") {
+                  botdifficulty = grabPMCDifficulty();
+                }
+                else {
+                  botdifficulty = grabOtherDifficulty();
+                }
+
                 var GClass628DataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
                 if (GClass628DataList != null && GClass628DataList.Count > 0)
                 {
@@ -580,7 +591,7 @@ namespace Donuts
                 }
                 else
                 {
-                    await myBotClass.CreateBot(wildSpawnType, side, actualType, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
+                    await myBotClass.CreateBot(wildSpawnType, side, actualBotType, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
                 }
 
                 count++;
@@ -1307,14 +1318,17 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualType, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualBotType, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
-            var botdifficulty = grabOtherDifficulty();
-            if (actualType == "assault") {
+            BotDifficulty botdifficulty;
+            if (actualBotType == "assault") {
               botdifficulty = grabSCAVDifficulty();
             }
-            else if (actualType == "sptusec" || actualType == "sptbear" || actualType == "pmc") {
+            else if (actualBotType == "sptusec" || actualBotType == "sptbear" || actualBotType == "pmc") {
               botdifficulty = grabPMCDifficulty();
+            }
+            else {
+              botdifficulty = grabOtherDifficulty();
             }
             //IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
             IBotData botData = new GClass629(side, wildSpawnType, botdifficulty, 0f, null);
