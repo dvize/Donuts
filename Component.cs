@@ -557,13 +557,13 @@ namespace Donuts
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 BotDifficulty botdifficulty;
                 if (actualBotType == "assault") {
-                  botdifficulty = grabSCAVDifficulty();
+                  botdifficulty = botClass.grabSCAVDifficulty();
                 }
                 else if (actualBotType == "sptusec" || actualBotType == "sptbear" || actualBotType == "pmc") {
-                  botdifficulty = grabPMCDifficulty();
+                  botdifficulty = botClass.grabPMCDifficulty();
                 }
                 else { 
-                  botdifficulty = grabOtherDifficulty();
+                  botdifficulty = botClass.grabOtherDifficulty();
                 }
 
                 var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
@@ -1334,7 +1334,6 @@ namespace Donuts
                     return BotDifficulty.normal;
             }
         }
-
         public static BotDifficulty grabOtherDifficulty()
         {
             switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
@@ -1362,3 +1361,4 @@ namespace Donuts
         }
     }
 }
+
