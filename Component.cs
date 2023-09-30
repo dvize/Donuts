@@ -481,8 +481,7 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                string actualBotType = hotspot.WildSpawnType
-                                SpawnBots(hotspotTimer, coordinate, actualBotType);
+                                SpawnBots(hotspotTimer, coordinate);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -532,7 +531,7 @@ namespace Donuts
 
             return false;
         }
-        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate, String actualBotType)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             int count = 0;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
@@ -1261,7 +1260,7 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualBotType, IBotCreator ibotCreator, BotSpawnerClass botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualBotType, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             BotDifficulty botdifficulty;
             if (actualBotType == "assault") {
