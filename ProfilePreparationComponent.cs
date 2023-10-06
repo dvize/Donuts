@@ -23,7 +23,6 @@ namespace Donuts
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
-        private static CancellationTokenSource cancellationToken;
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
@@ -47,6 +46,7 @@ namespace Donuts
         private int maxBotCount;
         private int maxBotCountIfOnlyOneDifficulty;
         private float replenishInterval;
+        private float timeSinceLastReplenish;
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -73,36 +73,35 @@ namespace Donuts
             //init the main vars
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
-            cancellationToken = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             maxBotCount = 5;
             maxBotCountIfOnlyOneDifficulty = 7;
             replenishInterval = 60.0f;
+            timeSinceLastReplenish = 0f;
         }
 
         private async void Start()
         {
             // Initialize the bot pool at the beginning of the round
             await InitializeBotPool();
-            ReplenishLoop();
         }
 
         private async Task InitializeBotPool()
         {
             // Initialize lists
-            List<BotCacheClass> bearsEasy = new List<BotCacheClass>();
-            List<BotCacheClass> usecEasy = new List<BotCacheClass>();
-            List<BotCacheClass> assaultEasy = new List<BotCacheClass>();
-            List<BotCacheClass> bearsNormal = new List<BotCacheClass>();
-            List<BotCacheClass> usecNormal = new List<BotCacheClass>();
-            List<BotCacheClass> assaultNormal = new List<BotCacheClass>();
-            List<BotCacheClass> bearsHard = new List<BotCacheClass>();
-            List<BotCacheClass> usecHard = new List<BotCacheClass>();
-            List<BotCacheClass> assaultHard = new List<BotCacheClass>();
-            List<BotCacheClass> bearsImpossible = new List<BotCacheClass>();
-            List<BotCacheClass> usecImpossible = new List<BotCacheClass>();
-            List<BotCacheClass> assaultImpossible = new List<BotCacheClass>();
+            bearsEasy = new List<BotCacheClass>();
+            usecEasy = new List<BotCacheClass>();
+            assaultEasy = new List<BotCacheClass>();
+            bearsNormal = new List<BotCacheClass>();
+            usecNormal = new List<BotCacheClass>();
+            assaultNormal = new List<BotCacheClass>();
+            bearsHard = new List<BotCacheClass>();
+            usecHard = new List<BotCacheClass>();
+            assaultHard = new List<BotCacheClass>();
+            bearsImpossible = new List<BotCacheClass>();
+            usecImpossible = new List<BotCacheClass>();
+            assaultImpossible = new List<BotCacheClass>();
 
             Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
 
@@ -158,74 +157,65 @@ namespace Donuts
             }
 
         }
-       
-
-        private async Task ReplenishLoop()
+        private async void Update()
         {
-            while (true)
+            timeSinceLastReplenish += Time.deltaTime;
+
+            if (timeSinceLastReplenish >= replenishInterval)
             {
-                //task.delay for replenish interval
-                await Task.Delay((int)(replenishInterval * 1000));
+                timeSinceLastReplenish = 0f;
+                Logger.LogWarning("Donuts: ReplenishAllBots() running");
 
-                await ReplenishAllBots();
+                switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
+                {
+                    case "asonline":
+                        ReplenishBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy);
+                        ReplenishBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy);
+                        ReplenishBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal);
+                        ReplenishBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal);
+                        ReplenishBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard);
+                        ReplenishBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard);
+                        break;
+                    case "easy":
+                        ReplenishBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
+                        ReplenishBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "normal":
+                        ReplenishBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
+                        ReplenishBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "hard":
+                        ReplenishBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
+                        ReplenishBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "impossible":
+                        ReplenishBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
+                        ReplenishBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                }
+
+                switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+                {
+                    case "asonline":
+                        ReplenishBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy);
+                        ReplenishBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal);
+                        ReplenishBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard);
+                        break;
+                    case "easy":
+                        ReplenishBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "normal":
+                        ReplenishBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "hard":
+                        ReplenishBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                    case "impossible":
+                        ReplenishBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
+                        break;
+                }
             }
-        }
 
-        private async Task ReplenishAllBots()
-        {
-            Logger.LogWarning("Donuts: ReplenishAllBots() running");
-
-            string botDifficultiesPMC = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
-            string botDifficultiesSCAV = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
-
-            switch (botDifficultiesPMC)
-            {
-                case "asonline":
-                    await ReplenishBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy);
-                    await ReplenishBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy);
-                    await ReplenishBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal);
-                    await ReplenishBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal);
-                    await ReplenishBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard);
-                    await ReplenishBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard);
-                    break;
-                case "easy":
-                    await ReplenishBots(bearsEasy, EPlayerSide.Bear, sptBear, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
-                    await ReplenishBots(usecEasy, EPlayerSide.Usec, sptUsec, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "normal":
-                    await ReplenishBots(bearsNormal, EPlayerSide.Bear, sptBear, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
-                    await ReplenishBots(usecNormal, EPlayerSide.Usec, sptUsec, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "hard":
-                    await ReplenishBots(bearsHard, EPlayerSide.Bear, sptBear, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
-                    await ReplenishBots(usecHard, EPlayerSide.Usec, sptUsec, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "impossible":
-                    await ReplenishBots(bearsImpossible, EPlayerSide.Bear, sptBear, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
-                    await ReplenishBots(usecImpossible, EPlayerSide.Usec, sptUsec, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
-                    break;
-            }
-
-            switch (botDifficultiesSCAV)
-            {
-                case "asonline":
-                    await ReplenishBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy);
-                    await ReplenishBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal);
-                    await ReplenishBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard);
-                    break;
-                case "easy":
-                    await ReplenishBots(assaultEasy, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.easy, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "normal":
-                    await ReplenishBots(assaultNormal, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.normal, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "hard":
-                    await ReplenishBots(assaultHard, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.hard, maxBotCountIfOnlyOneDifficulty);
-                    break;
-                case "impossible":
-                    await ReplenishBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
-                    break;
-            }
         }
 
         private async Task ReplenishBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
@@ -235,14 +225,7 @@ namespace Donuts
 
             if (botsToAdd > 0)
             {
-                List<Task> tasks = new List<Task>();
-
-                for (int i = 0; i < botsToAdd; i++)
-                {
-                    tasks.Add(CreateBot(botList, side, spawnType, difficulty));
-                }
-
-                await Task.WhenAll(tasks);
+                await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
             }
         }
 
@@ -254,14 +237,7 @@ namespace Donuts
 
             if (botsToAdd > 0)
             {
-                List<Task> tasks = new List<Task>();
-
-                for (int i = 0; i < botsToAdd; i++)
-                {
-                    tasks.Add(CreateBot(botList, side, spawnType, difficulty));
-                }
-
-                await Task.WhenAll(tasks);
+                await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
             }
         }
 
@@ -269,15 +245,17 @@ namespace Donuts
         {
             for (int i = 0; i < count; i++)
             {
-                await CreateBot(botList, side, spawnType, difficulty);
+                CreateBot(botList, side, spawnType, difficulty);
             }
         }
+
         private async Task CreateBot(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
         {
             var botData = new IProfileData(side, spawnType, difficulty, 0f, null);
             var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
             botList.Add(bot);
         }
+
         internal static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
             switch (botDifficulty)

@@ -74,6 +74,9 @@ namespace Donuts
         private static Coroutine gizmoUpdateCoroutine;
         internal static IBotCreator ibotCreator;
 
+        WildSpawnType sptUsec;
+        WildSpawnType sptBear;
+
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -168,6 +171,9 @@ namespace Donuts
             gizmoSpheres = new List<GameObject>();
             ibotCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             myBotClass = new botClass();
+
+            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
         private void SetupBotLimit(string folderName)
         {
@@ -537,7 +543,6 @@ namespace Donuts
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             // Moved outside so all spawns for a point are on the same side
-            var actualBotType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationToken = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
@@ -556,10 +561,11 @@ namespace Donuts
 
                 //check if array has a profile and activatebot and slice it.. otherwise use regular createbot
                 BotDifficulty botdifficulty;
-                if (actualBotType == "assault") {
+
+                if (wildSpawnType == WildSpawnType.assault) {
                   botdifficulty = botClass.grabSCAVDifficulty();
                 }
-                else if (actualBotType == "sptusec" || actualBotType == "sptbear" || actualBotType == "pmc") {
+                else if (wildSpawnType == sptUsec || wildSpawnType == sptBear|| wildSpawnType == WildSpawnType.pmcBot) {
                   botdifficulty = botClass.grabPMCDifficulty();
                 }
                 else { 
@@ -567,6 +573,7 @@ namespace Donuts
                 }
 
                 var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+                
                 if (BotCacheDataList != null && BotCacheDataList.Count > 0)
                 {
                     //splice data from GClass628DataList and assign it to GClass628Data
@@ -584,7 +591,7 @@ namespace Donuts
                 }
                 else
                 {
-                    await myBotClass.CreateBot(wildSpawnType, side, actualBotType, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
+                    await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
                 }
 
                 count++;
@@ -1260,18 +1267,25 @@ namespace Donuts
 
     internal class botClass
     {
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, String actualBotType, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             BotDifficulty botdifficulty;
-            if (actualBotType == "assault") {
-              botdifficulty = grabSCAVDifficulty();
+            var sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            var sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+
+            if (wildSpawnType == WildSpawnType.assault)
+            {
+                botdifficulty = botClass.grabSCAVDifficulty();
             }
-            else if (actualBotType == "sptusec" || actualBotType == "sptbear" || actualBotType == "pmc") {
-              botdifficulty = grabPMCDifficulty();
+            else if (wildSpawnType == sptUsec || wildSpawnType == sptBear || wildSpawnType == WildSpawnType.pmcBot)
+            {
+                botdifficulty = botClass.grabPMCDifficulty();
             }
-            else {
-              botdifficulty = grabOtherDifficulty();
+            else
+            {
+                botdifficulty = botClass.grabOtherDifficulty();
             }
+
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
