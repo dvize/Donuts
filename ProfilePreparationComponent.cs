@@ -47,6 +47,8 @@ namespace Donuts
         private int maxBotCountIfOnlyOneDifficulty;
         private float replenishInterval;
         private float timeSinceLastReplenish;
+        private int botsReplenishedCount;
+        private int maxBotsToReplenish;
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -77,9 +79,11 @@ namespace Donuts
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             maxBotCount = 5;
             maxBotCountIfOnlyOneDifficulty = 7;
-            replenishInterval = 60.0f;
+            replenishInterval = 30.0f;
             timeSinceLastReplenish = 0f;
-        }
+            botsReplenishedCount = 0;
+            maxBotsToReplenish = 3;
+    }
 
         private async void Start()
         {
@@ -214,8 +218,11 @@ namespace Donuts
                         ReplenishBots(assaultImpossible, EPlayerSide.Savage, WildSpawnType.assault, BotDifficulty.impossible, maxBotCountIfOnlyOneDifficulty);
                         break;
                 }
+
+                botsReplenishedCount = 0;
             }
 
+            
         }
 
         private async Task ReplenishBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
@@ -223,9 +230,10 @@ namespace Donuts
             int currentCount = botList.Count;
             int botsToAdd = maxBotCount - currentCount;
 
-            if (botsToAdd > 0)
+            if (botsToAdd > 0 && botsReplenishedCount < maxBotsToReplenish) // Check the counter.
             {
                 await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
+                botsReplenishedCount += botsToAdd; // Increment the counter.
             }
         }
 
@@ -235,9 +243,10 @@ namespace Donuts
             int currentCount = botList.Count;
             int botsToAdd = maxCount - currentCount;
 
-            if (botsToAdd > 0)
+            if (botsToAdd > 0 && botsReplenishedCount < maxBotsToReplenish) // Check the counter.
             {
                 await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
+                botsReplenishedCount += botsToAdd; // Increment the counter.
             }
         }
 
