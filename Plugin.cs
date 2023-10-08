@@ -19,10 +19,9 @@ namespace Donuts
 
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.0")]
     [BepInDependency("com.spt-aki.core", "3.7.0")]
-    //[BepInDependency("xyz.drakia.bigbrain")]
-    //[BepInDependency("xyz.drakia.waypoints")]
-    //[BepInDependency("me.sol.sain")]
-    //[BepInDependency("me.skwizzy.lootingbots")]
+    [BepInDependency("xyz.drakia.bigbrain")]
+    [BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -125,7 +124,7 @@ namespace Donuts
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
                 "Cool Down Timer",
-                180f,
+                300f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
