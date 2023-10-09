@@ -164,7 +164,7 @@ namespace Donuts
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",
                 "Show Random Scenario Selection",
-                false,
+                true,
                 new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
