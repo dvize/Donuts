@@ -607,6 +607,10 @@ namespace Donuts
                     return WildSpawnType.assault;
                 case "assaultgroup":
                     return WildSpawnType.assaultGroup;
+                case "bossboar":
+                    return WildSpawnType.bossBoar;
+                case "bossboarsniper":
+                    return WildSpawnType.bossBoarSniper;
                 case "bossbully":
                     return WildSpawnType.bossBully;
                 case "bossgluhar":
@@ -627,6 +631,8 @@ namespace Donuts
                     return WildSpawnType.cursedAssault;
                 case "exusec-rogues":
                     return WildSpawnType.exUsec;
+                case "followerboar":
+                    return WildSpawnType.followerBoar;
                 case "followerbully":
                     return WildSpawnType.followerBully;
                 case "followergluharassault":
