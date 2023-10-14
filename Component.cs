@@ -847,7 +847,8 @@ namespace Donuts
                 return !IsSpawnPositionInsideWall(spawnPosition) &&
                        !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
                        !IsSpawnInAir(spawnPosition) &&
-                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
+                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot) &&
+                       !IsSpawnPositionObstructed(spawnPosition);
             }
             return false;
         }
@@ -888,6 +889,20 @@ namespace Donuts
                     }
                     currentTransform = currentTransform.parent;
                 }
+            }
+
+            return false;
+        }
+
+        private bool IsSpawnPositionObstructed(Vector3 position)
+        {
+            Ray ray = new Ray(position, Vector3.up);
+            float distance = 5f;
+
+            if (Physics.Raycast(ray, out RaycastHit hit, distance, LayerMaskClass.TerrainMask))
+            {
+                // If the raycast hits a collider, it means the position is obstructed
+                return true;
             }
 
             return false;
