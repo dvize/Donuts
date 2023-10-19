@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using DrakiaXYZ.utils;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;
@@ -107,6 +109,13 @@ namespace Donuts
 
         private void Awake()
         {
+            //run dependency checker
+
+            if (!DependencyChecker.ValidateDependencies(Logger, Info, this.GetType(), Config))
+            {
+                throw new Exception($"Missing Dependencies");
+            }
+
             //Main Settings
             PluginEnabled = Config.Bind(
                 "1. Main Settings",

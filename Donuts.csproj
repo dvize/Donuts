@@ -142,6 +142,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DependencyChecker.cs" />
     <Compile Include="patches\PatchBodySound.cs" />
     <Compile Include="patches\PatchStandbyTeleport.cs" />
     <Compile Include="patches\MatchEndPlayerDisposePatch.cs" />
