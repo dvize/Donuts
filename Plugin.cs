@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -107,6 +108,11 @@ namespace Donuts
 
         private void Awake()
         {
+            if (!DependencyChecker.ValidateDependencies(Logger, Info, this.GetType(), Config))
+            {
+                throw new Exception($"Missing Dependencies");
+            }
+
             //Main Settings
             PluginEnabled = Config.Bind(
                 "1. Main Settings",
