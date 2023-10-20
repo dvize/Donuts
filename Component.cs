@@ -491,6 +491,9 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
+                                // we can figure out the group size here and pass the proper integer
+                                // lets add a new config option for group chance, kind of like SWAG
+                                // check it here and apply accordingly?
                                 SpawnBots(hotspotTimer, coordinate, hotspot.MaxRandomNumBots);
                                 hotspotTimer.timesSpawned++;
 
@@ -541,7 +544,7 @@ namespace Donuts
 
             return false;
         }
-        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate, Integer botsInGroup)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate, int botsInGroup)
         {
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
@@ -1297,7 +1300,7 @@ namespace Donuts
 
         private static List<Models.BotSpawnInfo> initialPMCGroups = new List<Models.BotSpawnInfo>();
 
-        public async Task CreateBot(WildSpawnType wildSpawnType, Integer botsInGroup, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateBot(WildSpawnType wildSpawnType, int botsInGroup, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             BotDifficulty botdifficulty;
             var sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
