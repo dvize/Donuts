@@ -489,7 +489,7 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                SpawnBots(hotspotTimer, coordinate);
+                                SpawnBots(hotspotTimer, coordinate, hotspot.MaxRandomNumBots);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
@@ -539,7 +539,7 @@ namespace Donuts
 
             return false;
         }
-        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate, Integer botsInGroup)
         {
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
@@ -547,9 +547,6 @@ namespace Donuts
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationToken = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-
-            // need to get rid of this while loop, and instead use MaxRandNum to roll for a number, that will be the botsInGroup
-            int botsInGroup = 5;
 
             Vector3? spawnPosition = await GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
@@ -562,12 +559,12 @@ namespace Donuts
             else if (wildSpawnType == sptUsec || wildSpawnType == sptBear|| wildSpawnType == WildSpawnType.pmcBot) {
                 botdifficulty = botClass.grabPMCDifficulty();
             }
-            else { 
+            else {
                 botdifficulty = botClass.grabOtherDifficulty();
             }
 
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
-            
+
             if (BotCacheDataList != null && BotCacheDataList.Count > 0)
             {
                 //splice data from GClass628DataList and assign it to GClass628Data
@@ -601,7 +598,7 @@ namespace Donuts
             }
             else
             {
-                await myBotClass.CreateBot(wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
+                await myBotClass.CreateBot(wildSpawnType, botsInGroup, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationToken);
             }
         }
         private WildSpawnType GetWildSpawnType(string spawnType)
@@ -1297,12 +1294,9 @@ namespace Donuts
     {
 
         private static List<Models.BotSpawnInfo> initialPMCGroups = new List<Models.BotSpawnInfo>();
-    
-        public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+
+        public async Task CreateBot(WildSpawnType wildSpawnType, Integer botsInGroup, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
-            // lets assume this is a 5-man PMC group
-            int botsInGroup = 5;
-            //
             BotDifficulty botdifficulty;
             var sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             var sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -1327,7 +1321,6 @@ namespace Donuts
             {
                 spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
             }
-            DonutComponent.Logger.LogWarning($"test1");
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, spawnParams);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, botsInGroup, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
@@ -1337,7 +1330,6 @@ namespace Donuts
             initialPMCGroups.Add(botSpawnInfo);
 
             // debug
-            DonutComponent.Logger.LogWarning($"hello");
             DonutComponent.Logger.LogWarning($"{botSpawnInfo}");
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
