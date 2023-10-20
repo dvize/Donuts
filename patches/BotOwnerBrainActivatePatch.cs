@@ -49,7 +49,7 @@ namespace dvize.Donuts
 
             string actualRoleName = __instance.Profile.Info.Settings.Role.ToString();
 
-            LoggingController.LogInfo("Converted spawn type for bot " + __instance.Profile.Nickname + " from " + currentRoleName + " to " + actualRoleName);
+            Logger.LogDebug("Converted spawn type for bot " + __instance.Profile.Nickname + " from " + currentRoleName + " to " + actualRoleName);
 
             return true;
         }

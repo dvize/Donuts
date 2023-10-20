@@ -221,8 +221,6 @@ namespace Donuts
 
                 botsReplenishedCount = 0;
             }
-
-            
         }
 
         private async Task ReplenishBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
@@ -328,9 +326,6 @@ namespace Donuts
                 default:
                     return null;
             }
-
-
         }
-
     }
 }

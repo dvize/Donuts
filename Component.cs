@@ -95,6 +95,8 @@ namespace Donuts
 
         public void Awake()
         {
+            new Patches.BotOwnerBrainActivatePatch.Enable();
+
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             methodCache = new Dictionary<string, MethodInfo>();
 
