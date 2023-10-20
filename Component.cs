@@ -595,25 +595,23 @@ namespace Donuts
                 var BotCacheElement = BotCacheDataList[0];
                 BotCacheDataList.RemoveAt(0);
 
-                BotSpawnParams spawnParams = new BotSpawnParams();
-                spawnParams.TriggerType = SpawnTriggerType.none;
-                spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
-                if (botsInGroup > 1)
-                {
-                    spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
-                }
-                DonutComponent.Logger.LogWarning($"test1");
-                IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, spawnParams);
-                BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, botsInGroup, botSpawnerClass);
+                // BotSpawnParams spawnParams = new BotSpawnParams();
+                // spawnParams.TriggerType = SpawnTriggerType.none;
+                // spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
+                // if (botsInGroup > 1)
+                // {
+                //     spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
+                // }
+                // IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, spawnParams);
+                // BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, botsInGroup, botSpawnerClass);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-                bot.AddPosition((Vector3)spawnPosition);
+                BotCacheElement.AddPosition((Vector3)spawnPosition);
 
-                Models.BotSpawnInfo botSpawnInfo = new Models.BotSpawnInfo(botsInGroup, bot);
+                Models.BotSpawnInfo botSpawnInfo = new Models.BotSpawnInfo(botsInGroup, BotCacheElement);
                 botSpawnInfo.UpdateOriginalSpawnTypes();
 
                 initialPMCGroups.Add(botSpawnInfo);
-                DonutComponent.Logger.LogWarning($"{botSpawnInfo}");
 
                 DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botSpawnInfo.Data, null, cancellationToken.Token });
 

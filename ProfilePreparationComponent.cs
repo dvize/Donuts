@@ -258,8 +258,16 @@ namespace Donuts
 
         private async Task CreateBot(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
         {
-            var botData = new IProfileData(side, spawnType, difficulty, 0f, null);
-            var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+            int botsInGroup = 5
+            BotSpawnParams spawnParams = new BotSpawnParams();
+            spawnParams.TriggerType = SpawnTriggerType.none;
+            spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
+            if (botsInGroup > 1)
+            {
+                spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
+            }
+            var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
+            var bot = await BotCacheClass.Create(botData, botCreator, botsInGroup, botSpawnerClass);
             botList.Add(bot);
         }
 
