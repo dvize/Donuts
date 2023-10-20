@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
+using Donuts.Models;
 
 //custom using
 using BotCacheClass = GClass513;
@@ -49,6 +50,11 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
+        private static List<Models.BotSpawnInfo> initialPMCGroups = new List<Models.BotSpawnInfo>();
+        public static ReadOnlyCollection<Models.BotSpawnInfo> InitialPMCBotGroups
+        {
+            get { return new ReadOnlyCollection<Models.BotSpawnInfo>(initialPMCGroups); }
+        }
         private bool fileLoaded = false;
         public static string maplocation;
         private int PMCBotLimit = 0;
@@ -1290,6 +1296,9 @@ namespace Donuts
     {
         public async Task CreateBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
+            // lets assume this is a 5-man PMC group
+            int botsInGroup = 5
+            //
             BotDifficulty botdifficulty;
             var sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             var sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -1307,9 +1316,21 @@ namespace Donuts
                 botdifficulty = botClass.grabOtherDifficulty();
             }
 
+            BotSpawnParams spawnParams = new BotSpawnParams();
+            spawnParams.TriggerType = SpawnTriggerType.none;
+            spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
+            if (botsInGroup > 1)
+            {
+                spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
+            }
+
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
-            BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
+            BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, botsInGroup, botSpawnerClass);
             bot.AddPosition((Vector3)spawnPosition);
+            Models.BotSpawnInfo botSpawnInfo = new Models.BotSpawnInfo(botsInGroup, bot)
+            botSpawnInfo.UpdateOriginalSpawnTypes();
+
+            initialPMCGroups.Add(botSpawnInfo)
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
@@ -1393,6 +1414,24 @@ namespace Donuts
                 default:
                     return BotDifficulty.normal;
             }
+        }
+        public static bool TryGetInitialPMCGroup(BotOwner bot, out BotSpawnInfo matchingGroupData)
+        {
+            matchingGroupData = null;
+
+            foreach (BotSpawnInfo info in initialPMCGroups)
+            {
+                foreach (Profile profile in info.Data.Profiles)
+                {
+                    if (profile.Id == bot.Profile.Id)
+                    {
+                        matchingGroupData = info;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
