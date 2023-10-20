@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Aki.Reflection.Patching;
 using EFT;
 
-namespace dvize.Donuts
+namespace Donuts.Patches
 {
     public class BotOwnerBrainActivatePatch : ModulePatch
     {
@@ -32,7 +32,7 @@ namespace dvize.Donuts
 
         private static bool TryConvertSpawnType(BotOwner __instance)
         {
-            if (!Component.TryGetInitialPMCGroup(__instance, out Models.BotSpawnInfo groupData))
+            if (!DonutComponent.TryGetInitialPMCGroup(__instance, out Models.BotSpawnInfo groupData))
             {
                 return false;
             }

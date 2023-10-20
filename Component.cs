@@ -93,9 +93,28 @@ namespace Donuts
 
         }
 
+        public static bool TryGetInitialPMCGroup(BotOwner bot, out BotSpawnInfo matchingGroupData)
+        {
+            matchingGroupData = null;
+
+            foreach (BotSpawnInfo info in initialPMCGroups)
+            {
+                foreach (Profile profile in info.Data.Profiles)
+                {
+                    if (profile.Id == bot.Profile.Id)
+                    {
+                        matchingGroupData = info;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public void Awake()
         {
-            new Patches.BotOwnerBrainActivatePatch.Enable();
+            new Patches.BotOwnerBrainActivatePatch().Enable();
 
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             methodCache = new Dictionary<string, MethodInfo>();
@@ -1419,24 +1438,6 @@ namespace Donuts
                 default:
                     return BotDifficulty.normal;
             }
-        }
-        public static bool TryGetInitialPMCGroup(BotOwner bot, out BotSpawnInfo matchingGroupData)
-        {
-            matchingGroupData = null;
-
-            foreach (BotSpawnInfo info in initialPMCGroups)
-            {
-                foreach (Profile profile in info.Data.Profiles)
-                {
-                    if (profile.Id == bot.Profile.Id)
-                    {
-                        matchingGroupData = info;
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
     }
 }
