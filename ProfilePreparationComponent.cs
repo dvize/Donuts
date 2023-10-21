@@ -277,7 +277,9 @@ namespace Donuts
                 }
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
                 var bot = await BotCacheClass.Create(botData, botCreator, i, botSpawnerClass);
-                DonutComponent.Logger.LogWarning($"i is {i} for bot {bot}")
+                DonutComponent.Logger.LogWarning($"i is {i} for bot {bot}");
+                botList.Add(bot);
+                i++;
             }
 
             // if (botsInGroup > 1)
@@ -287,7 +289,6 @@ namespace Donuts
             // var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
             // var bot = await BotCacheClass.Create(botData, botCreator, botsInGroup, botSpawnerClass);
             // DonutComponent.Logger.LogWarning($"{bot}")
-            botList.Add(bot);
         }
 
         internal static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)

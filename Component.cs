@@ -589,6 +589,7 @@ namespace Donuts
             }
 
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botdifficulty);
+            DonutComponent.Logger.LogWarning($"BotCacheDataList {BotCacheDataList}");
 
             if (BotCacheDataList != null && BotCacheDataList.Count > 0)
             {
