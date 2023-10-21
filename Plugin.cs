@@ -40,6 +40,8 @@ namespace Donuts
         public static ConfigEntry<string> scenarioSelection;
         public string[] scenarioValues = new string[] { };
 
+        public static ConfigEntry<string> pmcGroupChance;
+
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
         public static ConfigEntry<string> botDifficultiesSCAV;
