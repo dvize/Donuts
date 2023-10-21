@@ -267,12 +267,26 @@ namespace Donuts
             BotSpawnParams spawnParams = new BotSpawnParams();
             spawnParams.TriggerType = SpawnTriggerType.none;
             spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
-            if (botsInGroup > 1)
+
+            int i = 1;
+            while (i < 6)
             {
-                spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
+                if (i > 1)
+                {
+                    spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, i);
+                }
+                var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
+                var bot = await BotCacheClass.Create(botData, botCreator, i, botSpawnerClass);
+                DonutComponent.Logger.LogWarning($"i is {i} for bot {bot}")
             }
-            var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
-            var bot = await BotCacheClass.Create(botData, botCreator, botsInGroup, botSpawnerClass);
+
+            // if (botsInGroup > 1)
+            // {
+            //     spawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, botsInGroup);
+            // }
+            // var botData = new IProfileData(side, spawnType, difficulty, 0f, spawnParams);
+            // var bot = await BotCacheClass.Create(botData, botCreator, botsInGroup, botSpawnerClass);
+            // DonutComponent.Logger.LogWarning($"{bot}")
             botList.Add(bot);
         }
 
