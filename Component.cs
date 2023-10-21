@@ -40,7 +40,7 @@ namespace Donuts
 
         private static List<Models.BotSpawnInfo> initialPMCGroups = new List<Models.BotSpawnInfo>();
 
-        public static string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value
+        public static string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
 
         internal List<WildSpawnType> validDespawnListPMC = new List<WildSpawnType>()
         {
@@ -513,36 +513,8 @@ namespace Donuts
                                 }
 
                                 Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                // we can figure out the group size here and pass the proper integer
-                                // lets add a new config option for group chance, kind of like SWAG
-                                // check it here and apply accordingly?
 
-                                int maxNumBots = hotspot.MaxRandomNumBots
-
-                                if (pmcGroupChance == "none")
-                                {
-                                    maxNumBots = 1;
-                                }
-                                else
-                                {
-                                    Random random = new Random();
-                                    int diceRoll = random.Next(1, maxNumBots);
-
-                                    if (pmcGroupChance == "low" && diceRoll <= (maxNumBots / 4))
-                                    {
-                                        maxNumBots = Math.Min(maxNumBots - 1, 1);
-                                    }
-                                    else if (pmcGroupChance == "medium" && diceRoll <= (maxNumBots / 2))
-                                    {
-                                        maxNumBots = Math.Min(maxNumBots - 1, 1);
-                                    }
-                                    else if (pmcGroupChance == "high" && diceRoll >= (maxNumBots / 2))
-                                    {
-                                        maxNumBots = Math.Max(maxNumBots - 1, 1);
-                                    }
-                                }
-
-                                SpawnBots(hotspotTimer, coordinate, maxNumBots);
+                                SpawnBots(hotspotTimer, coordinate, hotspot.MaxRandomNumBots);
                                 hotspotTimer.timesSpawned++;
 
                                 // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed

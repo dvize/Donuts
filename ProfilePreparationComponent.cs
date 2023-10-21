@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,7 @@ namespace Donuts
         private float timeSinceLastReplenish;
         private int botsReplenishedCount;
         private int maxBotsToReplenish;
+        private string pmcGroupChance;
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -87,12 +89,15 @@ namespace Donuts
 
         private async void Start()
         {
+            pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
+
             // Initialize the bot pool at the beginning of the round
             await InitializeBotPool();
         }
 
         private async Task InitializeBotPool()
         {
+
             // Initialize lists
             bearsEasy = new List<BotCacheClass>();
             usecEasy = new List<BotCacheClass>();
@@ -258,7 +263,7 @@ namespace Donuts
 
         private async Task CreateBot(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
         {
-            int botsInGroup = 5
+            int botsInGroup = 2;
             BotSpawnParams spawnParams = new BotSpawnParams();
             spawnParams.TriggerType = SpawnTriggerType.none;
             spawnParams.Id_spawn = "InitialPMCGroup_" + botsInGroup;
