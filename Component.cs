@@ -561,7 +561,7 @@ namespace Donuts
                 }
                 ShallBeGroupParams groupParams = new ShallBeGroupParams(true, false, maxCount);
 
-                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, 1);
+                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount);
                 await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
             }
             else
