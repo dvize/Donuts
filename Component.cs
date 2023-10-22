@@ -559,7 +559,7 @@ namespace Donuts
                     // Failed to get a valid spawn position, move on to generating the next bot
                     Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
                 }
-                ShallBeGroupParams groupParams = new ShallBeGroupParams(true, false, maxCount);
+                ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
 
                 await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount);
                 await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
