@@ -7,21 +7,17 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Aki.Common.Http;
 using Aki.PrePatch;
-using Aki.Reflection.Patching;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
-using EFT.Bots;
 using EFT.Communications;
 using HarmonyLib;
 using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI;
 
 //custom using
 using BotCacheClass = GClass513;
@@ -541,11 +537,10 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            int count = 0;
             int maxCount = UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1);
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
-            
+
             // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
@@ -563,11 +558,11 @@ namespace Donuts
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
                     Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
-                    count++;
                 }
+                ShallBeGroupParams groupParams = new ShallBeGroupParams(true, false, maxCount);
 
-                await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
-                count++;
+                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, 1);
+                await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
             }
             else
             {
@@ -577,35 +572,13 @@ namespace Donuts
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
                     Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
-                    count++;
                 }
 
                 await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
-                count++;
             }
-           
+
         }
-        private async Task SpawnBotFromCacheOrCreateNew(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, 
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken, BotDifficulty botDifficulty)
-        {
-            if (botCacheList != null && botCacheList.Count > 0)
-            {
-                var botCacheElement = botCacheList[0];
-                botCacheList.RemoveAt(0);
-
-                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                botCacheElement.AddPosition(spawnPosition);
-
-                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationToken.Token });
-
-                DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
-            }
-            else
-            {
-                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationToken);
-            }
-        }
+        
 
         #region botHelperMethods
 
@@ -702,6 +675,46 @@ namespace Donuts
         }
 
         #endregion
+
+        private async Task SpawnBotFromCacheOrCreateNew(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty)
+        {
+            if (botCacheList != null && botCacheList.Count > 0)
+            {
+                var botCacheElement = botCacheList[0];
+                botCacheList.RemoveAt(0);
+
+                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
+                botCacheElement.AddPosition(spawnPosition);
+
+                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
+
+                DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
+            }
+            else
+            {
+                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource);
+            }
+        }
+        private async Task SpawnBotForGroup(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty)
+        {
+            if (botCacheList != null && botCacheList.Count > 0)
+            {
+                //since last element was the group that was just added, remove it
+                var botCacheElement = botCacheList.Last();
+                botCacheList.RemoveAt(botCacheList.Count - 1);
+
+                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
+                botCacheElement.AddPosition(spawnPosition);
+
+                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
+
+                DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
+            }
+        }
         public async Task CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
         {
             BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType);
@@ -716,7 +729,6 @@ namespace Donuts
 
             DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
-
         private WildSpawnType GetWildSpawnType(string spawnType)
         {
             switch (spawnType.ToLower())

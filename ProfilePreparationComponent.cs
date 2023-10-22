@@ -187,9 +187,11 @@ namespace Donuts
         }
 
         // create cached bots for groups.
-        private async Task CreateGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, 
+        internal static async Task CreateGroupBots(EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
             ShallBeGroupParams groupParams, int count = 1)
         {
+            List<BotCacheClass> botList = botLists[spawnType][difficulty];
+
             var botSpawnParams = new BotSpawnParams
             {
                 TriggerType = SpawnTriggerType.none,
