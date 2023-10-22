@@ -561,8 +561,16 @@ namespace Donuts
                 }
                 ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
 
-                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount);
-                await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty);
+                //check if group bots exist in cache or else create it
+                if(DonutsBotPrep.FindGroupBots(wildSpawnType, botDifficulty, maxCount) != null)
+                {
+                    await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount);
+                }
+                else
+                {
+                    await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount);
+                    await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount);
+                }
             }
             else
             {
@@ -698,13 +706,13 @@ namespace Donuts
             }
         }
         private async Task SpawnBotForGroup(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty)
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount)
         {
             if (botCacheList != null && botCacheList.Count > 0)
             {
                 //since last element was the group that was just added, remove it
-                var botCacheElement = botCacheList.Last();
-                botCacheList.RemoveAt(botCacheList.Count - 1);
+                var botCacheElement = DonutsBotPrep.FindGroupBots(wildSpawnType, botDifficulty, maxCount);
+                botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 botCacheElement.AddPosition(spawnPosition);

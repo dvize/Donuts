@@ -28,11 +28,11 @@ namespace Donuts
         private static WildSpawnType sptBear;
 
         private int maxBotCount;
-        private int maxBotCountIfOnlyOneDifficulty;
         private float replenishInterval;
         private float timeSinceLastReplenish;
         private int botsReplenishedCount;
         private int maxBotsToReplenish;
+        private int maxGroupBotsToReplenish;
 
         internal static ManualLogSource Logger
         {
@@ -62,12 +62,11 @@ namespace Donuts
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            maxBotCount = 5;
-            maxBotCountIfOnlyOneDifficulty = 7;
             replenishInterval = 30.0f;
             timeSinceLastReplenish = 0f;
             botsReplenishedCount = 0;
             maxBotsToReplenish = 3;
+            maxGroupBotsToReplenish = 2;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
             InitializeBotLists();
@@ -108,19 +107,29 @@ namespace Donuts
             // Create bots for PMC difficulties
             foreach (var entry in botLists[sptBear])
             {
-                CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key);
+                CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
             }
 
             foreach (var entry in botLists[sptUsec])
             {
-                CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key);
+                CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
             }
 
             // Create bots for SCAV difficulties
             foreach (var entry in botLists[WildSpawnType.assault])
             {
-                CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key);
+                CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, maxBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
             }
+
         }
         private async void Update()
         {
@@ -188,7 +197,7 @@ namespace Donuts
 
         // create cached bots for groups.
         internal static async Task CreateGroupBots(EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-            ShallBeGroupParams groupParams, int count = 1)
+    ShallBeGroupParams groupParams, int count)
         {
             List<BotCacheClass> botList = botLists[spawnType][difficulty];
 
@@ -198,13 +207,48 @@ namespace Donuts
                 ShallBeGroup = groupParams
             };
 
-            var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-            var bot = await BotCacheClass.Create(botData, botCreator, count, botSpawnerClass);
-            botList.Add(bot);
-
+            for (int i = 0; i < count; i++)
+            {
+                var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
+                var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+                botList.Add(bot);
+            }
         }
 
+        //overloaded method for if we know the botList for initial spawns
+        internal static async Task CreateGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
+    ShallBeGroupParams groupParams, int count)
+        {
+            var botSpawnParams = new BotSpawnParams
+            {
+                TriggerType = SpawnTriggerType.none,
+                ShallBeGroup = groupParams
+            };
 
+            for (int i = 0; i < count; i++)
+            {
+                var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
+                var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+                botList.Add(bot);
+            }
+        }
+
+        //find a botcacheclass list that has X amount of bots in the groupParams
+        internal static BotCacheClass FindGroupBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
+        {
+            List<BotCacheClass> botList = botLists[spawnType][botDifficulty];
+
+            foreach (var entry in botList)
+            {
+                if (entry.SpawnParams.ShallBeGroup != null && entry.SpawnParams.ShallBeGroup.StartCount == targetCount)
+                {
+                    //if there is a match, return the botcacheclass since we'll use it for something else.
+                    return entry;
+                }
+            }
+
+            return null;
+        }
     }
 
 
