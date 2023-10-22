@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Aki.PrePatch;
 using BepInEx.Logging;
@@ -23,6 +24,7 @@ namespace Donuts
         private static BotSpawner botSpawnerClass;
 
         private static Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>> botLists;
+        internal static List<BotCacheClass> OriginalBotSpawnTypes;
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
@@ -33,6 +35,7 @@ namespace Donuts
         private int botsReplenishedCount;
         private int maxBotsToReplenish;
         private int maxGroupBotsToReplenish;
+
 
         internal static ManualLogSource Logger
         {
@@ -69,6 +72,8 @@ namespace Donuts
             maxGroupBotsToReplenish = 2;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
+            OriginalBotSpawnTypes = new List<BotCacheClass>();
+
             InitializeBotLists();
         }
 
@@ -210,8 +215,10 @@ namespace Donuts
             for (int i = 0; i < count; i++)
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
-                botList.Add(bot);
+                var botGroup = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+                
+                botList.Add(botGroup);
+                OriginalBotSpawnTypes.Add(botGroup);
             }
         }
 
@@ -228,8 +235,10 @@ namespace Donuts
             for (int i = 0; i < count; i++)
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
-                botList.Add(bot);
+                var botGroup = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+
+                botList.Add(botGroup);
+                OriginalBotSpawnTypes.Add(botGroup);
             }
         }
 
@@ -249,7 +258,15 @@ namespace Donuts
 
             return null;
         }
+
+        //return the original wildspawntype of a bot that was converted to a group
+        internal static WildSpawnType? GetOriginalSpawnTypeForBot(BotOwner bot)
+        {
+            return OriginalBotSpawnTypes
+                .SelectMany(entry => entry.Profiles)
+                .FirstOrDefault(profile => profile.Id == bot.Profile.Id)?
+                .Info.Settings.Role;
+        }
     }
-
-
 }
+

@@ -6,6 +6,7 @@ using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using Donuts.Patches;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;
@@ -335,6 +336,13 @@ namespace Donuts
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
+
+            //Only enable this patch if questing bots is not loaded
+            if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.DanW.QuestingBots"))
+            {
+                new BotOwnerBrainActivatePatch().Enable();
+            }
+
             SetupScenariosUI();
         }
 
