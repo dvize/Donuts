@@ -91,6 +91,9 @@ namespace Donuts
         #region StartUpInit
         public void Awake()
         {
+            // Activate new patch for PMC groups
+            new Patches.BotOwnerBrainActivatePatch().Enable();
+
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             methodCache = new Dictionary<string, MethodInfo>();
 
@@ -564,10 +567,12 @@ namespace Donuts
                 //check if group bots exist in cache or else create it
                 if(DonutsBotPrep.FindGroupBots(wildSpawnType, botDifficulty, maxCount) != null)
                 {
+                    DonutComponent.Logger.LogWarning($"FindGroupBots returned not null")
                     await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount);
                 }
                 else
                 {
+                    DonutComponent.Logger.LogWarning($"FindGroupBots returned null")
                     await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount);
                     await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount);
                 }
@@ -586,7 +591,7 @@ namespace Donuts
             }
 
         }
-        
+
 
         #region botHelperMethods
 

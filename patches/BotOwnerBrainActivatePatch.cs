@@ -26,7 +26,7 @@ namespace Donuts.Patches
         }
         private static bool TryConvertSpawnType(BotOwner __instance)
         {
-            
+
             WildSpawnType? originalSpawnType = DonutsBotPrep.GetOriginalSpawnTypeForBot(__instance);
             Logger.LogWarning("Retrieved original Wildspawntype for bot " + __instance.Profile.Nickname + " as " + originalSpawnType.Value.ToString());
 
@@ -39,8 +39,5 @@ namespace Donuts.Patches
 
             return true;
         }
-
-        
-
     }
 }
