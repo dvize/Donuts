@@ -996,8 +996,7 @@ namespace Donuts
                 return !IsSpawnPositionInsideWall(spawnPosition) &&
                        !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
                        !IsSpawnInAir(spawnPosition) &&
-                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot) &&
-                       !IsSpawnPositionObstructed(spawnPosition);
+                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
             }
             return false;
         }
@@ -1043,7 +1042,7 @@ namespace Donuts
             return false;
         }
 
-        private bool IsSpawnPositionObstructed(Vector3 position)
+        /*private bool IsSpawnPositionObstructed(Vector3 position)
         {
             Ray ray = new Ray(position, Vector3.up);
             float distance = 5f;
@@ -1055,7 +1054,7 @@ namespace Donuts
             }
 
             return false;
-        }
+        }*/
         private bool IsSpawnInAir(Vector3 position)
         {
             // Raycast down and determine if the position is in the air or not
