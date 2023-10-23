@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Aki.PrePatch;
@@ -7,6 +8,7 @@ using Comfort.Common;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 //custom usings
 using BotCacheClass = GClass513;
@@ -113,26 +115,26 @@ namespace Donuts
             foreach (var entry in botLists[sptBear])
             {
                 CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
             }
 
             foreach (var entry in botLists[sptUsec])
             {
                 CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
             }
 
             // Create bots for SCAV difficulties
             foreach (var entry in botLists[WildSpawnType.assault])
             {
                 CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 3), maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 4), maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
             }
 
         }
@@ -202,7 +204,7 @@ namespace Donuts
 
         // create cached bots for groups.
         internal static async Task CreateGroupBots(EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-    ShallBeGroupParams groupParams, int count)
+    ShallBeGroupParams groupParams, int maxCount, int iterations )
         {
             List<BotCacheClass> botList = botLists[spawnType][difficulty];
 
@@ -212,10 +214,10 @@ namespace Donuts
                 ShallBeGroup = groupParams
             };
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < iterations; i++)
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var botGroup = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+                var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
                 
                 botList.Add(botGroup);
                 OriginalBotSpawnTypes.Add(botGroup);
@@ -224,7 +226,7 @@ namespace Donuts
 
         //overloaded method for if we know the botList for initial spawns
         internal static async Task CreateGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-    ShallBeGroupParams groupParams, int count)
+    ShallBeGroupParams groupParams, int maxCount, int iterations)
         {
             var botSpawnParams = new BotSpawnParams
             {
@@ -232,10 +234,10 @@ namespace Donuts
                 ShallBeGroup = groupParams
             };
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < iterations; i++)
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var botGroup = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
+                var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
 
                 botList.Add(botGroup);
                 OriginalBotSpawnTypes.Add(botGroup);
@@ -245,17 +247,21 @@ namespace Donuts
         //find a botcacheclass list that has X amount of bots in the groupParams
         internal static BotCacheClass FindGroupBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
         {
-            List<BotCacheClass> botList = botLists[spawnType][botDifficulty];
+            var botList = botLists[spawnType][botDifficulty];
+            Logger.LogWarning($"Trying to Find GroupBots that match: {targetCount} bots for {spawnType} and difficulty: {botDifficulty}");
 
-            foreach (var entry in botList)
+            var matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
+
+            if (matchingEntry != null)
             {
-                if (entry.SpawnParams.ShallBeGroup != null && entry.SpawnParams.ShallBeGroup.StartCount == targetCount)
+                foreach (var profile in matchingEntry.Profiles)
                 {
-                    //if there is a match, return the botcacheclass since we'll use it for something else.
-                    return entry;
+                    Logger.LogWarning($"Group Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
                 }
+                return matchingEntry;
             }
 
+            Logger.LogWarning("FindGroupBots: Did not find a group cached bot that matches the target count");
             return null;
         }
 

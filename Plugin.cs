@@ -337,11 +337,12 @@ namespace Donuts
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
 
-            //Only enable this patch if questing bots is not loaded
+            /*//Only enable this patch if questing bots is not loaded
             if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.DanW.QuestingBots"))
             {
                 new BotOwnerBrainActivatePatch().Enable();
             }
+            */
 
             SetupScenariosUI();
         }
