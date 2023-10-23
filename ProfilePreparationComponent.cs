@@ -247,15 +247,19 @@ namespace Donuts
         {
             List<BotCacheClass> botList = botLists[spawnType][botDifficulty];
 
+            DonutComponent.Logger.LogWarning($"botList {botList}")
+
             foreach (var entry in botList)
             {
+                DonutComponent.Logger.LogWarning($"foreach var entry in botList {entry}")
                 if (entry.SpawnParams.ShallBeGroup != null && entry.SpawnParams.ShallBeGroup.StartCount == targetCount)
                 {
+                    DonutComponent.Logger.LogWarning($"if is true {entry.SpawnParams.ShallBeGroup} {entry.SpawnParams.ShallBeGroup.StartCount} and target count is {targetCount}")
                     //if there is a match, return the botcacheclass since we'll use it for something else.
                     return entry;
                 }
             }
-
+            DonutComponent.Logger.LogWarning($"returning null")
             return null;
         }
 
