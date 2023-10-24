@@ -26,7 +26,9 @@ namespace Donuts
         private static BotSpawner botSpawnerClass;
 
         private static Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>> botLists;
-        internal static List<Profile> OriginalBotSpawnTypes;
+
+        //use dictionary of profile.id and wildspawntype
+        internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
@@ -74,7 +76,7 @@ namespace Donuts
             maxGroupBotsToReplenish = 2;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
-            OriginalBotSpawnTypes = new List<Profile>();
+            OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
 
             InitializeBotLists();
         }
@@ -259,7 +261,9 @@ namespace Donuts
                 foreach (var profile in botGroup.Profiles)
                 {
                     profile.Info.Settings.Role = spawnType;
-                    OriginalBotSpawnTypes.Add(profile);
+
+                    //add to originalbotspawntypes dictionary. profile.id is the key, spawnType is the value
+                    OriginalBotSpawnTypes.Add(profile.Id, spawnType);
                 }
             }
         }
@@ -286,7 +290,8 @@ namespace Donuts
                 {
                     profile.Info.Settings.Role = spawnType;
                     //Logger.LogWarning("Assigning Profile Role: " + profile.Info.Settings.Role.ToString() + " to OriginalBotSpawnTypes");
-                    OriginalBotSpawnTypes.Add(profile);
+                    //add to originalbotspawntypes dictionary. profile.id is the key, spawnType is the value
+                    OriginalBotSpawnTypes.Add(profile.Id, spawnType);
                 }
             }
         }
@@ -315,12 +320,15 @@ namespace Donuts
         //return the original wildspawntype of a bot that was converted to a group
         internal static WildSpawnType? GetOriginalSpawnTypeForBot(BotOwner bot)
         {
-            var originalProfile = OriginalBotSpawnTypes.FirstOrDefault(profile => profile.Id == bot.Profile.Id);
+            //search originalspawntype dictionary for the bot's profile.id
+            var originalProfile = OriginalBotSpawnTypes.FirstOrDefault(profile => profile.Key == bot.Profile.Id);
 
-            if (originalProfile != null)
+            //if we found the original profile, return the original role
+
+            if (originalProfile.Key != null)
             {
-                Logger.LogWarning("Found original profile for bot " + bot.Profile.Nickname + " as " + originalProfile.Info.Settings.Role.ToString());
-                return originalProfile.Info.Settings.Role;
+                Logger.LogWarning("Found original profile for bot " + bot.Profile.Nickname + " as " + originalProfile.Value.ToString());
+                return originalProfile.Value;
             }
             else
             {
