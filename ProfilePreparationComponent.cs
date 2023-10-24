@@ -151,17 +151,20 @@ namespace Donuts
                 foreach (var entry in botLists[sptBear])
                 {
                     ReplenishBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key);
+                    ReplenishGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key);
                 }
 
                 foreach (var entry in botLists[sptUsec])
                 {
                     ReplenishBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key);
+                    ReplenishGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key);
                 }
 
                 // Replenish bots for SCAV difficulties
                 foreach (var entry in botLists[WildSpawnType.assault])
                 {
                     ReplenishBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key);
+                    ReplenishGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key);
                 }
 
                 botsReplenishedCount = 0;
@@ -178,6 +181,37 @@ namespace Donuts
             {
                 await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
                 botsReplenishedCount += botsToAdd;
+            }
+        }
+
+        private async Task ReplenishGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
+        {
+            // Calculate the number of groups needed for 2, 3, and 4 bots
+            int groupsOf2Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 2);
+            int groupsOf3Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 3);
+            int groupsOf4Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 4);
+
+            int groupsNeeded = groupsOf2Needed + groupsOf3Needed + groupsOf4Needed;
+
+            if (groupsNeeded > 0)
+            {
+                for (int i = 0; i < groupsOf2Needed && botsReplenishedCount < 5; i++)
+                {
+                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 2), 2, 1);
+                    botsReplenishedCount += 2;
+                }
+
+                for (int i = 0; i < groupsOf3Needed && botsReplenishedCount < 5; i++)
+                {
+                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 3), 3, 1);
+                    botsReplenishedCount += 3;
+                }
+
+                for (int i = 0; i < groupsOf4Needed && botsReplenishedCount < 5; i++)
+                {
+                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 4), 4, 1);
+                    botsReplenishedCount += 4;
+                }
             }
         }
 
