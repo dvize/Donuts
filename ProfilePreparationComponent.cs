@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Aki.PrePatch;
@@ -8,7 +7,6 @@ using Comfort.Common;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 //custom usings
 using BotCacheClass = GClass513;
@@ -105,6 +103,12 @@ namespace Donuts
 
         private async void Start()
         {
+            botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
+            {
+                //remove bot from originalbotspawntypes dictionary
+                OriginalBotSpawnTypes.Remove(bot.Profile.Id);
+            };
+
             // Initialize the bot pool at the beginning of the round
             await InitializeBotPool();
         }
@@ -240,7 +244,7 @@ namespace Donuts
 
         // create cached bots for groups.
         internal static async Task CreateGroupBots(EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-    ShallBeGroupParams groupParams, int maxCount, int iterations )
+    ShallBeGroupParams groupParams, int maxCount, int iterations)
         {
             List<BotCacheClass> botList = botLists[spawnType][difficulty];
 
@@ -254,7 +258,7 @@ namespace Donuts
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
                 var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
-                
+
                 botList.Add(botGroup);
 
                 //add all profiles to orignalbotspawntypes list but change role to spawnType
