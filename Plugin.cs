@@ -336,7 +336,12 @@ namespace Donuts
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
-            new BotOwnerBrainActivatePatch().Enable();
+
+            //check if questing bots is enabled and then run this patch
+            if (!BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.DanW.QuestingBots"))
+            {
+                new BotOwnerBrainActivatePatch().Enable();
+            }
             
             SetupScenariosUI();
         }
