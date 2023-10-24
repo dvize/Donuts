@@ -571,7 +571,7 @@ namespace Donuts
                 else
                 {
                     Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {maxCount} grouped number of bots.");
-                    await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, 1, maxCount);
+                    await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount, 1);
                     await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
                 }
             }
