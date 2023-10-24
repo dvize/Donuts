@@ -28,8 +28,7 @@ namespace Donuts.Patches
         {
             
             WildSpawnType? originalSpawnType = DonutsBotPrep.GetOriginalSpawnTypeForBot(__instance);
-            Logger.LogWarning("Retrieved original Wildspawntype for bot " + __instance.Profile.Nickname + " as " + originalSpawnType.Value.ToString());
-
+            
             string currentRoleName = __instance.Profile.Info.Settings.Role.ToString();
 
             __instance.Profile.Info.Settings.Role = originalSpawnType.Value;

@@ -26,7 +26,7 @@ namespace Donuts
         private static BotSpawner botSpawnerClass;
 
         private static Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>> botLists;
-        internal static List<BotCacheClass> OriginalBotSpawnTypes;
+        internal static List<Profile> OriginalBotSpawnTypes;
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
@@ -74,7 +74,7 @@ namespace Donuts
             maxGroupBotsToReplenish = 2;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
-            OriginalBotSpawnTypes = new List<BotCacheClass>();
+            OriginalBotSpawnTypes = new List<Profile>();
 
             InitializeBotLists();
         }
@@ -220,7 +220,13 @@ namespace Donuts
                 var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
                 
                 botList.Add(botGroup);
-                OriginalBotSpawnTypes.Add(botGroup);
+
+                //add all profiles to orignalbotspawntypes list but change role to spawnType
+                foreach (var profile in botGroup.Profiles)
+                {
+                    profile.Info.Settings.Role = spawnType;
+                    OriginalBotSpawnTypes.Add(profile);
+                }
             }
         }
 
@@ -240,7 +246,14 @@ namespace Donuts
                 var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
 
                 botList.Add(botGroup);
-                OriginalBotSpawnTypes.Add(botGroup);
+
+                //add all profiles to orignalbotspawntypes list but change role to spawnType
+                foreach (var profile in botGroup.Profiles)
+                {
+                    profile.Info.Settings.Role = spawnType;
+                    Logger.LogWarning("Assigning Profile Role: " + profile.Info.Settings.Role.ToString() + " to OriginalBotSpawnTypes");
+                    OriginalBotSpawnTypes.Add(profile);
+                }
             }
         }
 
@@ -268,10 +281,18 @@ namespace Donuts
         //return the original wildspawntype of a bot that was converted to a group
         internal static WildSpawnType? GetOriginalSpawnTypeForBot(BotOwner bot)
         {
-            return OriginalBotSpawnTypes
-                .SelectMany(entry => entry.Profiles)
-                .FirstOrDefault(profile => profile.Id == bot.Profile.Id)?
-                .Info.Settings.Role;
+            var originalProfile = OriginalBotSpawnTypes.FirstOrDefault(profile => profile.Id == bot.Profile.Id);
+
+            if (originalProfile != null)
+            {
+                Logger.LogWarning("Found original profile for bot " + bot.Profile.Nickname + " as " + originalProfile.Info.Settings.Role.ToString());
+                return originalProfile.Info.Settings.Role;
+            }
+            else
+            {
+                Logger.LogWarning("Could not find original profile for bot " + bot.Profile.Nickname);
+                return null;
+            }
         }
     }
 }
