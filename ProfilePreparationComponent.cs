@@ -124,6 +124,7 @@ namespace Donuts
                 CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
             }
 
             foreach (var entry in botLists[sptUsec])
@@ -132,6 +133,7 @@ namespace Donuts
                 CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
             }
 
             // Create bots for SCAV difficulties
@@ -141,6 +143,7 @@ namespace Donuts
                 CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
                 CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
             }
 
         }
@@ -196,8 +199,9 @@ namespace Donuts
             int groupsOf2Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 2);
             int groupsOf3Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 3);
             int groupsOf4Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 4);
+            int groupsOf5Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 5);
 
-            int groupsNeeded = groupsOf2Needed + groupsOf3Needed + groupsOf4Needed;
+            int groupsNeeded = groupsOf2Needed + groupsOf3Needed + groupsOf4Needed + groupsOf5Needed;
 
             if (groupsNeeded > 0)
             {
@@ -217,6 +221,12 @@ namespace Donuts
                 {
                     CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 4), 4, 1);
                     botsReplenishedCount += 4;
+                }
+
+                for (int i = 0; i < groupsOf5Needed && botsReplenishedCount < 5; i++)
+                {
+                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 5), 5, 1);
+                    botsReplenishedCount += 5;
                 }
             }
         }
