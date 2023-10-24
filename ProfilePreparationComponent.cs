@@ -261,7 +261,7 @@ namespace Donuts
         internal static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
         {
             var botList = botLists[spawnType][botDifficulty];
-            Logger.LogWarning($"Trying to Find GroupBots that match: {targetCount} bots for {spawnType} and difficulty: {botDifficulty}");
+            Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
 
             var matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
 
@@ -269,12 +269,12 @@ namespace Donuts
             {
                 foreach (var profile in matchingEntry.Profiles)
                 {
-                    Logger.LogWarning($"Group Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
+                    Logger.LogWarning($"Contained Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
                 }
                 return matchingEntry;
             }
 
-            Logger.LogWarning("FindGroupBots: Did not find a group cached bot that matches the target count");
+            Logger.LogWarning("FindCachedBots: Did not find a group cached bot that matches the target count");
             return null;
         }
 
