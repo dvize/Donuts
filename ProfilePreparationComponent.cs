@@ -251,14 +251,14 @@ namespace Donuts
                 foreach (var profile in botGroup.Profiles)
                 {
                     profile.Info.Settings.Role = spawnType;
-                    Logger.LogWarning("Assigning Profile Role: " + profile.Info.Settings.Role.ToString() + " to OriginalBotSpawnTypes");
+                    //Logger.LogWarning("Assigning Profile Role: " + profile.Info.Settings.Role.ToString() + " to OriginalBotSpawnTypes");
                     OriginalBotSpawnTypes.Add(profile);
                 }
             }
         }
 
         //find a botcacheclass list that has X amount of bots in the groupParams
-        internal static BotCacheClass FindGroupBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
+        internal static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
         {
             var botList = botLists[spawnType][botDifficulty];
             Logger.LogWarning($"Trying to Find GroupBots that match: {targetCount} bots for {spawnType} and difficulty: {botDifficulty}");
