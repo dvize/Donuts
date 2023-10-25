@@ -537,7 +537,17 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            int maxCount = UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1);
+            int maxCount = UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots);
+
+            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value.toLower();
+            if (pmcGroupChance == "none")
+            {
+                maxCount = 1;
+            }
+            else if (pmcGroupChance == "max")
+            {
+                maxCount = 5;
+            }
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
@@ -589,7 +599,7 @@ namespace Donuts
             }
 
         }
-        
+
 
         #region botHelperMethods
 

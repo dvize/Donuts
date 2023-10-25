@@ -79,9 +79,10 @@ namespace Donuts
             InitializeBotLists();
         }
 
+        // maybe we can check here as well? for preset? so that we don't have to add so many?
         private void InitializeBotLists()
         {
-            
+
             botLists.Add(WildSpawnType.assault, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptUsec, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptBear, new Dictionary<BotDifficulty, List<BotCacheClass>>());
@@ -142,7 +143,7 @@ namespace Donuts
                     Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
                     break;
             }
-            
+
         }
 
         private async void Start()
@@ -157,37 +158,70 @@ namespace Donuts
             await InitializeBotPool();
         }
 
+        // maybe we can check the difficulty here? also preset? this happens pre-raid...
         private async Task InitializeBotPool()
         {
             Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
 
+            // testing, this is raid load here i think
+            // we can probably decide what we need here before each raid
+            selectedPreset = DonutsPlugin.scenarioSelection.Value.ToLower();
+            pmcDifficulty = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
+            scavDifficulty = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
+            pmcGroupChance = DonutsPlugin.pmcGroupChance.Value.ToLower();
+
             // Create bots for PMC difficulties
             foreach (var entry in botLists[sptBear])
             {
-                CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                if (pmcGroupChance == "none")
+                {
+                    CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
+                    continue;
+                }
+                else if (pmcGroupChance == "max")
+                {
+                    maxGroupBotsToReplenish = 3;
+                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                    continue;
+                }
+                else
+                {
+                    CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                }
             }
 
             foreach (var entry in botLists[sptUsec])
             {
-                CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                if (pmcGroupChance == "none")
+                {
+                    CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
+                    continue;
+                }
+                else if (pmcGroupChance == "max")
+                {
+                    maxGroupBotsToReplenish = 3;
+                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                    continue;
+                }
+                else
+                {
+                    CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
+                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                }
             }
 
             // Create bots for SCAV difficulties
             foreach (var entry in botLists[WildSpawnType.assault])
             {
-                CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, maxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
+                CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, scavMaxBotsToReplenish);
+                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), 2, scavMaxGroupBotsToReplenish);
             }
 
         }

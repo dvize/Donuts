@@ -41,11 +41,14 @@ namespace Donuts
         public static ConfigEntry<string> scenarioSelection;
         public string[] scenarioValues = new string[] { };
 
+        public static ConfigEntry<string> pmcGroupChance;
+
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
         public static ConfigEntry<string> botDifficultiesSCAV;
         public static ConfigEntry<string> botDifficultiesOther;
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
+        public string[] pmcGroupChanceList = new string[] { "medium", "low", "high", "none", "max"};
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -149,6 +152,14 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
+            pmcGroupChance = Config.Bind(
+                "1. Main Settings",
+                "Donuts PMC Group Chance",
+                "medium",
+                new ConfigDescription("Setting to determine the odds of PMC groups and group size. See mod page for more details.",
+                new AcceptableValueList<string>(pmcGroupChanceList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
                 "Donuts PMC Spawn Difficulty",
@@ -181,7 +192,7 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
-            //Debugging 
+            //Debugging
             DebugGizmos = Config.Bind(
                 "2. Debugging",
                 "Enable Debug Markers",
@@ -337,8 +348,7 @@ namespace Donuts
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
             new BotOwnerBrainActivatePatch().Enable();
-            
-            
+
             SetupScenariosUI();
         }
 
@@ -647,7 +657,7 @@ namespace Donuts
                 return false;
             }
 
-            return true; 
+            return true;
         }
     }
 
