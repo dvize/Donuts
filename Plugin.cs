@@ -48,7 +48,7 @@ namespace Donuts
         public static ConfigEntry<string> botDifficultiesSCAV;
         public static ConfigEntry<string> botDifficultiesOther;
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
-        public string[] pmcGroupChanceList = new string[] { "medium", "low", "high", "none", "max"};
+        public string[] pmcGroupChanceList = new string[] { "default", "low", "high", "none", "max"};
 
         //menu vars
         public static ConfigEntry<string> spawnName;
