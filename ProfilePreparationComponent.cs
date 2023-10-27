@@ -70,8 +70,8 @@ namespace Donuts
             replenishInterval = 30.0f;
             timeSinceLastReplenish = 0f;
             botsReplenishedCount = 0;
-            maxBotsToReplenish = 3;
-            maxGroupBotsToReplenish = 2;
+            maxBotsToReplenish = 2;
+            maxGroupBotsToReplenish = 1;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
@@ -81,24 +81,68 @@ namespace Donuts
 
         private void InitializeBotLists()
         {
+            
             botLists.Add(WildSpawnType.assault, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptUsec, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptBear, new Dictionary<BotDifficulty, List<BotCacheClass>>());
 
-            botLists[WildSpawnType.assault].Add(BotDifficulty.easy, new List<BotCacheClass>());
-            botLists[WildSpawnType.assault].Add(BotDifficulty.normal, new List<BotCacheClass>());
-            botLists[WildSpawnType.assault].Add(BotDifficulty.hard, new List<BotCacheClass>());
-            botLists[WildSpawnType.assault].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+            //create dictionary entries based on donuts difficulty settings
+            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
+            {
+                case "asonline":
+                    botLists[sptUsec].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    botLists[sptUsec].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    botLists[sptUsec].Add(BotDifficulty.hard, new List<BotCacheClass>());
 
-            botLists[sptUsec].Add(BotDifficulty.easy, new List<BotCacheClass>());
-            botLists[sptUsec].Add(BotDifficulty.normal, new List<BotCacheClass>());
-            botLists[sptUsec].Add(BotDifficulty.hard, new List<BotCacheClass>());
-            botLists[sptUsec].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    break;
+                case "easy":
+                    botLists[sptUsec].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    break;
+                case "normal":
+                    botLists[sptUsec].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    break;
+                case "hard":
+                    botLists[sptUsec].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    break;
+                case "impossible":
+                    botLists[sptUsec].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    botLists[sptBear].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    break;
+                default:
+                    Logger.LogWarning("Could not find a valid difficulty for PMC bots. Please check method.");
+                    break;
+            }
 
-            botLists[sptBear].Add(BotDifficulty.easy, new List<BotCacheClass>());
-            botLists[sptBear].Add(BotDifficulty.normal, new List<BotCacheClass>());
-            botLists[sptBear].Add(BotDifficulty.hard, new List<BotCacheClass>());
-            botLists[sptBear].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            {
+                case "asonline":
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    break;
+                case "easy":
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    break;
+                case "normal":
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    break;
+                case "hard":
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    break;
+                case "impossible":
+                    botLists[WildSpawnType.assault].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    break;
+                default:
+                    Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
+                    break;
+            }
+            
         }
 
         private async void Start()
@@ -207,25 +251,25 @@ namespace Donuts
             {
                 for (int i = 0; i < groupsOf2Needed && botsReplenishedCount < 5; i++)
                 {
-                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 2), 2, 1);
+                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 2), 2, 1);
                     botsReplenishedCount += 2;
                 }
 
                 for (int i = 0; i < groupsOf3Needed && botsReplenishedCount < 5; i++)
                 {
-                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 3), 3, 1);
+                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 3), 3, 1);
                     botsReplenishedCount += 3;
                 }
 
                 for (int i = 0; i < groupsOf4Needed && botsReplenishedCount < 5; i++)
                 {
-                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 4), 4, 1);
+                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 4), 4, 1);
                     botsReplenishedCount += 4;
                 }
 
                 for (int i = 0; i < groupsOf5Needed && botsReplenishedCount < 5; i++)
                 {
-                    CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 5), 5, 1);
+                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 5), 5, 1);
                     botsReplenishedCount += 5;
                 }
             }
