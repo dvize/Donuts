@@ -67,7 +67,7 @@ namespace Donuts
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            replenishInterval = 30.0f;
+            replenishInterval = 60.0f;
             timeSinceLastReplenish = 0f;
             botsReplenishedCount = 0;
             maxBotsToReplenish = 2;
