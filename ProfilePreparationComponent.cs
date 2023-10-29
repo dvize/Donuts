@@ -37,6 +37,8 @@ namespace Donuts
         private int botsReplenishedCount;
         private int maxBotsToReplenish;
         private int maxGroupBotsToReplenish;
+        private int scavMaxBotsToReplenish = 1;
+        private int scavMaxGroupBotsToReplenish = 1;
 
 
         internal static ManualLogSource Logger
@@ -72,6 +74,8 @@ namespace Donuts
             botsReplenishedCount = 0;
             maxBotsToReplenish = 2;
             maxGroupBotsToReplenish = 1;
+            scavMaxBotsToReplenish = 1;
+            scavMaxGroupBotsToReplenish = 1;
 
             botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
@@ -163,12 +167,7 @@ namespace Donuts
         {
             Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
 
-            // testing, this is raid load here i think
-            // we can probably decide what we need here before each raid
-            selectedPreset = DonutsPlugin.scenarioSelection.Value.ToLower();
-            pmcDifficulty = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
-            scavDifficulty = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
-            pmcGroupChance = DonutsPlugin.pmcGroupChance.Value.ToLower();
+            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
 
             // Create bots for PMC difficulties
             foreach (var entry in botLists[sptBear])

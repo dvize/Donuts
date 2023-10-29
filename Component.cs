@@ -547,18 +547,18 @@ namespace Donuts
         {
             // temporary, just testing stuff
             int maxInitialPMCs = PMCBotLimit;
-            int maxCount = getActualBotCount(HotspotTimer.MaxRandomNumBots);
+            int maxCount = getActualBotCount(hotspotTimer.Hotspot.MaxRandomNumBots);
 
             // quick and dirty, not keeping this
             // this will likely become some sort of new spawn parameter
-            if (HotspotTimer.BotTimerTrigger > 1000)
+            if (hotspotTimer.Hotspot.BotTimerTrigger > 1000)
             {
                 // if currently this spawn would make the current count greater than the preset limit
                 // and check if its an initial spawn only, will add a new parameter for this
                 // also, dont know if this works yet, probably not
                 if (currentInitialPMCs >= maxInitialPMCs)
                 {
-                    DonutComponent.Logger.LogDebug($"already at pmc limit, skipping")
+                    DonutComponent.Logger.LogDebug($"already at pmc limit, skipping");
                     return;
                 }
                 else
@@ -568,7 +568,7 @@ namespace Donuts
                     if (currentInitialPMCs > maxInitialPMCs)
                     {
                         maxCount = maxInitialPMCs - currentInitialPMCs;
-                        DonutComponent.Logger.LogDebug($"this spawn will take it over the limit, spawning {maxCount} instead")
+                        DonutComponent.Logger.LogDebug($"this spawn will take it over the limit, spawning {maxCount} instead");
                     }
                 }
             }
@@ -633,18 +633,18 @@ namespace Donuts
 
             if (pmcGroupChance == "none") 
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is none, all PMC counts will be 1")
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is none, all PMC counts will be 1");
                 return 1;
             }
             else if (pmcGroupChance == "max") 
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is max, all PMC counts will at the max possible group size.")
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is max, all PMC counts will at the max possible group size.");
                 return count;
             }
             else
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}, all PMC counts will be {count}")
-                return getGroupChance(pmcGroupChance, count)
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}, all PMC counts will be {count}");
+                return getGroupChance(pmcGroupChance, count);
             }
         }
 
@@ -656,7 +656,7 @@ namespace Donuts
             // Adjust probabilities based on maxCount
             double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["default"];
 
-            Random random = new Random();
+            System.Random random = new System.Random();
 
             // Determine actualMaxCount based on pmcGroupChance and probabilities
             actualMaxCount = getOutcomeWithProbability(random, probabilities, maxCount) + 1;
@@ -664,7 +664,7 @@ namespace Donuts
             return actualMaxCount;
         }
 
-        private int getOutcomeWithProbability(Random random, double[] probabilities, int maxCount)
+        private int getOutcomeWithProbability(System.Random random, double[] probabilities, int maxCount)
         {
             double probabilitySum = 0.0;
             foreach (var probability in probabilities)
