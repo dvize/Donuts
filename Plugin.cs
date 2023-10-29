@@ -19,7 +19,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.2")]
     [BepInDependency("com.spt-aki.core", "3.7.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -48,7 +48,9 @@ namespace Donuts
         public static ConfigEntry<string> botDifficultiesSCAV;
         public static ConfigEntry<string> botDifficultiesOther;
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
-        public string[] pmcGroupChanceList = new string[] { "default", "low", "high", "none", "max"};
+
+        // Bot Groups
+        public string[] pmcGroupChanceList = new string[] { "Default", "Low", "High", "None", "Max"};
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -102,6 +104,7 @@ namespace Donuts
         public static ConfigEntry<int> maxSpawnsBeforeCooldown;
         public static ConfigEntry<bool> ignoreTimerFirstSpawn;
         public static ConfigEntry<float> minSpawnDistanceFromPlayer;
+        public static ConfigEntry<bool> initialSpawnOnly;
 
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
@@ -155,7 +158,7 @@ namespace Donuts
             pmcGroupChance = Config.Bind(
                 "1. Main Settings",
                 "Donuts PMC Group Chance",
-                "medium",
+                "Default",
                 new ConfigDescription("Setting to determine the odds of PMC groups and group size. See mod page for more details.",
                 new AcceptableValueList<string>(pmcGroupChanceList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));

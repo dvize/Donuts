@@ -49,9 +49,9 @@ namespace Donuts
 
         private Dictionary<string, double[]> groupChanceWeights = new Dictionary<string, double[]>
         {
-            { "low", new double[] { 0.75, 0.15, 0.07, 0.03, 0.0 } },
-            { "default", new double[] { 0.35, 0.35, 0.20, 0.10, 0.0 } },
-            { "high", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
+            { "Low", new double[] { 0.75, 0.15, 0.07, 0.03, 0.0 } },
+            { "Default", new double[] { 0.35, 0.35, 0.20, 0.10, 0.0 } },
+            { "High", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
         };
 
         private bool fileLoaded = false;
@@ -545,7 +545,6 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            // temporary, just testing stuff
             int maxInitialPMCs = PMCBotLimit;
             int maxCount = getActualBotCount(hotspotTimer.Hotspot.MaxRandomNumBots);
 
@@ -558,7 +557,7 @@ namespace Donuts
                 // also, dont know if this works yet, probably not
                 if (currentInitialPMCs >= maxInitialPMCs)
                 {
-                    DonutComponent.Logger.LogDebug($"already at pmc limit, skipping");
+                    DonutComponent.Logger.LogDebug($"currentInitialPMCs is >= than maxInitialPMCs, skipping this spawn");
                     return;
                 }
                 else
@@ -569,7 +568,7 @@ namespace Donuts
                     if (currentInitialPMCs > maxInitialPMCs)
                     {
                         maxCount = maxInitialPMCs - originalInitialPMCs;
-                        DonutComponent.Logger.LogDebug($"this spawn will take it over the limit, spawning {maxCount} instead");
+                        DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
                     }
                 }
             }
@@ -632,20 +631,21 @@ namespace Donuts
         {
             string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
 
-            if (pmcGroupChance == "none") 
+            if (pmcGroupChance == "None") 
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is none, all PMC counts will be 1");
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is None: PMC count is 1");
                 return 1;
             }
-            else if (pmcGroupChance == "max") 
+            else if (pmcGroupChance == "Max") 
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is max, all PMC counts will at the max possible group size.");
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is None: PMC count is {count}");
                 return count;
             }
             else
-            {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}, all PMC counts will be {count}");
-                return getGroupChance(pmcGroupChance, count);
+            {   
+                int groupChance = getGroupChance(pmcGroupChance, count);
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}: PMC count is {count}");
+                return groupChance;
             }
         }
 
@@ -655,7 +655,7 @@ namespace Donuts
             int actualMaxCount = maxCount;
 
             // Adjust probabilities based on maxCount
-            double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["default"];
+            double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["Default"];
 
             System.Random random = new System.Random();
 
@@ -1506,10 +1506,6 @@ namespace Donuts
         }
 
         public float MinSpawnDistanceFromPlayer
-        {
-            get; set;
-        }
-        public string InitialSpawnOnly
         {
             get; set;
         }
