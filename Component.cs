@@ -47,10 +47,18 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
+        private Dictionary<string, double[]> groupChanceWeights = new Dictionary<string, double[]>
+        {
+            { "low", new double[] { 0.75, 0.15, 0.07, 0.03, 0.0 } },
+            { "default", new double[] { 0.35, 0.35, 0.20, 0.10, 0.0 } },
+            { "high", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
+        };
+
         private bool fileLoaded = false;
         public static string maplocation;
         private int PMCBotLimit = 0;
         private int SCAVBotLimit = 0;
+        private int currentInitialPMCs = 0;
         public static GameWorld gameWorld;
         private static BotSpawner botSpawnerClass;
 
@@ -537,17 +545,34 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            int maxCount = UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots);
+            // temporary, just testing stuff
+            int maxInitialPMCs = PMCBotLimit;
+            int maxCount = getActualBotCount(HotspotTimer.MaxRandomNumBots);
 
-            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value.toLower();
-            if (pmcGroupChance == "none")
+            // quick and dirty, not keeping this
+            // this will likely become some sort of new spawn parameter
+            if (HotspotTimer.BotTimerTrigger > 1000)
             {
-                maxCount = 1;
+                // if currently this spawn would make the current count greater than the preset limit
+                // and check if its an initial spawn only, will add a new parameter for this
+                // also, dont know if this works yet, probably not
+                if (currentInitialPMCs >= maxInitialPMCs)
+                {
+                    DonutComponent.Logger.LogDebug($"already at pmc limit, skipping")
+                    return;
+                }
+                else
+                {
+                    currentInitialPMCs += maxCount;
+                    // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                    if (currentInitialPMCs > maxInitialPMCs)
+                    {
+                        maxCount = maxInitialPMCs - currentInitialPMCs;
+                        DonutComponent.Logger.LogDebug($"this spawn will take it over the limit, spawning {maxCount} instead")
+                    }
+                }
             }
-            else if (pmcGroupChance == "max")
-            {
-                maxCount = 5;
-            }
+
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
@@ -600,6 +625,73 @@ namespace Donuts
 
         }
 
+        #region botGroups
+
+        private int getActualBotCount(int count)
+        {
+            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
+
+            if (pmcGroupChance == "none") 
+            {
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is none, all PMC counts will be 1")
+                return 1;
+            }
+            else if (pmcGroupChance == "max") 
+            {
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is max, all PMC counts will at the max possible group size.")
+                return count;
+            }
+            else
+            {
+                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}, all PMC counts will be {count}")
+                return getGroupChance(pmcGroupChance, count)
+            }
+        }
+
+        // i'm not sure how all this works, ChatGPT wrote this for me
+        private int getGroupChance(string pmcGroupChance, int maxCount)
+        {
+            int actualMaxCount = maxCount;
+
+            // Adjust probabilities based on maxCount
+            double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["default"];
+
+            Random random = new Random();
+
+            // Determine actualMaxCount based on pmcGroupChance and probabilities
+            actualMaxCount = getOutcomeWithProbability(random, probabilities, maxCount) + 1;
+
+            return actualMaxCount;
+        }
+
+        private int getOutcomeWithProbability(Random random, double[] probabilities, int maxCount)
+        {
+            double probabilitySum = 0.0;
+            foreach (var probability in probabilities)
+            {
+                probabilitySum += probability;
+            }
+
+            if (Math.Abs(probabilitySum - 1.0) > 0.0001)
+            {
+                throw new InvalidOperationException("Probabilities should sum up to 1.");
+            }
+
+            double probabilityThreshold = random.NextDouble();
+            double cumulative = 0.0;
+            for (int i = 0; i < maxCount; i++)
+            {
+                cumulative += probabilities[i];
+                if (probabilityThreshold < cumulative)
+                {
+                    return i;
+                }
+            }
+            // Default outcome if probabilities are not well-defined
+            return maxCount - 1;
+        }
+
+        #endregion
 
         #region botHelperMethods
 
@@ -1413,6 +1505,10 @@ namespace Donuts
         }
 
         public float MinSpawnDistanceFromPlayer
+        {
+            get; set;
+        }
+        public string InitialSpawnOnly
         {
             get; set;
         }
