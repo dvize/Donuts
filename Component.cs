@@ -563,11 +563,12 @@ namespace Donuts
                 }
                 else
                 {
+                    int originalInitialPMCs = currentInitialPMCs;
                     currentInitialPMCs += maxCount;
                     // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
                     if (currentInitialPMCs > maxInitialPMCs)
                     {
-                        maxCount = maxInitialPMCs - currentInitialPMCs;
+                        maxCount = maxInitialPMCs - originalInitialPMCs;
                         DonutComponent.Logger.LogDebug($"this spawn will take it over the limit, spawning {maxCount} instead");
                     }
                 }
