@@ -50,7 +50,7 @@ namespace Donuts
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         // Bot Groups
-        public string[] pmcGroupChanceList = new string[] { "Default", "Low", "High", "None", "Max"};
+        public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -104,7 +104,6 @@ namespace Donuts
         public static ConfigEntry<int> maxSpawnsBeforeCooldown;
         public static ConfigEntry<bool> ignoreTimerFirstSpawn;
         public static ConfigEntry<float> minSpawnDistanceFromPlayer;
-        public static ConfigEntry<bool> initialSpawnOnly;
 
         public static ConfigEntry<bool> saveNewFileOnly;
         public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;

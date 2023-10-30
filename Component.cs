@@ -548,16 +548,12 @@ namespace Donuts
             int maxInitialPMCs = PMCBotLimit;
             int maxCount = getActualBotCount(hotspotTimer.Hotspot.MaxRandomNumBots);
 
-            // quick and dirty, not keeping this
-            // this will likely become some sort of new spawn parameter
-            if (hotspotTimer.Hotspot.BotTimerTrigger > 1000)
+            // quick and dirty, this will likely become some sort of new spawn parameter eventually
+            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
-                // if currently this spawn would make the current count greater than the preset limit
-                // and check if its an initial spawn only, will add a new parameter for this
-                // also, dont know if this works yet, probably not
                 if (currentInitialPMCs >= maxInitialPMCs)
                 {
-                    DonutComponent.Logger.LogDebug($"currentInitialPMCs is >= than maxInitialPMCs, skipping this spawn");
+                    DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
                     return;
                 }
                 else
@@ -631,20 +627,17 @@ namespace Donuts
         {
             string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
 
-            if (pmcGroupChance == "None") 
+            if (pmcGroupChance == "None")
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is None: PMC count is 1");
                 return 1;
             }
-            else if (pmcGroupChance == "Max") 
+            else if (pmcGroupChance == "Max")
             {
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is None: PMC count is {count}");
                 return count;
             }
             else
-            {   
+            {
                 int groupChance = getGroupChance(pmcGroupChance, count);
-                DonutComponent.Logger.LogDebug($"pmcGroupChance is {pmcGroupChance}: PMC count is {count}");
                 return groupChance;
             }
         }
@@ -822,7 +815,7 @@ namespace Donuts
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 botCacheElement.AddPosition(spawnPosition);
-                
+
                 DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                     $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
 
