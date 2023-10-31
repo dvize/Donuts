@@ -545,12 +545,26 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            int maxInitialPMCs = PMCBotLimit;
-            int maxCount = getActualBotCount(hotspotTimer.Hotspot.MaxRandomNumBots);
+            string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
+            int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;
 
+            if (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear")
+            {
+                string pluginGroupChance = DonutsPlugin.pmcGroupChance.Value;
+                maxCount = getActualBotCount(pluginGroupChance, maxCount);
+            }
+            else if (hotspotSpawnType == "assault")
+            {
+                string pluginGroupChance = DonutsPlugin.scavGroupChance.Value;
+                maxCount = getActualBotCount(pluginGroupChance, maxCount);
+            }
+
+            int maxInitialPMCs = PMCBotLimit;
             // quick and dirty, this will likely become some sort of new spawn parameter eventually
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
+                // current doesn't reset until the next raid
+                // doesn't matter right now since we only care about starting bots
                 if (currentInitialPMCs >= maxInitialPMCs)
                 {
                     DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
@@ -623,22 +637,20 @@ namespace Donuts
 
         #region botGroups
 
-        private int getActualBotCount(int count)
+        private int getActualBotCount(string pluginGroupChance, int count)
         {
-            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
-
-            if (pmcGroupChance == "None")
+            if (pluginGroupChance == "None")
             {
                 return 1;
             }
-            else if (pmcGroupChance == "Max")
+            else if (pluginGroupChance == "Max")
             {
                 return count;
             }
             else
             {
-                int groupChance = getGroupChance(pmcGroupChance, count);
-                return groupChance;
+                int actualGroupChance = getGroupChance(pluginGroupChance, count);
+                return actualGroupChance;
             }
         }
 

@@ -42,6 +42,7 @@ namespace Donuts
         public string[] scenarioValues = new string[] { };
 
         public static ConfigEntry<string> pmcGroupChance;
+        public static ConfigEntry<string> scavGroupChance;
 
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
@@ -51,6 +52,8 @@ namespace Donuts
 
         // Bot Groups
         public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
+        public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
+
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -128,7 +131,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             DespawnEnabled = Config.Bind(
                 "1. Main Settings",
@@ -136,7 +139,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
@@ -144,7 +147,7 @@ namespace Donuts
                 300f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 6 }));
 
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
@@ -152,7 +155,7 @@ namespace Donuts
                 20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             pmcGroupChance = Config.Bind(
                 "1. Main Settings",
@@ -160,7 +163,15 @@ namespace Donuts
                 "Default",
                 new ConfigDescription("Setting to determine the odds of PMC groups and group size. See mod page for more details.",
                 new AcceptableValueList<string>(pmcGroupChanceList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
+
+            scavGroupChance = Config.Bind(
+                "1. Main Settings",
+                "Donuts SCAV Group Chance",
+                "Default",
+                new ConfigDescription("Setting to determine the odds of SCAV groups and group size. See mod page for more details.",
+                new AcceptableValueList<string>(scavGroupChanceList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 3 }));
 
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
