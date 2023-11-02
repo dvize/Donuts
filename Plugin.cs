@@ -152,7 +152,7 @@ namespace Donuts
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
                 "Donuts PMC Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for All PMC Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
@@ -160,7 +160,7 @@ namespace Donuts
             botDifficultiesSCAV = Config.Bind(
                 "1. Main Settings",
                 "Donuts SCAV Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for All SCAV Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
@@ -168,7 +168,7 @@ namespace Donuts
             botDifficultiesOther = Config.Bind(
                 "1. Main Settings",
                 "Other Bot Type Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for all other bot types spawned with Donuts, such as bosses, Rogues, Raiders, etc.",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
