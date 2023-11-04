@@ -59,6 +59,8 @@ namespace Donuts
         private int PMCBotLimit = 0;
         private int SCAVBotLimit = 0;
         private int currentInitialPMCs = 0;
+        private int currentInitialSCAVs = 0;
+
         public static GameWorld gameWorld;
         private static BotSpawner botSpawnerClass;
 
@@ -560,27 +562,53 @@ namespace Donuts
             }
 
             int maxInitialPMCs = PMCBotLimit;
+            int maxInitialSCAVs = SCAVBotLimit;
             // quick and dirty, this will likely become some sort of new spawn parameter eventually
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
-                // current doesn't reset until the next raid
-                // doesn't matter right now since we only care about starting bots
-                if (currentInitialPMCs >= maxInitialPMCs)
+                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
                 {
-                    DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
-                    return;
-                }
-                else
-                {
-                    int originalInitialPMCs = currentInitialPMCs;
-                    currentInitialPMCs += maxCount;
-                    // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                    if (currentInitialPMCs > maxInitialPMCs)
+                    // current doesn't reset until the next raid
+                    // doesn't matter right now since we only care about starting bots
+                    if (currentInitialPMCs >= maxInitialPMCs)
                     {
-                        maxCount = maxInitialPMCs - originalInitialPMCs;
-                        DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
+                        DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
+                        return;
+                    }
+                    else
+                    {
+                        int originalInitialPMCs = currentInitialPMCs;
+                        currentInitialPMCs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentInitialPMCs > maxInitialPMCs)
+                        {
+                            maxCount = maxInitialPMCs - originalInitialPMCs;
+                            DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
+                        }
                     }
                 }
+                else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
+                {
+                    // current doesn't reset until the next raid
+                    // doesn't matter right now since we only care about starting bots
+                    if (currentInitialSCAVs >= maxInitialSCAVs)
+                    {
+                        DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
+                        return;
+                    }
+                    else
+                    {
+                        int originalInitialSCAVs = currentInitialSCAVs;
+                        currentInitialSCAVs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentInitialSCAVs > maxInitialSCAVs)
+                        {
+                            maxCount = maxInitialSCAVs - originalInitialSCAVs;
+                            DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
+                        }
+                    }
+                }
+
             }
 
             bool group = maxCount > 1;
