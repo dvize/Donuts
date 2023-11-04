@@ -172,12 +172,12 @@ namespace Donuts
             // Create bots for PMC difficulties
             foreach (var entry in botLists[sptBear])
             {
-                if (pmcGroupChance == "none")
+                if (pmcGroupChance == "None")
                 {
                     CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
                     continue;
                 }
-                else if (pmcGroupChance == "max")
+                else if (pmcGroupChance == "Max")
                 {
                     maxGroupBotsToReplenish = 3;
                     CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
@@ -195,12 +195,12 @@ namespace Donuts
 
             foreach (var entry in botLists[sptUsec])
             {
-                if (pmcGroupChance == "none")
+                if (pmcGroupChance == "None")
                 {
                     CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
                     continue;
                 }
-                else if (pmcGroupChance == "max")
+                else if (pmcGroupChance == "Max")
                 {
                     maxGroupBotsToReplenish = 3;
                     CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
