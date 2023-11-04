@@ -49,8 +49,8 @@ namespace Donuts
 
         private Dictionary<string, double[]> groupChanceWeights = new Dictionary<string, double[]>
         {
-            { "Low", new double[] { 0.75, 0.15, 0.07, 0.03, 0.0 } },
-            { "Default", new double[] { 0.35, 0.35, 0.20, 0.10, 0.0 } },
+            { "Low", new double[] { 0.80, 0.18, 0.02, 0.0, 0.0 } },
+            { "Default", new double[] { 0.42, 0.42, 0.09, 0.05, 0.02 } },
             { "High", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
         };
 
