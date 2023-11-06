@@ -19,7 +19,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.2")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.3")]
     [BepInDependency("com.spt-aki.core", "3.7.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -38,6 +38,7 @@ namespace Donuts
 
         //Add folder scenarios
         internal static List<Folder> scenarios = new List<Folder>();
+        internal static List<Folder> randomScenarios = new List<Folder>();
         public static ConfigEntry<string> scenarioSelection;
         public string[] scenarioValues = new string[] { };
 
@@ -371,13 +372,19 @@ namespace Donuts
             LoadDonutsFolders();
 
             List<string> scenarioValuesList = new List<string>(scenarioValues);
-            scenarioValuesList.Add("Random");
+            // scenarioValuesList.Add("Random");
 
             // Add folder.Name to the scenarioValuesList
             foreach (Folder folder in scenarios)
             {
                 Logger.LogWarning("Adding scenario: " + folder.Name);
                 scenarioValuesList.Add(folder.Name);
+            }
+
+            foreach (FOlder folder in randomScenarios)
+            {
+                Logger.LogWarning("Adding random scenario: " + folder.RandomScenarioConfig);
+                scenarioValuesList.Add(folder.RandomScenarioConfig);
             }
 
             scenarioValues = scenarioValuesList.ToArray();
@@ -409,6 +416,13 @@ namespace Donuts
             }
 
             Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
+
+            string filePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
+
+            Logger.LogWarning("Found file at: " + filePath);
+
+            string file = File.ReadAllText(filePath);
+            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
         }
 
         internal static Folder GrabDonutsFolder(string folderName)

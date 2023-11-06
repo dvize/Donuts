@@ -384,52 +384,57 @@ namespace Donuts
 
         private string runWeightedScenarioSelection()
         {
-            if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
+            foreach (Folder folder in DonutsPlugin.scenarios)
             {
-                Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
-
-                return DonutsPlugin.scenarioSelection.Value;
-            }
-
-            //filter out folders where folder.RandomSelection is false
-            var filteredFolders = DonutsPlugin.scenarios.Where(folder => folder.RandomSelection);
-
-            // Calculate the total weight of all folders minus the ones where folder.RandomSelection is false
-            int totalWeight = filteredFolders.Sum(folder => folder.Weight);
-
-            int randomWeight = UnityEngine.Random.Range(0, totalWeight);
-
-            // Select the folder based on the random weight
-            Folder selectedFolder = null;
-            int accumulatedWeight = 0;
-
-            foreach (Folder folder in filteredFolders)
-            {
-                accumulatedWeight += folder.Weight;
-                if (randomWeight <= accumulatedWeight)
+                if (folder.Name == DonutsPlugin.scenarioSelection.Value)
                 {
-                    selectedFolder = folder;
-                    break;
+                    Logger.LogDebug("Selected Preset: " + DonutsPlugin.scenarioSelection.Value);
+                    return folder.Name; // Return the chosen preset from the UI
                 }
             }
 
-            // Use the selected folder
-            if (selectedFolder != null)
+            // Check if a RandomScenarioConfig was selected from the UI
+            foreach (Folder folder in DonutsPlugin.randomScenarios)
             {
-                Console.WriteLine("Donuts: Random Selected Folder: " + selectedFolder.Name);
-
-                if (DonutsPlugin.ShowRandomFolderChoice.Value)
+                if (folder.RandomScenarioConfig == DonutsPlugin.scenarioSelection.Value)
                 {
-                    MethodInfo displayMessageNotificationMethod;
-                    if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                    // Calculate the total weight of all presets for the selected RandomScenarioConfig
+                    int totalWeight = folder.Presets.Sum(preset => preset.Weight);
+
+                    int randomWeight = UnityEngine.Random.Range(0, totalWeight);
+
+                    // Select the preset based on the random weight
+                    string selectedPreset = null;
+                    int accumulatedWeight = 0;
+
+                    foreach (var preset in folder.Presets)
                     {
-                        var txt = $"Donuts Random Selected Folder: {selectedFolder.Name}";
-                        EFT.UI.ConsoleScreen.Log(txt);
-                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                        accumulatedWeight += preset.Weight;
+                        if (randomWeight <= accumulatedWeight)
+                        {
+                            selectedPreset = preset.Name;
+                            break;
+                        }
+                    }
+
+                    if (selectedPreset != null)
+                    {
+                        Console.WriteLine("Donuts: Random Selected Preset: " + selectedPreset);
+
+                        if (DonutsPlugin.ShowRandomFolderChoice.Value)
+                        {
+                            MethodInfo displayMessageNotificationMethod;
+                            if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                            {
+                                var txt = $"Donuts Random Selected Preset: {selectedPreset}";
+                                EFT.UI.ConsoleScreen.Log(txt);
+                                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                            }
+                        }
+
+                        return selectedPreset;
                     }
                 }
-
-                return selectedFolder.Name;
             }
 
             return null;
@@ -608,7 +613,6 @@ namespace Donuts
                         }
                     }
                 }
-
             }
 
             bool group = maxCount > 1;
