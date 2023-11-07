@@ -322,6 +322,7 @@ namespace Donuts
             var botData = new IProfileData(side, spawnType, difficulty, 0f, null);
             var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
             botList.Add(bot);
+            OriginalBotSpawnTypes.Add(bot.Profiles[0].Id, spawnType);
         }
 
         internal static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
