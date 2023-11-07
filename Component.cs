@@ -399,7 +399,7 @@ namespace Donuts
                 if (folder.RandomScenarioConfig == DonutsPlugin.scenarioSelection.Value)
                 {
                     // Calculate the total weight of all presets for the selected RandomScenarioConfig
-                    int totalWeight = folder.Presets.Sum(preset => preset.Weight);
+                    int totalWeight = folder.presets.Sum(preset => preset.Weight);
 
                     int randomWeight = UnityEngine.Random.Range(0, totalWeight);
 
@@ -407,7 +407,7 @@ namespace Donuts
                     string selectedPreset = null;
                     int accumulatedWeight = 0;
 
-                    foreach (var preset in folder.Presets)
+                    foreach (var preset in folder.presets)
                     {
                         accumulatedWeight += preset.Weight;
                         if (randomWeight <= accumulatedWeight)

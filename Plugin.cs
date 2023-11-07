@@ -381,7 +381,7 @@ namespace Donuts
                 scenarioValuesList.Add(folder.Name);
             }
 
-            foreach (FOlder folder in randomScenarios)
+            foreach (Folder folder in randomScenarios)
             {
                 Logger.LogWarning("Adding random scenario: " + folder.RandomScenarioConfig);
                 scenarioValuesList.Add(folder.RandomScenarioConfig);
@@ -417,12 +417,12 @@ namespace Donuts
 
             Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
 
-            string filePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
+            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
 
-            Logger.LogWarning("Found file at: " + filePath);
+            Logger.LogWarning("Found file at: " + randFilePath);
 
-            string file = File.ReadAllText(filePath);
-            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
+            string randFile = File.ReadAllText(randFilePath);
+            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
         }
 
         internal static Folder GrabDonutsFolder(string folderName)
@@ -724,6 +724,30 @@ namespace Donuts
         }
 
         public SCAVBotLimitPresets SCAVBotLimitPresets
+        {
+            get; set;
+        }
+
+        public string RandomScenarioConfig
+        {
+            get; set;
+        }
+
+        public List<Presets> presets
+        {
+            get; set;
+        }
+
+    }
+
+    internal class Presets
+    {
+        public string Name
+        {
+            get; set;
+        }
+
+        public int Weight
         {
             get; set;
         }
