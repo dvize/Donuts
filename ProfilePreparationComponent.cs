@@ -394,7 +394,7 @@ namespace Donuts
             var botList = botLists[spawnType][botDifficulty];
             Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
 
-            var matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
+            var matchingEntry = botList.First(entry => entry.Profiles.Count == targetCount);
 
             if (matchingEntry != null)
             {
@@ -413,7 +413,7 @@ namespace Donuts
         internal static WildSpawnType? GetOriginalSpawnTypeForBot(BotOwner bot)
         {
             //search originalspawntype dictionary for the bot's profile.id
-            var originalProfile = OriginalBotSpawnTypes.FirstOrDefault(profile => profile.Key == bot.Profile.Id);
+            var originalProfile = OriginalBotSpawnTypes.First(profile => profile.Key == bot.Profile.Id);
 
             //if we found the original profile, return the original role
 
