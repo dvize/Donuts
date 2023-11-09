@@ -120,7 +120,9 @@ namespace Donuts
                     botLists[sptBear].Add(BotDifficulty.impossible, new List<BotCacheClass>());
                     break;
                 default:
-                    Logger.LogWarning("Could not find a valid difficulty for PMC bots. Please check method.");
+                    #if DEBUG
+                        Logger.LogWarning("Could not find a valid difficulty for PMC bots. Please check method.");
+                    #endif
                     break;
             }
 
@@ -144,7 +146,9 @@ namespace Donuts
                     botLists[WildSpawnType.assault].Add(BotDifficulty.impossible, new List<BotCacheClass>());
                     break;
                 default:
-                    Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
+                    #if DEBUG
+                        Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
+                    #endif
                     break;
             }
 
@@ -165,7 +169,9 @@ namespace Donuts
         // maybe we can check the difficulty here? also preset? this happens pre-raid...
         private async Task InitializeBotPool()
         {
-            Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
+            #if DEBUG
+                Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
+            #endif
 
             string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
 
@@ -231,7 +237,10 @@ namespace Donuts
             if (timeSinceLastReplenish >= replenishInterval)
             {
                 timeSinceLastReplenish = 0f;
+
+                #if DEBUG
                 Logger.LogWarning("Donuts: ReplenishAllBots() running");
+                #endif
 
                 // Replenish bots for PMC difficulties
                 foreach (var entry in botLists[sptBear])
@@ -392,20 +401,25 @@ namespace Donuts
         internal static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
         {
             var botList = botLists[spawnType][botDifficulty];
-            Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
-
+            #if DEBUG
+                Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
+            #endif
             var matchingEntry = botList.First(entry => entry.Profiles.Count == targetCount);
 
             if (matchingEntry != null)
             {
                 foreach (var profile in matchingEntry.Profiles)
                 {
-                    Logger.LogWarning($"Contained Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
+                    #if DEBUG
+                        Logger.LogWarning($"Contained Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
+                    #endif
                 }
                 return matchingEntry;
             }
 
-            Logger.LogWarning("FindCachedBots: Did not find a group cached bot that matches the target count");
+            #if DEBUG
+                Logger.LogWarning("FindCachedBots: Did not find a group cached bot that matches the target count");
+            #endif
             return null;
         }
 
@@ -419,12 +433,16 @@ namespace Donuts
 
             if (originalProfile.Key != null)
             {
-                Logger.LogWarning("Found original profile for bot " + bot.Profile.Nickname + " as " + originalProfile.Value.ToString());
+                #if DEBUG
+                    Logger.LogWarning("Found original profile for bot " + bot.Profile.Nickname + " as " + originalProfile.Value.ToString());
+                #endif
                 return originalProfile.Value;
             }
             else
-            {
-                Logger.LogWarning("Could not find original profile for bot " + bot.Profile.Nickname);
+            {   
+                #if DEBUG
+                    Logger.LogWarning("Could not find original profile for bot " + bot.Profile.Nickname);
+                #endif
                 return null;
             }
         }
