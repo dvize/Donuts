@@ -47,10 +47,20 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
+        private Dictionary<string, double[]> groupChanceWeights = new Dictionary<string, double[]>
+        {
+            { "Low", new double[] { 0.80, 0.18, 0.02, 0.0, 0.0 } },
+            { "Default", new double[] { 0.42, 0.42, 0.09, 0.05, 0.02 } },
+            { "High", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
+        };
+
         private bool fileLoaded = false;
         public static string maplocation;
         private int PMCBotLimit = 0;
         private int SCAVBotLimit = 0;
+        private int currentInitialPMCs = 0;
+        private int currentInitialSCAVs = 0;
+
         public static GameWorld gameWorld;
         private static BotSpawner botSpawnerClass;
 
@@ -374,52 +384,57 @@ namespace Donuts
 
         private string runWeightedScenarioSelection()
         {
-            if (DonutsPlugin.scenarioSelection.Value.ToLower() != "random")
+            foreach (Folder folder in DonutsPlugin.scenarios)
             {
-                Logger.LogDebug("Selected Folder: " + DonutsPlugin.scenarioSelection.Value);
-
-                return DonutsPlugin.scenarioSelection.Value;
-            }
-
-            //filter out folders where folder.RandomSelection is false
-            var filteredFolders = DonutsPlugin.scenarios.Where(folder => folder.RandomSelection);
-
-            // Calculate the total weight of all folders minus the ones where folder.RandomSelection is false
-            int totalWeight = filteredFolders.Sum(folder => folder.Weight);
-
-            int randomWeight = UnityEngine.Random.Range(0, totalWeight);
-
-            // Select the folder based on the random weight
-            Folder selectedFolder = null;
-            int accumulatedWeight = 0;
-
-            foreach (Folder folder in filteredFolders)
-            {
-                accumulatedWeight += folder.Weight;
-                if (randomWeight <= accumulatedWeight)
+                if (folder.Name == DonutsPlugin.scenarioSelection.Value)
                 {
-                    selectedFolder = folder;
-                    break;
+                    Logger.LogDebug("Selected Preset: " + DonutsPlugin.scenarioSelection.Value);
+                    return folder.Name; // Return the chosen preset from the UI
                 }
             }
 
-            // Use the selected folder
-            if (selectedFolder != null)
+            // Check if a RandomScenarioConfig was selected from the UI
+            foreach (Folder folder in DonutsPlugin.randomScenarios)
             {
-                Console.WriteLine("Donuts: Random Selected Folder: " + selectedFolder.Name);
-
-                if (DonutsPlugin.ShowRandomFolderChoice.Value)
+                if (folder.RandomScenarioConfig == DonutsPlugin.scenarioSelection.Value)
                 {
-                    MethodInfo displayMessageNotificationMethod;
-                    if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                    // Calculate the total weight of all presets for the selected RandomScenarioConfig
+                    int totalWeight = folder.presets.Sum(preset => preset.Weight);
+
+                    int randomWeight = UnityEngine.Random.Range(0, totalWeight);
+
+                    // Select the preset based on the random weight
+                    string selectedPreset = null;
+                    int accumulatedWeight = 0;
+
+                    foreach (var preset in folder.presets)
                     {
-                        var txt = $"Donuts Random Selected Folder: {selectedFolder.Name}";
-                        EFT.UI.ConsoleScreen.Log(txt);
-                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                        accumulatedWeight += preset.Weight;
+                        if (randomWeight <= accumulatedWeight)
+                        {
+                            selectedPreset = preset.Name;
+                            break;
+                        }
+                    }
+
+                    if (selectedPreset != null)
+                    {
+                        Console.WriteLine("Donuts: Random Selected Preset: " + selectedPreset);
+
+                        if (DonutsPlugin.ShowRandomFolderChoice.Value)
+                        {
+                            MethodInfo displayMessageNotificationMethod;
+                            if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
+                            {
+                                var txt = $"Donuts Random Selected Preset: {selectedPreset}";
+                                EFT.UI.ConsoleScreen.Log(txt);
+                                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+                            }
+                        }
+
+                        return selectedPreset;
                     }
                 }
-
-                return selectedFolder.Name;
             }
 
             return null;
@@ -537,7 +552,69 @@ namespace Donuts
         }
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            int maxCount = UnityEngine.Random.Range(1, hotspotTimer.Hotspot.MaxRandomNumBots + 1);
+            string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
+            int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;
+
+            if (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear")
+            {
+                string pluginGroupChance = DonutsPlugin.pmcGroupChance.Value;
+                maxCount = getActualBotCount(pluginGroupChance, maxCount);
+            }
+            else if (hotspotSpawnType == "assault")
+            {
+                string pluginGroupChance = DonutsPlugin.scavGroupChance.Value;
+                maxCount = getActualBotCount(pluginGroupChance, maxCount);
+            }
+
+            int maxInitialPMCs = PMCBotLimit;
+            int maxInitialSCAVs = SCAVBotLimit;
+            // quick and dirty, this will likely become some sort of new spawn parameter eventually
+            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
+            {
+                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
+                {
+                    // current doesn't reset until the next raid
+                    // doesn't matter right now since we only care about starting bots
+                    if (currentInitialPMCs >= maxInitialPMCs)
+                    {
+                        DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
+                        return;
+                    }
+                    else
+                    {
+                        int originalInitialPMCs = currentInitialPMCs;
+                        currentInitialPMCs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentInitialPMCs > maxInitialPMCs)
+                        {
+                            maxCount = maxInitialPMCs - originalInitialPMCs;
+                            DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
+                        }
+                    }
+                }
+                else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
+                {
+                    // current doesn't reset until the next raid
+                    // doesn't matter right now since we only care about starting bots
+                    if (currentInitialSCAVs >= maxInitialSCAVs)
+                    {
+                        DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
+                        return;
+                    }
+                    else
+                    {
+                        int originalInitialSCAVs = currentInitialSCAVs;
+                        currentInitialSCAVs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentInitialSCAVs > maxInitialSCAVs)
+                        {
+                            maxCount = maxInitialSCAVs - originalInitialSCAVs;
+                            DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
+                        }
+                    }
+                }
+            }
+
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
@@ -589,7 +666,70 @@ namespace Donuts
             }
 
         }
-        
+
+        #region botGroups
+
+        private int getActualBotCount(string pluginGroupChance, int count)
+        {
+            if (pluginGroupChance == "None")
+            {
+                return 1;
+            }
+            else if (pluginGroupChance == "Max")
+            {
+                return count;
+            }
+            else
+            {
+                int actualGroupChance = getGroupChance(pluginGroupChance, count);
+                return actualGroupChance;
+            }
+        }
+
+        // i'm not sure how all this works, ChatGPT wrote this for me
+        private int getGroupChance(string pmcGroupChance, int maxCount)
+        {
+            int actualMaxCount = maxCount;
+
+            // Adjust probabilities based on maxCount
+            double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["Default"];
+
+            System.Random random = new System.Random();
+
+            // Determine actualMaxCount based on pmcGroupChance and probabilities
+            actualMaxCount = getOutcomeWithProbability(random, probabilities, maxCount) + 1;
+
+            return actualMaxCount;
+        }
+
+        private int getOutcomeWithProbability(System.Random random, double[] probabilities, int maxCount)
+        {
+            double probabilitySum = 0.0;
+            foreach (var probability in probabilities)
+            {
+                probabilitySum += probability;
+            }
+
+            if (Math.Abs(probabilitySum - 1.0) > 0.0001)
+            {
+                throw new InvalidOperationException("Probabilities should sum up to 1.");
+            }
+
+            double probabilityThreshold = random.NextDouble();
+            double cumulative = 0.0;
+            for (int i = 0; i < maxCount; i++)
+            {
+                cumulative += probabilities[i];
+                if (probabilityThreshold < cumulative)
+                {
+                    return i;
+                }
+            }
+            // Default outcome if probabilities are not well-defined
+            return maxCount - 1;
+        }
+
+        #endregion
 
         #region botHelperMethods
 
@@ -719,7 +859,7 @@ namespace Donuts
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 botCacheElement.AddPosition(spawnPosition);
-                
+
                 DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                     $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
 

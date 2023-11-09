@@ -19,7 +19,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.3")]
     [BepInDependency("com.spt-aki.core", "3.7.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -38,14 +38,23 @@ namespace Donuts
 
         //Add folder scenarios
         internal static List<Folder> scenarios = new List<Folder>();
+        internal static List<Folder> randomScenarios = new List<Folder>();
         public static ConfigEntry<string> scenarioSelection;
         public string[] scenarioValues = new string[] { };
+
+        public static ConfigEntry<string> pmcGroupChance;
+        public static ConfigEntry<string> scavGroupChance;
 
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
         public static ConfigEntry<string> botDifficultiesSCAV;
         public static ConfigEntry<string> botDifficultiesOther;
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
+
+        // Bot Groups
+        public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
+        public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
+
 
         //menu vars
         public static ConfigEntry<string> spawnName;
@@ -123,7 +132,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("Enable/Disable Spawning from Donut Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             DespawnEnabled = Config.Bind(
                 "1. Main Settings",
@@ -131,7 +140,7 @@ namespace Donuts
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
@@ -139,7 +148,7 @@ namespace Donuts
                 300f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 6 }));
 
             maxSpawnTriesPerBot = Config.Bind(
                 "1. Main Settings",
@@ -147,7 +156,23 @@ namespace Donuts
                 20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+
+            pmcGroupChance = Config.Bind(
+                "1. Main Settings",
+                "Donuts PMC Group Chance",
+                "Default",
+                new ConfigDescription("Setting to determine the odds of PMC groups and group size. See mod page for more details.",
+                new AcceptableValueList<string>(pmcGroupChanceList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
+
+            scavGroupChance = Config.Bind(
+                "1. Main Settings",
+                "Donuts SCAV Group Chance",
+                "Default",
+                new ConfigDescription("Setting to determine the odds of SCAV groups and group size. See mod page for more details.",
+                new AcceptableValueList<string>(scavGroupChanceList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 3 }));
 
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
@@ -181,7 +206,7 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
-            //Debugging 
+            //Debugging
             DebugGizmos = Config.Bind(
                 "2. Debugging",
                 "Enable Debug Markers",
@@ -337,8 +362,7 @@ namespace Donuts
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
             new BotOwnerBrainActivatePatch().Enable();
-            
-            
+
             SetupScenariosUI();
         }
 
@@ -348,13 +372,19 @@ namespace Donuts
             LoadDonutsFolders();
 
             List<string> scenarioValuesList = new List<string>(scenarioValues);
-            scenarioValuesList.Add("Random");
+            // scenarioValuesList.Add("Random");
 
             // Add folder.Name to the scenarioValuesList
             foreach (Folder folder in scenarios)
             {
                 Logger.LogWarning("Adding scenario: " + folder.Name);
                 scenarioValuesList.Add(folder.Name);
+            }
+
+            foreach (Folder folder in randomScenarios)
+            {
+                Logger.LogWarning("Adding random scenario: " + folder.RandomScenarioConfig);
+                scenarioValuesList.Add(folder.RandomScenarioConfig);
             }
 
             scenarioValues = scenarioValuesList.ToArray();
@@ -386,6 +416,13 @@ namespace Donuts
             }
 
             Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
+
+            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
+
+            Logger.LogWarning("Found file at: " + randFilePath);
+
+            string randFile = File.ReadAllText(randFilePath);
+            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
         }
 
         internal static Folder GrabDonutsFolder(string folderName)
@@ -647,7 +684,7 @@ namespace Donuts
                 return false;
             }
 
-            return true; 
+            return true;
         }
     }
 
@@ -687,6 +724,30 @@ namespace Donuts
         }
 
         public SCAVBotLimitPresets SCAVBotLimitPresets
+        {
+            get; set;
+        }
+
+        public string RandomScenarioConfig
+        {
+            get; set;
+        }
+
+        public List<Presets> presets
+        {
+            get; set;
+        }
+
+    }
+
+    internal class Presets
+    {
+        public string Name
+        {
+            get; set;
+        }
+
+        public int Weight
         {
             get; set;
         }
