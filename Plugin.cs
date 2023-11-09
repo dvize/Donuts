@@ -1,26 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using Donuts.Patches;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 
+//disable the ide0007 warning for the entire file
+#pragma warning disable IDE0007
 
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.2.4")]
-    [BepInDependency("com.spt-aki.core", "3.6.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.1")]
+    [BepInDependency("com.spt-aki.core", "3.7.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("me.sol.sain")]
-    [BepInDependency("me.skwizzy.lootingbots")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -55,6 +58,8 @@ namespace Donuts
             "arenafighterevent",
             "assault",
             "assaultgroup",
+            "bossboar",
+            "bossboarsniper",
             "bossbully",
             "bossgluhar",
             "bosskilla",
@@ -68,6 +73,7 @@ namespace Donuts
             "exusec",
             "followerbigpipe",
             "followerbirdeye",
+            "followerboar",
             "followerbully",
             "followergluharassault",
             "followergluharscout",
@@ -103,6 +109,13 @@ namespace Donuts
 
         private void Awake()
         {
+            //run dependency checker
+
+            if (!DependencyChecker.ValidateDependencies(Logger, Info, this.GetType(), Config))
+            {
+                throw new Exception($"Missing Dependencies");
+            }
+
             //Main Settings
             PluginEnabled = Config.Bind(
                 "1. Main Settings",
@@ -123,7 +136,7 @@ namespace Donuts
             coolDownTimer = Config.Bind(
                 "1. Main Settings",
                 "Cool Down Timer",
-                180f,
+                300f,
                 new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
                 new AcceptableValueRange<float>(0f, 1000f),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
@@ -139,7 +152,7 @@ namespace Donuts
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
                 "Donuts PMC Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for All PMC Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
@@ -147,7 +160,7 @@ namespace Donuts
             botDifficultiesSCAV = Config.Bind(
                 "1. Main Settings",
                 "Donuts SCAV Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for All SCAV Donut Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
@@ -155,7 +168,7 @@ namespace Donuts
             botDifficultiesOther = Config.Bind(
                 "1. Main Settings",
                 "Other Bot Type Spawn Difficulty",
-                "AsOnline",
+                "Normal",
                 new ConfigDescription("Difficulty Setting for all other bot types spawned with Donuts, such as bosses, Rogues, Raiders, etc.",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
@@ -163,7 +176,7 @@ namespace Donuts
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",
                 "Show Random Scenario Selection",
-                false,
+                true,
                 new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -319,11 +332,13 @@ namespace Donuts
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
-            new PatchBodySound().Enable();
+            //new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
-            new UseAKIHTTPForBotLoadingPatch().Enable();
             new BotProfilePreparationHook().Enable();
+            new BotOwnerBrainActivatePatch().Enable();
+            
+            
             SetupScenariosUI();
         }
 
@@ -605,7 +620,7 @@ namespace Donuts
     //re-initializes each new game
     internal class BotProfilePreparationHook : ModulePatch
     {
-        protected override MethodBase GetTargetMethod() => typeof(BotControllerClass).GetMethod(nameof(BotControllerClass.AddActivePLayer));
+        protected override MethodBase GetTargetMethod() => typeof(BotsController).GetMethod(nameof(BotsController.AddActivePLayer));
 
         [PatchPrefix]
         public static void PatchPrefix() => DonutsBotPrep.Enable();
@@ -623,16 +638,16 @@ namespace Donuts
     // Don't add invalid enemies
     internal class BotGroupAddEnemyPatch : ModulePatch
     {
-        protected override MethodBase GetTargetMethod() => typeof(BotGroupClass).GetMethod("AddEnemy");
+        protected override MethodBase GetTargetMethod() => typeof(BotsGroup).GetMethod("AddEnemy");
         [PatchPrefix]
-        public static bool PatchPrefix(IAIDetails person)
+        public static bool PatchPrefix(IPlayer person)
         {
             if (person == null || (person.IsAI && person.AIData?.BotOwner?.GetPlayer == null))
             {
                 return false;
             }
 
-            return true;
+            return true; 
         }
     }
 
@@ -640,7 +655,7 @@ namespace Donuts
     {
         protected override MethodBase GetTargetMethod() => typeof(BotMemoryClass).GetMethod("AddEnemy");
         [PatchPrefix]
-        public static bool PatchPrefix(IAIDetails enemy)
+        public static bool PatchPrefix(IPlayer enemy)
         {
             if (enemy == null || (enemy.IsAI && enemy.AIData?.BotOwner?.GetPlayer == null))
             {
