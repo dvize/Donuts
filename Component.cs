@@ -476,7 +476,9 @@ namespace Donuts
                                 // Check if passes hotspot.spawnChance
                                 if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
                                 {
-                                    Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
+                                    #if DEBUG
+                                        Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
+                                    #endif
 
                                     //reset timer if spawn chance fails for all hotspots with same groupNum
                                     foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
@@ -488,18 +490,25 @@ namespace Donuts
                                             timer.Hotspot.IgnoreTimerFirstSpawn = false;
                                         }
 
-                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
+                                        #if DEBUG
+                                            Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
+                                        #endif
                                     }
                                     continue;
                                 }
 
                                 if (hotspotTimer.inCooldown)
                                 {
-                                    Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
+                                    #if DEBUG
+                                        Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
+                                    #endif
                                     continue;
                                 }
 
-                                Logger.LogWarning("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
+                                #if DEBUG
+                                    Logger.LogWarning("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
+                                #endif 
+
                                 SpawnBots(hotspotTimer, coordinate);
                                 hotspotTimer.timesSpawned++;
 
@@ -507,9 +516,14 @@ namespace Donuts
                                 if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
                                 {
                                     hotspotTimer.inCooldown = true;
-                                    Logger.LogDebug("Hotspot: " + hotspot.Name + " is now in cooldown");
+                                    #if DEBUG
+                                        Logger.LogDebug("Hotspot: " + hotspot.Name + " is now in cooldown");
+                                    #endif
                                 }
-                                Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+
+                                #if DEBUG
+                                    Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
+                                #endif
 
                                 //reset timer if spawn chance passes for all hotspots with same groupNum
                                 foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
@@ -521,7 +535,9 @@ namespace Donuts
                                         timer.Hotspot.IgnoreTimerFirstSpawn = false;
                                     }
 
-                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
+                                    #if DEBUG
+                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
+                                    #endif
                                 }
                             }
                         }
@@ -577,7 +593,9 @@ namespace Donuts
                     // doesn't matter right now since we only care about starting bots
                     if (currentInitialPMCs >= maxInitialPMCs)
                     {
-                        DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
+                        #if DEBUG
+                            DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
+                        #endif
                         return;
                     }
                     else
@@ -588,7 +606,10 @@ namespace Donuts
                         if (currentInitialPMCs > maxInitialPMCs)
                         {
                             maxCount = maxInitialPMCs - originalInitialPMCs;
-                            DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
+
+                            #if DEBUG
+                                DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
+                            #endif
                         }
                     }
                 }
@@ -598,7 +619,9 @@ namespace Donuts
                     // doesn't matter right now since we only care about starting bots
                     if (currentInitialSCAVs >= maxInitialSCAVs)
                     {
-                        DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
+                        #if DEBUG
+                            DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
+                        #endif
                         return;
                     }
                     else
@@ -609,7 +632,9 @@ namespace Donuts
                         if (currentInitialSCAVs > maxInitialSCAVs)
                         {
                             maxCount = maxInitialSCAVs - originalInitialSCAVs;
-                            DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
+                            #if DEBUG
+                                DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
+                            #endif
                         }
                     }
                 }
@@ -634,7 +659,9 @@ namespace Donuts
                 if (!spawnPosition.HasValue)
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
-                    Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
+                    #if DEBUG
+                        Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
+                    #endif
                 }
 
                 ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
@@ -642,12 +669,16 @@ namespace Donuts
                 //check if group bots exist in cache or else create it
                 if(DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, maxCount) != null)
                 {
-                    Logger.LogWarning("Found grouped cached bots, spawning them.");
+                    #if DEBUG
+                        Logger.LogWarning("Found grouped cached bots, spawning them.");
+                    #endif
                     await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
                 }
                 else
                 {
-                    Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {maxCount} grouped number of bots.");
+                    #if DEBUG
+                        Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {maxCount} grouped number of bots.");
+                    #endif
                     await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount, 1);
                     await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
                 }
@@ -659,7 +690,9 @@ namespace Donuts
                 if (!spawnPosition.HasValue)
                 {
                     // Failed to get a valid spawn position, move on to generating the next bot
-                    Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
+                    #if DEBUG
+                        Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
+                    #endif
                 }
 
                 await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);
@@ -838,9 +871,10 @@ namespace Donuts
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 botCacheElement.AddPosition(spawnPosition);
 
-                DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} for hotspot {hotspotTimer.Hotspot.Name} ");
-
+                #if DEBUG
+                    DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                        $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} for hotspot {hotspotTimer.Hotspot.Name} ");
+                #endif
                 DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
             }
             else
@@ -860,9 +894,10 @@ namespace Donuts
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 botCacheElement.AddPosition(spawnPosition);
 
-                DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
-
+                #if DEBUG
+                    DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                        $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
+                #endif
                 DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
             }
         }
@@ -875,8 +910,10 @@ namespace Donuts
             bot.AddPosition((Vector3)spawnPosition);
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
-            DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                $"of side: {bot.Side} and difficulty: {botdifficulty}");
+            #if DEBUG
+                DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                    $"of side: {bot.Side} and difficulty: {botdifficulty}");
+            #endif
 
             DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
         }
@@ -1075,8 +1112,9 @@ namespace Donuts
                 }
 
                 // Despawn the bot
-                Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
-
+                #if DEBUG
+                    Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
+                #endif
                 BotOwner botOwner = furthestBot.AIData.BotOwner;
 
                 var botgame = Singleton<IBotGame>.Instance;
@@ -1111,7 +1149,9 @@ namespace Donuts
 
                     if (IsValidSpawnPosition(spawnPosition, hotspot))
                     {
-                        Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                        #if DEBUG
+                            Logger.LogDebug("Found spawn position at: " + spawnPosition);
+                        #endif
                         return spawnPosition;
                     }
                 }
