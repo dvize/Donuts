@@ -362,9 +362,6 @@ namespace Donuts
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
 
-            // NOTE: This patch should no longer be necessarry, as we no longer set "shallBeGroup"
-            //new BotOwnerBrainActivatePatch().Enable();
-
             SetupScenariosUI();
         }
 
