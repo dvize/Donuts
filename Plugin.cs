@@ -361,7 +361,6 @@ namespace Donuts
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
-            new BotOwnerBrainActivatePatch().Enable();
 
             SetupScenariosUI();
         }
