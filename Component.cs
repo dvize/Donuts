@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -63,6 +64,7 @@ namespace Donuts
 
         public static GameWorld gameWorld;
         private static BotSpawner botSpawnerClass;
+        private static IBotCreator botCreator;
 
         private float PMCdespawnCooldown = 0f;
         private float PMCdespawnCooldownDuration = 10f;
@@ -102,6 +104,7 @@ namespace Donuts
         public void Awake()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
+            botCreator = AccessTools.Field(botSpawnerClass.GetType(), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             methodCache = new Dictionary<string, MethodInfo>();
 
             // Retrieve displayMessageNotification MethodInfo
@@ -113,6 +116,12 @@ namespace Donuts
             }
 
             var methodInfo = typeof(BotSpawner).GetMethod("method_9", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (methodInfo != null)
+            {
+                methodCache[methodInfo.Name] = methodInfo;
+            }
+
+            methodInfo = AccessTools.Method(typeof(BotSpawner), "method_10");
             if (methodInfo != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
@@ -875,7 +884,8 @@ namespace Donuts
                     DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                         $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} for hotspot {hotspotTimer.Hotspot.Name} ");
                 #endif
-                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
+
+                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
             }
             else
             {
@@ -898,10 +908,11 @@ namespace Donuts
                     DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                         $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
                 #endif
-                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
+
+                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
             }
         }
-        public async Task CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationToken)
+        public async Task CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource)
         {
             BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType);
 
@@ -915,8 +926,53 @@ namespace Donuts
                     $"of side: {bot.Side} and difficulty: {botdifficulty}");
             #endif
 
-            DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, bot, null, cancellationToken.Token });
+            ActivateBot(closestBotZone, bot, cancellationTokenSource);
         }
+
+        public void ActivateBot(BotZone botZone, BotCacheClass botData, CancellationTokenSource cancellationTokenSource)
+        {
+            CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper();
+            createBotCallbackWrapper.botData = botData;
+
+            GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
+
+            // Call ActivateBot directly, using our own group callback and bot created callback
+            // NOTE: Make sure to pass "false" for the third parameter to avoid "assaultGroup" conversion
+            botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
+        }
+
+        // Custom GetGroupAndSetEnemies wrapper that handles grouping bots into multiple groups within the same botzone
+        internal class GetGroupWrapper
+        {
+            private BotsGroup group = null;
+
+            public BotsGroup GetGroupAndSetEnemies(BotOwner bot, BotZone zone)
+            {
+                // If we haven't found/created our BotsGroup yet, do so, and then lock it so nobody else can use it
+                if (group == null)
+                {
+                    group = botSpawnerClass.GetGroupAndSetEnemies(bot, zone);
+                    group.Lock();
+                }
+
+                return group;
+            }
+        }
+
+        // Wrapper around method_10 called after bot creation, so we can pass it the BotCacheClass data
+        internal class CreateBotCallbackWrapper
+        {
+            public BotCacheClass botData;
+            public Stopwatch stopWatch = new Stopwatch();
+
+            public void CreateBotCallback(BotOwner bot)
+            {
+                // I have no idea why BSG passes a stopwatch into this call...
+                stopWatch.Start();
+                methodCache["method_10"].Invoke(botSpawnerClass, new object[] { bot, botData, null, false, stopWatch });
+            }
+        }
+
         private WildSpawnType GetWildSpawnType(string spawnType)
         {
             switch (spawnType.ToLower())
