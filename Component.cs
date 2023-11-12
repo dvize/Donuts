@@ -865,6 +865,9 @@ namespace Donuts
         {
             if (botCacheList != null && botCacheList.Count > 0)
             {
+                #if DEBUG
+                    DonutComponent.Logger.LogDebug("Bot Cache is not empty. Finding Cached Bot");
+                #endif
                 var botCacheElement = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, 1);
                 botCacheList.Remove(botCacheElement);
 
@@ -879,7 +882,11 @@ namespace Donuts
             }
             else
             {
-                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource);
+                #if DEBUG
+                    DonutComponent.Logger.LogDebug("Bot Cache is empty for solo bot. Creating a new bot.");
+                #endif
+                CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource);
+
             }
         }
         private async Task SpawnBotForGroup(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
