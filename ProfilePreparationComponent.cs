@@ -406,7 +406,7 @@ namespace Donuts
                 Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
             #endif
 
-            matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
+            var matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
 
             if (matchingEntry != null)
             {
