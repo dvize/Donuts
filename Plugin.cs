@@ -6,7 +6,6 @@ using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
-using Donuts.Patches;
 using dvize.Donuts;
 using EFT;
 using EFT.Communications;

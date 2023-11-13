@@ -967,9 +967,11 @@ namespace Donuts
 
             public void CreateBotCallback(BotOwner bot)
             {
+                bool shallBeGroup = botData.SpawnParams?.ShallBeGroup != null;
+
                 // I have no idea why BSG passes a stopwatch into this call...
                 stopWatch.Start();
-                methodCache["method_10"].Invoke(botSpawnerClass, new object[] { bot, botData, null, false, stopWatch });
+                methodCache["method_10"].Invoke(botSpawnerClass, new object[] { bot, botData, null, shallBeGroup, stopWatch });
             }
         }
 
