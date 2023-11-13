@@ -405,13 +405,8 @@ namespace Donuts
             #if DEBUG
                 Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
             #endif
-            var matchingEntry = default(BotCacheClass);
 
-            try
-            {
-                matchingEntry = botList.First(entry => entry.Profiles.Count == targetCount);
-            }
-            catch (Exception) { }
+            matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
 
             if (matchingEntry != null)
             {
@@ -446,7 +441,7 @@ namespace Donuts
                 return originalProfile.Value;
             }
             else
-            {   
+            {
                 #if DEBUG
                     Logger.LogWarning("Could not find original profile for bot " + bot.Profile.Nickname);
                 #endif
