@@ -888,7 +888,7 @@ namespace Donuts
                 DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                     $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} for hotspot {hotspotTimer.Hotspot.Name} ");
             #endif
-                DonutComponent.methodCache["method_9"].Invoke(botSpawnerClass, new object[] { closestBotZone, botCacheElement, null, cancellationTokenSource.Token });
+                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
             }
 
             else
