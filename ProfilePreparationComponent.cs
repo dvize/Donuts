@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Aki.PrePatch;
@@ -404,7 +405,13 @@ namespace Donuts
             #if DEBUG
                 Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
             #endif
-            var matchingEntry = botList.First(entry => entry.Profiles.Count == targetCount);
+            var matchingEntry = default(BotCacheClass);
+
+            try
+            {
+                matchingEntry = botList.First(entry => entry.Profiles.Count == targetCount);
+            }
+            catch (Exception) { }
 
             if (matchingEntry != null)
             {

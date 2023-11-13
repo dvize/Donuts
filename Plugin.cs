@@ -389,9 +389,9 @@ namespace Donuts
 
             scenarioSelection = Config.Bind(
                 "1. Main Settings",
-                "Scenario Selection",
-                "Default",
-                new ConfigDescription("Select a scenario to use for spawning",
+                "Preset Selection",
+                "Random Live Like",
+                new ConfigDescription("Select a preset to use for spawning",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
         }

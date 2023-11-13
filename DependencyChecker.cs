@@ -20,12 +20,13 @@ namespace Donuts
         /// <returns></returns>
         public static bool ValidateDependencies(ManualLogSource Logger, PluginInfo Info, Type pluginType, ConfigFile Config = null)
         {
+            var noVersion = new Version("0.0.0");
             var dependencies = pluginType.GetCustomAttributes(typeof(BepInDependency), true) as BepInDependency[];
 
             foreach (var dependency in dependencies)
             {
                 PluginInfo pluginInfo;
-                if (!BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue(dependency.DependencyGUID, out pluginInfo))
+                if (!Chainloader.PluginInfos.TryGetValue(dependency.DependencyGUID, out pluginInfo))
                 {
                     pluginInfo = null;
                 }
@@ -33,14 +34,22 @@ namespace Donuts
                 // If the plugin isn't found, or the instance isn't enabled, it means the required plugin failed to load
                 if (pluginInfo == null || pluginInfo.Instance?.enabled == false)
                 {
-                    string errorMessage = $"ERROR: This version of {Info.Metadata.Name} v{Info.Metadata.Version} depends on {dependency.DependencyGUID}, but it was not loaded.";
+                    string dependencyName = pluginInfo?.Metadata.Name ?? dependency.DependencyGUID;
+                    string dependencyVersion = "";
+                    if (dependency.MinimumVersion > noVersion)
+                    {
+                        dependencyVersion = $" v{dependency.MinimumVersion}";
+                    }
+
+                    string errorMessage = $"ERROR: This version of {Info.Metadata.Name} v{Info.Metadata.Version} depends on {dependencyName}{dependencyVersion}, but it was not loaded.";
                     Logger.LogError(errorMessage);
+                    Chainloader.DependencyErrors.Add(errorMessage);
 
                     if (Config != null)
                     {
                         // This results in a bogus config entry in the BepInEx config file for the plugin, but it shouldn't hurt anything
                         // We leave the "section" parameter empty so there's no section header drawn
-                        Config.Bind("", "TarkovVersion", "", new ConfigDescription(
+                        Config.Bind("", "MissingDeps", "", new ConfigDescription(
                             errorMessage, null, new ConfigurationManagerAttributes
                             {
                                 CustomDrawer = ErrorLabelDrawer,
