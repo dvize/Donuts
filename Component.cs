@@ -48,13 +48,6 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
-        private Dictionary<string, double[]> groupChanceWeights = new Dictionary<string, double[]>
-        {
-            { "Low", new double[] { 0.80, 0.18, 0.02, 0.0, 0.0 } },
-            { "Default", new double[] { 0.42, 0.42, 0.09, 0.05, 0.02 } },
-            { "High", new double[] { 0.0, 0.15, 0.35, 0.35, 0.15 } }
-        };
-
         private bool fileLoaded = false;
         public static string maplocation;
         private int PMCBotLimit = 0;
@@ -593,6 +586,7 @@ namespace Donuts
 
             int maxInitialPMCs = PMCBotLimit;
             int maxInitialSCAVs = SCAVBotLimit;
+
             // quick and dirty, this will likely become some sort of new spawn parameter eventually
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
@@ -643,6 +637,81 @@ namespace Donuts
                             maxCount = maxInitialSCAVs - originalInitialSCAVs;
                             #if DEBUG
                                 DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
+                            #endif
+                        }
+                    }
+                }
+            }
+
+            if (DonutsPlugin.HardCapEnabled.Value)
+            {
+                #if DEBUG
+                    DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
+                #endif
+                int currentAlivePMCs = 0;
+                int currentAliveSCAVs = 0;
+
+                // this is similar to DespawnFurthestBot, only sort of in reverse
+                // we need to get a count of all bots currently alive, PMCs and SCAVs separately
+                var bots = gameWorld.RegisteredPlayers;
+                foreach (Player bot in bots)
+                {
+                    var role = bot.Profile.Info.Settings.Role;
+                    if (!bot.IsYourPlayer && bot.AIData.BotOwner.BotState == EBotState.Active)
+                    {
+                        if (role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
+                        {
+                            currentAlivePMCs++;
+                        }
+                        else if (role == WildSpawnType.assault)
+                        {
+                            currentAliveSCAVs++;
+                        }
+                    }
+                }
+
+                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
+                {
+                    if (currentAlivePMCs >= PMCBotLimit)
+                    {
+                        #if DEBUG
+                            DonutComponent.Logger.LogDebug($"Raid is full - skipping this PMC spawn");
+                        #endif
+                        return;
+                    }
+                    else
+                    {
+                        int originalAlivePMCs = currentAlivePMCs;
+                        currentAlivePMCs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentAlivePMCs > PMCBotLimit)
+                        {
+                            maxCount = PMCBotLimit - originalAlivePMCs;
+                            #if DEBUG
+                                DonutComponent.Logger.LogDebug($"Reaching PMCBotLimit {PMCBotLimit}, spawning {maxCount} instead");
+                            #endif
+                        }
+                    }
+                }
+                else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
+                {
+                    if (currentAliveSCAVs >= SCAVBotLimit)
+                    {
+                        #if DEBUG
+                            DonutComponent.Logger.LogDebug($"Raid is full - skipping this SCAV spawn");
+                        #endif
+                        return;
+                    }
+                    else
+                    {
+                        int originalAliveSCAVs = currentAliveSCAVs;
+                        currentAliveSCAVs += maxCount;
+                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
+                        if (currentAliveSCAVs > SCAVBotLimit)
+                        {
+                            maxCount = SCAVBotLimit - originalAliveSCAVs;
+                            #if DEBUG
+                                DonutComponent.Logger.LogDebug($"Reaching SCAVBotLimit {SCAVBotLimit}, spawning {maxCount} instead");
                             #endif
                         }
                     }
@@ -720,11 +789,20 @@ namespace Donuts
             {
                 return count;
             }
+            else if (pluginGroupChance == "Random")
+            {
+                string[] groupChances = { "None", "Low", "Default", "High", "Max" };
+                pluginGroupChance = groupChances[UnityEngine.Random.Range(0, groupChances.Length)];
+            }
             else
             {
+                // Assuming getGroupChance is the actual implementation for non-random cases
                 int actualGroupChance = getGroupChance(pluginGroupChance, count);
                 return actualGroupChance;
             }
+
+            // Recursively call the function with the updated pluginGroupChance
+            return getActualBotCount(pluginGroupChance, count);
         }
 
         // i'm not sure how all this works, ChatGPT wrote this for me
@@ -733,14 +811,45 @@ namespace Donuts
             int actualMaxCount = maxCount;
 
             // Adjust probabilities based on maxCount
-            double[] probabilities = groupChanceWeights.ContainsKey(pmcGroupChance) ? groupChanceWeights[pmcGroupChance] : groupChanceWeights["Default"];
+            double[] probabilities;
+            try
+            {
+                probabilities = GetProbabilityArray(pmcGroupChance);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error getting probability array for group chance {pmcGroupChance}. Using default.");
+                probabilities = GetDefaultProbabilityArray(pmcGroupChance);
+            }
 
             System.Random random = new System.Random();
 
             // Determine actualMaxCount based on pmcGroupChance and probabilities
             actualMaxCount = getOutcomeWithProbability(random, probabilities, maxCount) + 1;
 
-            return actualMaxCount;
+            return Math.Min(actualMaxCount, maxCount);
+        }
+
+        private double[] GetProbabilityArray(string pmcGroupChance)
+        {
+            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            {
+                double totalWeight = relativeWeights.Sum(); // Sum of all weights
+                return relativeWeights.Select(weight => weight / totalWeight).ToArray();
+            }
+
+            throw new ArgumentException($"Invalid pmcGroupChance: {pmcGroupChance}");
+        }
+
+        private double[] GetDefaultProbabilityArray(string pmcGroupChance)
+        {
+            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            {
+                double totalWeight = relativeWeights.Sum(); // Sum of all weights
+                return relativeWeights.Select(weight => weight / totalWeight).ToArray();
+            }
+
+            throw new ArgumentException($"Invalid pmcGroupChance: {pmcGroupChance}");
         }
 
         private int getOutcomeWithProbability(System.Random random, double[] probabilities, int maxCount)
@@ -1095,7 +1204,7 @@ namespace Donuts
             Player furthestBot = null;
             var tempBotCount = 0;
 
-            if (bottype == "pmc")
+            if (bottype == "pmc" || bottype == "sptusec" || bottype == "sptbear")
             {
                 if (Time.time - PMCdespawnCooldown < PMCdespawnCooldownDuration)
                 {
@@ -1131,7 +1240,7 @@ namespace Donuts
 
 
             }
-            else if (bottype == "scav")
+            else if (bottype == "assault")
             {
                 if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration)
                 {

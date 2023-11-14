@@ -18,7 +18,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.3")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.4")]
     [BepInDependency("com.spt-aki.core", "3.7.1")]
     [BepInDependency("xyz.drakia.bigbrain")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -30,6 +30,7 @@ namespace Donuts
         public static ConfigEntry<float> botTimerTrigger;
         public static ConfigEntry<float> coolDownTimer;
         public static ConfigEntry<bool> DespawnEnabled;
+        public static ConfigEntry<bool> HardCapEnabled;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
@@ -44,6 +45,10 @@ namespace Donuts
         public static ConfigEntry<string> pmcGroupChance;
         public static ConfigEntry<string> scavGroupChance;
 
+        public static ConfigEntry<string> groupWeightDistroLow;
+        public static ConfigEntry<string> groupWeightDistroDefault;
+        public static ConfigEntry<string> groupWeightDistroHigh;
+
         //bot difficulty
         public static ConfigEntry<string> botDifficultiesPMC;
         public static ConfigEntry<string> botDifficultiesSCAV;
@@ -51,14 +56,25 @@ namespace Donuts
         public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         // Bot Groups
-        public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
-        public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max"};
+        public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random"};
+        public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random"};
 
+        public static Dictionary<string, int[]> groupChanceWeights = new Dictionary<string, int[]>
+        {
+            { "Low", new int[] { 400, 90, 9, 0, 0 } },
+            { "Default", new int[] { 210, 210, 45, 25, 10 } },
+            { "High", new int[] { 0, 75, 175, 175, 75 } }
+        };
+
+        public string ConvertIntArrayToString(int[] array)
+        {
+            return string.Join(",", array);
+        }
 
         //menu vars
         public static ConfigEntry<string> spawnName;
         public static ConfigEntry<int> groupNum;
-        //make groupList of numbers 1-20
+        //make groupList of numbers 1-100
         public static int[] groupList = Enumerable.Range(1, 100).ToArray();
         public ConfigEntry<string> wildSpawns;
         public string[] wildDropValues = new string[]
@@ -124,20 +140,32 @@ namespace Donuts
                 throw new Exception($"Missing Dependencies");
             }
 
+            string defaultWeightsString = ConvertIntArrayToString(groupChanceWeights["Default"]);
+            string lowWeightsString = ConvertIntArrayToString(groupChanceWeights["Low"]);
+            string highWeightsString = ConvertIntArrayToString(groupChanceWeights["High"]);
+
             //Main Settings
             PluginEnabled = Config.Bind(
                 "1. Main Settings",
-                "Donut On/Off",
+                "Donuts On/Off",
                 true,
-                new ConfigDescription("Enable/Disable Spawning from Donut Points",
+                new ConfigDescription("Enable/Disable Spawning from Donuts Points",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             DespawnEnabled = Config.Bind(
                 "1. Main Settings",
                 "Despawn Option",
                 true,
                 new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+
+            HardCapEnabled = Config.Bind(
+                "1. Main Settings",
+                "Bot Hard Cap Option",
+                false,
+                new ConfigDescription("When enabled, all bot spawns will be hard capped by your preset caps. In other words, if your bot count is at the total Donuts cap then no more bots will spawn until one dies (vanilla SPT behavior).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
@@ -161,7 +189,7 @@ namespace Donuts
                 "1. Main Settings",
                 "Donuts PMC Group Chance",
                 "Default",
-                new ConfigDescription("Setting to determine the odds of PMC groups and group size. See mod page for more details.",
+                new ConfigDescription("Setting to determine the odds of PMC groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details.",
                 new AcceptableValueList<string>(pmcGroupChanceList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 4 }));
 
@@ -169,15 +197,39 @@ namespace Donuts
                 "1. Main Settings",
                 "Donuts SCAV Group Chance",
                 "Default",
-                new ConfigDescription("Setting to determine the odds of SCAV groups and group size. See mod page for more details.",
+                new ConfigDescription("Setting to determine the odds of SCAV groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details. See mod page for more details.",
                 new AcceptableValueList<string>(scavGroupChanceList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 3 }));
+
+            groupWeightDistroLow = Config.Bind(
+                "3. Group Chance Weight Distribution",
+                "Low",
+                lowWeightsString,
+                new ConfigDescription("Weight Distribution for Group Chance 'Low'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
+
+            groupWeightDistroDefault = Config.Bind(
+                "3. Group Chance Weight Distribution",
+                "Default",
+                defaultWeightsString,
+                new ConfigDescription("Weight Distribution for Group Chance 'Default'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 3 }));
+
+            groupWeightDistroHigh = Config.Bind(
+                "3. Group Chance Weight Distribution",
+                "High",
+                highWeightsString,
+                new ConfigDescription("Weight Distribution for Group Chance 'High'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
             botDifficultiesPMC = Config.Bind(
                 "1. Main Settings",
                 "Donuts PMC Spawn Difficulty",
                 "Normal",
-                new ConfigDescription("Difficulty Setting for All PMC Donut Related Spawns",
+                new ConfigDescription("Difficulty Setting for All PMC Donuts Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
 
@@ -185,7 +237,7 @@ namespace Donuts
                 "1. Main Settings",
                 "Donuts SCAV Spawn Difficulty",
                 "Normal",
-                new ConfigDescription("Difficulty Setting for All SCAV Donut Related Spawns",
+                new ConfigDescription("Difficulty Setting for All SCAV Donuts Related Spawns",
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 2 }));
 
@@ -224,7 +276,7 @@ namespace Donuts
 
             // Spawn Point Maker
             spawnName = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Name",
                 "Spawn Name Here",
                 new ConfigDescription("Name used to identify the spawn marker",
@@ -232,7 +284,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 14 }));
 
             groupNum = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Group Number",
                 1,
                 new ConfigDescription("Group Number used to identify the spawn marker",
@@ -240,7 +292,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 13 }));
 
             wildSpawns = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Wild Spawn Type",
                 "pmc",
                 new ConfigDescription("Select an option.",
@@ -248,7 +300,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 12 }));
 
             minSpawnDist = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Min Spawn Distance",
                 1f,
                 new ConfigDescription("Min Distance Bots will Spawn From Marker You Set.",
@@ -256,7 +308,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 11 }));
 
             maxSpawnDist = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Max Spawn Distance",
                 20f,
                 new ConfigDescription("Max Distance Bots will Spawn From Marker You Set.",
@@ -264,7 +316,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 10 }));
 
             botTriggerDistance = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Bot Spawn Trigger Distance",
                 150f,
                 new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
@@ -272,7 +324,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 9 }));
 
             botTimerTrigger = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Bot Spawn Timer Trigger",
                 180f,
                 new ConfigDescription("In seconds before it spawns next wave while player in the fight zone area",
@@ -280,7 +332,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 8 }));
 
             maxRandNumBots = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Max Random Bots",
                 2,
                 new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
@@ -288,7 +340,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
 
             spawnChance = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Spawn Chance for Marker",
                 50,
                 new ConfigDescription("Chance bot will be spawn here after timer is reached",
@@ -296,7 +348,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 6 }));
 
             maxSpawnsBeforeCooldown = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Max Spawns Before Cooldown",
                 5,
                 new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
@@ -304,7 +356,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
 
             ignoreTimerFirstSpawn = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Ignore Timer for First Spawn",
                 false,
                 new ConfigDescription("When enabled for this point, it will still spawn even if timer is not ready for first spawn only",
@@ -312,7 +364,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
             minSpawnDistanceFromPlayer = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Min Spawn Distance From Player",
                 40f,
                 new ConfigDescription("How far the random selected spawn near the spawn marker needs to be from player",
@@ -320,7 +372,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 3 }));
 
             CreateSpawnMarkerKey = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
@@ -328,7 +380,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
-                "3. Spawn Point Maker",
+                "4. Spawn Point Maker",
                 "Delete Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
@@ -337,7 +389,7 @@ namespace Donuts
 
             //Save Settings
             saveNewFileOnly = Config.Bind(
-                "4. Save Settings",
+                "5. Save Settings",
                 "Save New Locations Only",
                 false,
                 new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
@@ -345,7 +397,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             WriteToFileKey = Config.Bind(
-                "4. Save Settings",
+                "5. Save Settings",
                 "Create Temp Json File",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",

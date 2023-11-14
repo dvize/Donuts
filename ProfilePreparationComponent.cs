@@ -32,7 +32,6 @@ namespace Donuts
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        private int maxBotCount;
         private float replenishInterval;
         private float timeSinceLastReplenish;
         private int botsReplenishedCount;
@@ -210,19 +209,19 @@ namespace Donuts
                     break;
                 case "normal":
                     foreach (WildSpawnType botType in wildSpawnList)
-                    {                
+                    {
                         botLists[botType].Add(BotDifficulty.normal, new List<BotCacheClass>());
                     }
                     break;
                 case "hard":
                     foreach (WildSpawnType botType in wildSpawnList)
-                    {                
+                    {
                         botLists[botType].Add(BotDifficulty.hard, new List<BotCacheClass>());
                     }
                     break;
                 case "impossible":
                     foreach (WildSpawnType botType in wildSpawnList)
-                    {               
+                    {
                         botLists[botType].Add(BotDifficulty.impossible, new List<BotCacheClass>());
                     }
                     break;
