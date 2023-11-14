@@ -41,6 +41,41 @@ namespace Donuts
         private int scavMaxBotsToReplenish = 1;
         private int scavMaxGroupBotsToReplenish = 1;
 
+        private List<WildSpawnType> wildSpawnList = new List<WildSpawnType>
+            {
+                WildSpawnType.arenaFighterEvent,
+                WildSpawnType.assaultGroup,
+                WildSpawnType.bossBoar,
+                WildSpawnType.bossBoarSniper,
+                WildSpawnType.bossBully,
+                WildSpawnType.bossGluhar,
+                WildSpawnType.bossKilla,
+                WildSpawnType.bossKojaniy,
+                WildSpawnType.bossSanitar,
+                WildSpawnType.bossTagilla,
+                WildSpawnType.bossZryachiy,
+                WildSpawnType.crazyAssaultEvent,
+                WildSpawnType.cursedAssault,
+                WildSpawnType.exUsec,
+                WildSpawnType.followerBoar,
+                WildSpawnType.followerBully,
+                WildSpawnType.followerGluharAssault,
+                WildSpawnType.followerGluharScout,
+                WildSpawnType.followerGluharSecurity,
+                WildSpawnType.followerGluharSnipe,
+                WildSpawnType.followerKojaniy,
+                WildSpawnType.followerSanitar,
+                WildSpawnType.followerTagilla,
+                WildSpawnType.followerZryachiy,
+                WildSpawnType.marksman,
+                WildSpawnType.pmcBot,
+                WildSpawnType.sectantPriest,
+                WildSpawnType.sectantWarrior,
+                WildSpawnType.followerBigPipe,
+                WildSpawnType.followerBirdEye,
+                WildSpawnType.bossKnight
+            };
+
 
         internal static ManualLogSource Logger
         {
@@ -84,13 +119,17 @@ namespace Donuts
             InitializeBotLists();
         }
 
-        // maybe we can check here as well? for preset? so that we don't have to add so many?
         private void InitializeBotLists()
         {
 
             botLists.Add(WildSpawnType.assault, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptUsec, new Dictionary<BotDifficulty, List<BotCacheClass>>());
             botLists.Add(sptBear, new Dictionary<BotDifficulty, List<BotCacheClass>>());
+
+            foreach (WildSpawnType botType in wildSpawnList)
+            {
+                botLists.Add(botType, new Dictionary<BotDifficulty, List<BotCacheClass>>());
+            }
 
             //create dictionary entries based on donuts difficulty settings
             switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
@@ -145,6 +184,47 @@ namespace Donuts
                     break;
                 case "impossible":
                     botLists[WildSpawnType.assault].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    break;
+                default:
+                    #if DEBUG
+                        Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
+                    #endif
+                    break;
+            }
+
+            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
+            {
+                case "asonline":
+                    foreach (WildSpawnType botType in wildSpawnList)
+                    {
+                        botLists[botType].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                        botLists[botType].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                        botLists[botType].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    }
+                    break;
+                case "easy":
+                    foreach (WildSpawnType botType in wildSpawnList)
+                    {
+                        botLists[botType].Add(BotDifficulty.easy, new List<BotCacheClass>());
+                    }
+                    break;
+                case "normal":
+                    foreach (WildSpawnType botType in wildSpawnList)
+                    {                
+                        botLists[botType].Add(BotDifficulty.normal, new List<BotCacheClass>());
+                    }
+                    break;
+                case "hard":
+                    foreach (WildSpawnType botType in wildSpawnList)
+                    {                
+                        botLists[botType].Add(BotDifficulty.hard, new List<BotCacheClass>());
+                    }
+                    break;
+                case "impossible":
+                    foreach (WildSpawnType botType in wildSpawnList)
+                    {               
+                        botLists[botType].Add(BotDifficulty.impossible, new List<BotCacheClass>());
+                    }
                     break;
                 default:
                     #if DEBUG

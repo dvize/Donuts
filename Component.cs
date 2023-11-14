@@ -657,7 +657,6 @@ namespace Donuts
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
-
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
             //check if we are spawning a group or a single bot
