@@ -386,11 +386,24 @@ namespace Donuts
 
         private string runWeightedScenarioSelection()
         {
+            var scenarioSelection = DonutsPlugin.scenarioSelection.Value;
+
+            // check if this is a SCAV raid; this only works during raid load
+            if (Aki.SinglePlayer.Utils.InRaid.RaidChangesUtil.IsScavRaid)
+            {
+                #if DEBUG
+                    Logger.LogDebug($"This is a SCAV raid, using SCAV raid preset selector");
+                #endif
+                scenarioSelection = DonutsPlugin.scavScenarioSelection.Value;
+            }
+
             foreach (Folder folder in DonutsPlugin.scenarios)
             {
-                if (folder.Name == DonutsPlugin.scenarioSelection.Value)
-                {
-                    Logger.LogDebug("Selected Preset: " + DonutsPlugin.scenarioSelection.Value);
+                if (folder.Name == scenarioSelection)
+                {           
+                    #if DEBUG
+                        Logger.LogDebug("Selected Preset: " + scenarioSelection);
+                    #endif
                     return folder.Name; // Return the chosen preset from the UI
                 }
             }
@@ -398,7 +411,7 @@ namespace Donuts
             // Check if a RandomScenarioConfig was selected from the UI
             foreach (Folder folder in DonutsPlugin.randomScenarios)
             {
-                if (folder.RandomScenarioConfig == DonutsPlugin.scenarioSelection.Value)
+                if (folder.RandomScenarioConfig == scenarioSelection)
                 {
                     // Calculate the total weight of all presets for the selected RandomScenarioConfig
                     int totalWeight = folder.presets.Sum(preset => preset.Weight);

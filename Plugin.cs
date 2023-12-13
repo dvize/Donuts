@@ -40,6 +40,7 @@ namespace Donuts
         internal static List<Folder> scenarios = new List<Folder>();
         internal static List<Folder> randomScenarios = new List<Folder>();
         public static ConfigEntry<string> scenarioSelection;
+        public static ConfigEntry<string> scavScenarioSelection;
         public string[] scenarioValues = new string[] { };
 
         public static ConfigEntry<string> pmcGroupChance;
@@ -444,6 +445,14 @@ namespace Donuts
                 "Preset Selection",
                 "Random Live Like",
                 new ConfigDescription("Select a preset to use for spawning",
+                new AcceptableValueList<string>(scenarioValues),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            scavScenarioSelection = Config.Bind(
+                "1. Main Settings",
+                "SCAV Raid Preset Selection",
+                "Random SCAV Raids",
+                new ConfigDescription("Select a preset to use for spawning for SCAV raids specifically.",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
         }
