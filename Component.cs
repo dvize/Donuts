@@ -522,7 +522,7 @@ namespace Donuts
 
                                 #if DEBUG
                                     Logger.LogWarning("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-                                #endif 
+                                #endif
 
                                 SpawnBots(hotspotTimer, coordinate);
                                 hotspotTimer.timesSpawned++;
@@ -670,7 +670,7 @@ namespace Donuts
                 foreach (Player bot in bots)
                 {
                     var role = bot.Profile.Info.Settings.Role;
-                    if (!bot.IsYourPlayer && bot.AIData.BotOwner.BotState == EBotState.Active)
+                    if (!bot.IsYourPlayer)
                     {
                         if (role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
                         {
@@ -1217,7 +1217,7 @@ namespace Donuts
             Player furthestBot = null;
             var tempBotCount = 0;
 
-            if (bottype == "pmc" || bottype == "sptusec" || bottype == "sptbear")
+            if (bottype == "pmc")
             {
                 if (Time.time - PMCdespawnCooldown < PMCdespawnCooldownDuration)
                 {
@@ -1253,7 +1253,7 @@ namespace Donuts
 
 
             }
-            else if (bottype == "assault")
+            else if (bottype == "scav")
             {
                 if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration)
                 {

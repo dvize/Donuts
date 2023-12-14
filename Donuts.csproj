@@ -68,6 +68,9 @@
     <Reference Include="aki_PrePatch">
       <HintPath>F:\SPT-AKI-DEV\BepInEx\patchers\aki_PrePatch.dll</HintPath>
     </Reference>
+    <Reference Include="aki-singleplayer">
+      <HintPath>F:\SPT-AKI-DEV\BepInEx\plugins\spt\aki-singleplayer.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
