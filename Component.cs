@@ -400,7 +400,7 @@ namespace Donuts
             foreach (Folder folder in DonutsPlugin.scenarios)
             {
                 if (folder.Name == scenarioSelection)
-                {           
+                {
                     #if DEBUG
                         Logger.LogDebug("Selected Preset: " + scenarioSelection);
                     #endif
@@ -656,77 +656,67 @@ namespace Donuts
                 }
             }
 
+            const string PmcSpawnTypes = "pmc,sptusec,sptbear";
+            const string ScavSpawnType = "assault";
+
+            bool IsPMC(WildSpawnType role)
+            {
+                return role == WildSpawnType.pmc ||
+                    role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue ||
+                    role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            }
+
+            bool IsSCAV(WildSpawnType role)
+            {
+                return role == WildSpawnType.assault;
+            }
+
+            bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int maxCount)
+            {
+                if (currentBots + maxCount > botLimit)
+                {
+                    maxCount = botLimit - currentBots;
+                    DonutComponent.Logger.LogDebug($"Reaching {spawnType}BotLimit {botLimit}, spawning {maxCount} instead");
+                    return true;
+                }
+                return false;
+            }
+
             if (DonutsPlugin.HardCapEnabled.Value)
             {
                 #if DEBUG
-                    DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
+                DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
                 #endif
-                int currentAlivePMCs = 0;
-                int currentAliveSCAVs = 0;
 
-                // this is similar to DespawnFurthestBot, only sort of in reverse
-                // we need to get a count of all bots currently alive, PMCs and SCAVs separately
-                var bots = gameWorld.RegisteredPlayers;
-                foreach (Player bot in bots)
+                int currentPMCsAlive = 0;
+                int currentSCAVsAlive = 0;
+                foreach (Player bot in gameWorld.RegisteredPlayers)
                 {
-                    var role = bot.Profile.Info.Settings.Role;
                     if (!bot.IsYourPlayer)
                     {
-                        if (role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
+                        if (IsPMC(bot.Profile.Info.Settings.Role))
                         {
-                            currentAlivePMCs++;
+                            currentPMCsAlive++;
                         }
-                        else if (role == WildSpawnType.assault)
+                        else if (IsSCAV(bot.Profile.Info.Settings.Role))
                         {
-                            currentAliveSCAVs++;
+                            currentSCAVsAlive++;
                         }
                     }
                 }
 
-                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
+                if (PmcSpawnTypes.Contains(hotspotTimer.Hotspot.WildSpawnType))
                 {
-                    if (currentAlivePMCs >= PMCBotLimit)
+                    if (IsSpawnLimitExceeded("PMC", currentPMCsAlive, PMCBotLimit, maxCount))
                     {
-                        #if DEBUG
-                            DonutComponent.Logger.LogDebug($"Raid is full - skipping this PMC spawn");
-                        #endif
                         return;
-                    }
-                    else
-                    {
-                        int originalAlivePMCs = currentAlivePMCs;
-                        currentAlivePMCs += maxCount;
-                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                        if (currentAlivePMCs > PMCBotLimit)
-                        {
-                            maxCount = PMCBotLimit - originalAlivePMCs;
-                            #if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching PMCBotLimit {PMCBotLimit}, spawning {maxCount} instead");
-                            #endif
-                        }
                     }
                 }
-                else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
+                else if (hotspotTimer.Hotspot.WildSpawnType == ScavSpawnType)
                 {
-                    if (currentAliveSCAVs >= SCAVBotLimit)
+                    if (IsSpawnLimitExceeded("SCAV", currentSCAVsAlive, SCAVBotLimit, maxCount))
                     {
-                        #if DEBUG
-                            DonutComponent.Logger.LogDebug($"Raid is full - skipping this SCAV spawn");
-                        #endif
                         return;
-                    }
-                    else
-                    {
-                        int originalAliveSCAVs = currentAliveSCAVs;
-                        currentAliveSCAVs += maxCount;
-                        // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                        if (currentAliveSCAVs > SCAVBotLimit)
-                        {
-                            maxCount = SCAVBotLimit - originalAliveSCAVs;
-                            #if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching SCAVBotLimit {SCAVBotLimit}, spawning {maxCount} instead");
-                            #endif
-                        }
                     }
                 }
             }
