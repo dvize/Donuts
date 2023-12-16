@@ -661,9 +661,7 @@ namespace Donuts
 
             bool IsPMC(WildSpawnType role)
             {
-                return role == WildSpawnType.pmc ||
-                    role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue ||
-                    role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+                return role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             }
 
             bool IsSCAV(WildSpawnType role)
@@ -671,11 +669,11 @@ namespace Donuts
                 return role == WildSpawnType.assault;
             }
 
-            bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int maxCount)
+            bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int count)
             {
-                if (currentBots + maxCount > botLimit)
+                if (currentBots + count > botLimit)
                 {
-                    maxCount = botLimit - currentBots;
+                    count = botLimit - currentBots;
                     DonutComponent.Logger.LogDebug($"Reaching {spawnType}BotLimit {botLimit}, spawning {maxCount} instead");
                     return true;
                 }
