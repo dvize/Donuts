@@ -480,7 +480,6 @@ namespace Donuts
                         var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
                         var hotspotTimer = groupHotspotTimers[randomIndex];
 
-
                         if (hotspotTimer.ShouldSpawn())
                         {
                             var hotspot = hotspotTimer.Hotspot;
@@ -584,8 +583,39 @@ namespace Donuts
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
-            int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;
+            if (DonutsPlugin.hardStopOptionPMC.Value && (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear"))
+            {
+                #if DEBUG
+                    Logger.LogDebug($"Hard stop PMCs is enabled, checking raid time");
+                #endif
+                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimePMC.Value;
+                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+                if (raidTimeLeft < DonutsPlugin.hardStopTimePMC.Value)
+                {
+                    #if DEBUG
+                        Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimePMC.Value} - skipping this spawn");
+                    #endif
+                    return;
+                }
+            }
 
+            else if (DonutsPlugin.hardStopOptionSCAV.Value && hotspotSpawnType == "assault")
+            {
+                #if DEBUG
+                    Logger.LogDebug($"Hard stop SCAVs is enabled, checking raid time");
+                #endif
+                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimeSCAV;
+                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+                if (raidTimeLeft < DonutsPlugin.hardStopTimeSCAV.Value)
+                {
+                    #if DEBUG
+                        Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimeSCAV.Value} - skipping this spawn");
+                    #endif
+                    return;
+                }
+            }
+
+            int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;
             if (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear")
             {
                 string pluginGroupChance = DonutsPlugin.pmcGroupChance.Value;
@@ -674,7 +704,9 @@ namespace Donuts
                 if (currentBots + count > botLimit)
                 {
                     count = botLimit - currentBots;
-                    DonutComponent.Logger.LogDebug($"Reaching {spawnType}BotLimit {botLimit}, spawning {maxCount} instead");
+                    #if DEBUG
+                        DonutComponent.Logger.LogDebug($"Reaching {spawnType} BotLimit {botLimit}, spawning {maxCount} instead");
+                    #endif
                     return true;
                 }
                 return false;
@@ -683,7 +715,7 @@ namespace Donuts
             if (DonutsPlugin.HardCapEnabled.Value)
             {
                 #if DEBUG
-                DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
+                    DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
                 #endif
 
                 int currentPMCsAlive = 0;
@@ -722,8 +754,21 @@ namespace Donuts
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
-            // Moved outside so all spawns for a point are on the same side
             WildSpawnType wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+
+            // check here for faction option, only applies to pmcs
+            if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptbear" || hotspotTimer.Hotspot.WildSpawnType == "sptusec")
+            {
+                if (DonutsPlugin.pmcFaction.Value == "USEC")
+                {
+                    wildSpawnType = GetWildSpawnType("sptusec");
+                }
+                else if (DonutsPlugin.pmcFaction.Value == "BEAR")
+                {
+                    wildSpawnType = GetWildSpawnType("sptbear");
+                }
+            }
+
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
