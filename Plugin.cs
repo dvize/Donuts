@@ -18,11 +18,11 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.5")]
-    [BepInDependency("com.spt-aki.core", "3.7.5")]
-    [BepInDependency("xyz.drakia.bigbrain")]
-    [BepInDependency("xyz.drakia.waypoints")]
-    [BepInDependency("me.sol.sain")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
+    [BepInDependency("com.spt-aki.core", "3.8.0")]
+    // [BepInDependency("xyz.drakia.bigbrain")]
+    // [BepInDependency("xyz.drakia.waypoints")]
+    // [BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -35,6 +35,7 @@ namespace Donuts
         public static ConfigEntry<bool> hardStopOptionSCAV;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
+        public static ConfigEntry<bool> forceAllBotType;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
@@ -67,6 +68,8 @@ namespace Donuts
         public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
 
         public string[] pmcFactionList = new string[] { "Default", "USEC", "BEAR" };
+
+        public string[] forceAllBotTypeList = new string[] { "Disabled", "SCAV", "PMC" };
 
         public static Dictionary<string, int[]> groupChanceWeights = new Dictionary<string, int[]>
         {
@@ -232,6 +235,14 @@ namespace Donuts
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+
+            forceAllBotType = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Force Bot Type for All Spawns",
+                "Disabled",
+                new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
+                new AcceptableValueList<string>(forceAllBotTypeList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             hardStopOptionPMC = Config.Bind(
@@ -462,6 +473,7 @@ namespace Donuts
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
+            new AddEnemyPatch().Enable();
 
             SetupScenariosUI();
         }

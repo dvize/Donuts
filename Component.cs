@@ -21,8 +21,9 @@ using UnityEngine;
 using UnityEngine.AI;
 
 //custom using
-using BotCacheClass = GClass513;
-using IProfileData = GClass514;
+using BotCacheClass = GClass588;
+using IProfileData = GClass589;
+using CorePointFinder = AICorePointHolder;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -583,6 +584,17 @@ namespace Donuts
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
+
+            // force bot type, if applicable
+            if (DonutsPlugin.forceAllBotType.Value == "PMC")
+            {
+                hotspotSpawnType = "pmc"
+            }
+            else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
+            {
+                hotspotSpawnType = "assault"
+            }
+
             if (DonutsPlugin.hardStopOptionPMC.Value && (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear"))
             {
                 #if DEBUG
@@ -1036,7 +1048,9 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                botCacheElement.AddPosition(spawnPosition);
+                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                // may need to check if null?
+                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
             #if DEBUG
                 DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
@@ -1064,7 +1078,9 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                botCacheElement.AddPosition(spawnPosition);
+                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                // may need to check if null?
+                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
                 #if DEBUG
                     DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
@@ -1080,7 +1096,8 @@ namespace Donuts
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
-            bot.AddPosition((Vector3)spawnPosition);
+            var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+            bot.AddPosition((Vector3)spawnPosition, closestCorePoint.Id);
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
             #if DEBUG

@@ -149,6 +149,7 @@
     <Compile Include="patches\PatchBodySound.cs" />
     <Compile Include="patches\PatchStandbyTeleport.cs" />
     <Compile Include="patches\MatchEndPlayerDisposePatch.cs" />
+    <Compile Include="patches\AddEnemyPatch.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
