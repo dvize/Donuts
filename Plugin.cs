@@ -19,7 +19,7 @@ namespace Donuts
 {
 
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
-    [BepInDependency("com.spt-aki.core", "3.8.0")]
+    // [BepInDependency("com.spt-aki.core", "3.8.0")]
     // [BepInDependency("xyz.drakia.bigbrain")]
     // [BepInDependency("xyz.drakia.waypoints")]
     // [BepInDependency("me.sol.sain")]
@@ -33,6 +33,7 @@ namespace Donuts
         public static ConfigEntry<bool> HardCapEnabled;
         public static ConfigEntry<bool> hardStopOptionPMC;
         public static ConfigEntry<bool> hardStopOptionSCAV;
+        public static ConfigEntry<bool> hotspotBoost;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<bool> forceAllBotType;
@@ -276,6 +277,14 @@ namespace Donuts
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            hotspotBoost = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Hotspot Spawn Boost",
+                false,
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more bots.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",

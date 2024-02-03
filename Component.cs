@@ -485,9 +485,20 @@ namespace Donuts
                         {
                             var hotspot = hotspotTimer.Hotspot;
                             var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+                            bool hotspotBoost = DonutsPlugin.hotspotBoost.Value;
 
                             if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                             {
+
+                                // hotspot check here?
+                                if (DonutsPlugin.hotspotBoost.Value)
+                                {
+                                    #if DEBUG
+                                        Logger.LogDebug($"Hotspot boost enabled - juicing up spawns");
+                                    #endif
+                                    hotspot.SpawnChance = 100;
+                                }
+
                                 // Check if passes hotspot.spawnChance
                                 if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
                                 {
@@ -512,7 +523,7 @@ namespace Donuts
                                     continue;
                                 }
 
-                                if (hotspotTimer.inCooldown)
+                                if (hotspotTimer.inCooldown && !hotspotBoost)
                                 {
                                     #if DEBUG
                                         Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
