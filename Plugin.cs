@@ -33,7 +33,8 @@ namespace Donuts
         public static ConfigEntry<bool> HardCapEnabled;
         public static ConfigEntry<bool> hardStopOptionPMC;
         public static ConfigEntry<bool> hardStopOptionSCAV;
-        public static ConfigEntry<bool> hotspotBoost;
+        public static ConfigEntry<bool> hotspotBoostPMC;
+        public static ConfigEntry<bool> hotspotBoostSCAV;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
@@ -278,11 +279,19 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
-            hotspotBoost = Config.Bind(
+            hotspotBoostPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hotspot Spawn Boost",
+                "Hotspot PMC Spawn Boost",
                 false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more bots.",
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            hotspotBoostSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Hotspot SCAV Spawn Boost",
+                false,
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 

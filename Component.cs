@@ -489,16 +489,24 @@ namespace Donuts
                         {
                             var hotspot = hotspotTimer.Hotspot;
                             var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-                            bool hotspotBoost = DonutsPlugin.hotspotBoost.Value;
+                            bool hotspotBoostPMC = DonutsPlugin.hotspotBoostPMC.Value;
+                            bool hotspotBoostSCAV = DonutsPlugin.hotspotBoostSCAV.Value;
 
                             if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                             {
 
                                 // hotspot check here?
-                                if (DonutsPlugin.hotspotBoost.Value && hotspot.Name.ToLower().Contains("hotspot"))
+                                if (hotspotBoostPMC && hotspot.Name.ToLower().Contains("hotspot_pmc"))
                                 {
                                     #if DEBUG
-                                        Logger.LogDebug($"Hotspot boost enabled - juicing up spawns");
+                                        Logger.LogDebug($"Hotspot boost enabled for PMCs - juicing up spawns");
+                                    #endif
+                                    hotspot.SpawnChance = 100;
+                                }
+                                else if (hotspotBoostSCAV && hotspot.Name.ToLower().Contains("hotspot_scav"))
+                                {
+                                    #if DEBUG
+                                        Logger.LogDebug($"Hotspot boost enabled for SCAVs - juicing up spawns");
                                     #endif
                                     hotspot.SpawnChance = 100;
                                 }
@@ -527,7 +535,8 @@ namespace Donuts
                                     continue;
                                 }
 
-                                if (hotspotTimer.inCooldown && !hotspotBoost)
+                                // if hotspot boost is enabled then skip the cooldown
+                                if (hotspotTimer.inCooldown && (!hotspotBoostPMC || !hotspotBoostSCAV))
                                 {
                                     #if DEBUG
                                         Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
