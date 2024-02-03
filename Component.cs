@@ -227,6 +227,10 @@ namespace Donuts
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
                     break;
+                case "sandbox":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
+                    break;
                 default:
                     PMCBotLimit = 8;
                     SCAVBotLimit = 5;
@@ -491,7 +495,7 @@ namespace Donuts
                             {
 
                                 // hotspot check here?
-                                if (DonutsPlugin.hotspotBoost.Value)
+                                if (DonutsPlugin.hotspotBoost.Value && hotspot.Name.ToLower().Contains("hotspot"))
                                 {
                                     #if DEBUG
                                         Logger.LogDebug($"Hotspot boost enabled - juicing up spawns");
@@ -599,11 +603,11 @@ namespace Donuts
             // force bot type, if applicable
             if (DonutsPlugin.forceAllBotType.Value == "PMC")
             {
-                hotspotSpawnType = "pmc"
+                hotspotSpawnType = "pmc";
             }
             else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
             {
-                hotspotSpawnType = "assault"
+                hotspotSpawnType = "assault";
             }
 
             if (DonutsPlugin.hardStopOptionPMC.Value && (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear"))

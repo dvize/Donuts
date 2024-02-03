@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
-using Aki.Reflection.Utils;
 using EFT;
 using EFT.AssetsManager;
+using HarmonyLib;
 using UnityEngine;
 
 namespace dvize.Donuts
@@ -15,8 +14,7 @@ namespace dvize.Donuts
         protected override MethodBase GetTargetMethod()
         {
             // Method used by SPT for finding BaseLocalGame
-            return PatchConstants.EftTypes.Single(x => x.Name == "LocalGame").BaseType // BaseLocalGame
-                .GetMethod("smethod_4", BindingFlags.FlattenHierarchy | BindingFlags.NonPublic | BindingFlags.Static);
+            return AccessTools.Method(typeof(BaseLocalGame<GamePlayerOwner>), nameof(BaseLocalGame<GamePlayerOwner>.smethod_4));
         }
 
         [PatchPrefix]

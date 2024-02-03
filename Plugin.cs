@@ -36,7 +36,7 @@ namespace Donuts
         public static ConfigEntry<bool> hotspotBoost;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
-        public static ConfigEntry<bool> forceAllBotType;
+        public static ConfigEntry<string> forceAllBotType;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
@@ -920,6 +920,10 @@ namespace Donuts
         {
             get; set;
         }
+        public int GroundZeroBotLimit
+        {
+            get; set;
+        }
     }
 
     internal class SCAVBotLimitPresets
@@ -957,6 +961,10 @@ namespace Donuts
             get; set;
         }
         public int TarkovStreetsBotLimit
+        {
+            get; set;
+        }
+        public int GroundZeroBotLimit
         {
             get; set;
         }
