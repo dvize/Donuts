@@ -19,10 +19,10 @@ namespace Donuts
 {
 
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
-    // [BepInDependency("com.spt-aki.core", "3.8.0")]
-    // [BepInDependency("xyz.drakia.bigbrain")]
-    // [BepInDependency("xyz.drakia.waypoints")]
-    // [BepInDependency("me.sol.sain")]
+    [BepInDependency("com.spt-aki.core", "3.8.0")]
+    [BepInDependency("xyz.drakia.bigbrain")]
+    [BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 

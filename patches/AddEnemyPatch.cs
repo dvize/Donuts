@@ -9,6 +9,8 @@ using Aki.Reflection.Patching;
 using Comfort.Common;
 using EFT;
 
+// Stolen from DanW's Questing Bots, thanks Dan!
+
 namespace dvize.Donuts
 {
     public class AddEnemyPatch : ModulePatch
