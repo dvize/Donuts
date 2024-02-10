@@ -605,6 +605,7 @@ namespace Donuts
 
             return false;
         }
+
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
@@ -773,14 +774,14 @@ namespace Donuts
 
                 if (PmcSpawnTypes.Contains(hotspotTimer.Hotspot.WildSpawnType))
                 {
-                    if (IsSpawnLimitExceeded("PMC", currentPMCsAlive, PMCBotLimit, maxCount))
+                    if (IsSpawnLimitExceeded("PMC", currentPMCsAlive, PMCBotLimit, maxCount) && !DonutsPlugin.hotspotIgnoreHardCapPMC.Value)
                     {
                         return;
                     }
                 }
                 else if (hotspotTimer.Hotspot.WildSpawnType == ScavSpawnType)
                 {
-                    if (IsSpawnLimitExceeded("SCAV", currentSCAVsAlive, SCAVBotLimit, maxCount))
+                    if (IsSpawnLimitExceeded("SCAV", currentSCAVsAlive, SCAVBotLimit, maxCount) && !DonutsPlugin.hotspotIgnoreHardCapPMC.Value)
                     {
                         return;
                     }

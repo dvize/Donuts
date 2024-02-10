@@ -35,6 +35,8 @@ namespace Donuts
         public static ConfigEntry<bool> hardStopOptionSCAV;
         public static ConfigEntry<bool> hotspotBoostPMC;
         public static ConfigEntry<bool> hotspotBoostSCAV;
+        public static ConfigEntry<bool> hotspotIgnoreHardCapPMC;
+        public static ConfigEntry<bool> hotspotIgnoreHardCapSCAV;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
@@ -231,13 +233,29 @@ namespace Donuts
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 8 }));
 
+            hotspotIgnoreHardCapPMC = Config.Bind(
+                "2. Additional Spawn Settings",
+                "PMC Hotspot Spawn Points Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'".,
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
+
+            hotspotIgnoreHardCapSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "SCAV Hotspot Spawn Points Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'".,
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
+
             pmcFaction = Config.Bind(
                 "2. Additional Spawn Settings",
                 "Force PMC Faction",
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             forceAllBotType = Config.Bind(
                 "2. Additional Spawn Settings",
