@@ -811,6 +811,7 @@ namespace Donuts
                     #if DEBUG
                         Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
                     #endif
+                    return;
                 }
 
                 ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
@@ -842,6 +843,7 @@ namespace Donuts
                     #if DEBUG
                         Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
                     #endif
+                    return;
                 }
 
                 await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);

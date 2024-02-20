@@ -235,17 +235,17 @@ namespace Donuts
 
             hotspotIgnoreHardCapPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "PMC Hotspot Spawn Points Ignore Hard Cap",
+                "PMC Hotspot: Ignore Hard Cap",
                 false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'".,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.".,
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             hotspotIgnoreHardCapSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "SCAV Hotspot Spawn Points Ignore Hard Cap",
+                "SCAV Hotspot: Ignore Hard Cap",
                 false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'".,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.".,
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
@@ -301,7 +301,7 @@ namespace Donuts
                 "2. Additional Spawn Settings",
                 "Hotspot PMC Spawn Boost",
                 false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs.",
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
@@ -309,7 +309,7 @@ namespace Donuts
                 "2. Additional Spawn Settings",
                 "Hotspot SCAV Spawn Boost",
                 false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs.",
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
