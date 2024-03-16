@@ -10,8 +10,8 @@ using HarmonyLib;
 using UnityEngine;
 
 //custom usings
-using BotCacheClass = GClass588;
-using IProfileData = GClass589;
+using BotCacheClass = GClass591;
+using IProfileData = GClass592;
 
 #pragma warning disable IDE0007, CS4014
 
