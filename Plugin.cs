@@ -19,10 +19,10 @@ namespace Donuts
 {
 
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
-    [BepInDependency("com.spt-aki.core", "3.8.0")]
-    [BepInDependency("xyz.drakia.bigbrain")]
-    [BepInDependency("xyz.drakia.waypoints")]
-    [BepInDependency("me.sol.sain")]
+    //[BepInDependency("com.spt-aki.core", "3.8.0")]
+    //[BepInDependency("xyz.drakia.bigbrain")]
+    //[BepInDependency("xyz.drakia.waypoints")]
+    //[BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -233,22 +233,6 @@ namespace Donuts
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 8 }));
 
-            hotspotIgnoreHardCapPMC = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Hotspot: Ignore Hard Cap",
-                false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.".,
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
-
-            hotspotIgnoreHardCapSCAV = Config.Bind(
-                "2. Additional Spawn Settings",
-                "SCAV Hotspot: Ignore Hard Cap",
-                false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.".,
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
-
             pmcFaction = Config.Bind(
                 "2. Additional Spawn Settings",
                 "Force PMC Faction",
@@ -312,6 +296,22 @@ namespace Donuts
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            hotspotIgnoreHardCapPMC = Config.Bind(
+                "2. Additional Spawn Settings",
+                "PMC Hotspot: Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            hotspotIgnoreHardCapSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "SCAV Hotspot: Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",
@@ -471,7 +471,7 @@ namespace Donuts
             CreateSpawnMarkerKey = Config.Bind(
                 "6. Spawn Point Maker",
                 "Create Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
+                new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
@@ -479,7 +479,7 @@ namespace Donuts
             DeleteSpawnMarkerKey = Config.Bind(
                 "6. Spawn Point Maker",
                 "Delete Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
+                new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
