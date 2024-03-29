@@ -18,11 +18,11 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.3.5")]
-    [BepInDependency("com.spt-aki.core", "3.7.5")]
-    [BepInDependency("xyz.drakia.bigbrain")]
-    [BepInDependency("xyz.drakia.waypoints")]
-    [BepInDependency("me.sol.sain")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
+    //[BepInDependency("com.spt-aki.core", "3.8.0")]
+    //[BepInDependency("xyz.drakia.bigbrain")]
+    //[BepInDependency("xyz.drakia.waypoints")]
+    //[BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
 
@@ -33,8 +33,13 @@ namespace Donuts
         public static ConfigEntry<bool> HardCapEnabled;
         public static ConfigEntry<bool> hardStopOptionPMC;
         public static ConfigEntry<bool> hardStopOptionSCAV;
+        public static ConfigEntry<bool> hotspotBoostPMC;
+        public static ConfigEntry<bool> hotspotBoostSCAV;
+        public static ConfigEntry<bool> hotspotIgnoreHardCapPMC;
+        public static ConfigEntry<bool> hotspotIgnoreHardCapSCAV;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
+        public static ConfigEntry<string> forceAllBotType;
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
@@ -67,6 +72,8 @@ namespace Donuts
         public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
 
         public string[] pmcFactionList = new string[] { "Default", "USEC", "BEAR" };
+
+        public string[] forceAllBotTypeList = new string[] { "Disabled", "SCAV", "PMC" };
 
         public static Dictionary<string, int[]> groupChanceWeights = new Dictionary<string, int[]>
         {
@@ -232,6 +239,14 @@ namespace Donuts
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+
+            forceAllBotType = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Force Bot Type for All Spawns",
+                "Disabled",
+                new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
+                new AcceptableValueList<string>(forceAllBotTypeList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             hardStopOptionPMC = Config.Bind(
@@ -265,6 +280,38 @@ namespace Donuts
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+
+            hotspotBoostPMC = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Hotspot PMC Spawn Boost",
+                false,
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            hotspotBoostSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Hotspot SCAV Spawn Boost",
+                false,
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            hotspotIgnoreHardCapPMC = Config.Bind(
+                "2. Additional Spawn Settings",
+                "PMC Hotspot: Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            hotspotIgnoreHardCapSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "SCAV Hotspot: Ignore Hard Cap",
+                false,
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",
@@ -424,7 +471,7 @@ namespace Donuts
             CreateSpawnMarkerKey = Config.Bind(
                 "6. Spawn Point Maker",
                 "Create Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Insert),
+                new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
@@ -432,7 +479,7 @@ namespace Donuts
             DeleteSpawnMarkerKey = Config.Bind(
                 "6. Spawn Point Maker",
                 "Delete Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.Delete),
+                new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
@@ -462,6 +509,7 @@ namespace Donuts
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
+            new AddEnemyPatch().Enable();
 
             SetupScenariosUI();
         }
@@ -899,6 +947,10 @@ namespace Donuts
         {
             get; set;
         }
+        public int GroundZeroBotLimit
+        {
+            get; set;
+        }
     }
 
     internal class SCAVBotLimitPresets
@@ -936,6 +988,10 @@ namespace Donuts
             get; set;
         }
         public int TarkovStreetsBotLimit
+        {
+            get; set;
+        }
+        public int GroundZeroBotLimit
         {
             get; set;
         }

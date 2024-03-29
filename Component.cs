@@ -21,8 +21,9 @@ using UnityEngine;
 using UnityEngine.AI;
 
 //custom using
-using BotCacheClass = GClass513;
-using IProfileData = GClass514;
+using BotCacheClass = GClass591;
+using IProfileData = GClass592;
+using CorePointFinder = AICorePointHolder;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -225,6 +226,10 @@ namespace Donuts
                 case "tarkovstreets":
                     PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
                     SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
+                    break;
+                case "sandbox":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
                     break;
                 default:
                     PMCBotLimit = 8;
@@ -484,9 +489,28 @@ namespace Donuts
                         {
                             var hotspot = hotspotTimer.Hotspot;
                             var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+                            bool hotspotBoostPMC = DonutsPlugin.hotspotBoostPMC.Value;
+                            bool hotspotBoostSCAV = DonutsPlugin.hotspotBoostSCAV.Value;
 
                             if (IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
                             {
+
+                                // hotspot check here?
+                                if (hotspotBoostPMC && hotspot.Name.ToLower().Contains("hotspot_pmc"))
+                                {
+                                    #if DEBUG
+                                        Logger.LogDebug($"Hotspot boost enabled for PMCs - juicing up spawns");
+                                    #endif
+                                    hotspot.SpawnChance = 100;
+                                }
+                                else if (hotspotBoostSCAV && hotspot.Name.ToLower().Contains("hotspot_scav"))
+                                {
+                                    #if DEBUG
+                                        Logger.LogDebug($"Hotspot boost enabled for SCAVs - juicing up spawns");
+                                    #endif
+                                    hotspot.SpawnChance = 100;
+                                }
+
                                 // Check if passes hotspot.spawnChance
                                 if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
                                 {
@@ -511,7 +535,8 @@ namespace Donuts
                                     continue;
                                 }
 
-                                if (hotspotTimer.inCooldown)
+                                // if hotspot boost is enabled then skip the cooldown
+                                if (hotspotTimer.inCooldown && (!hotspotBoostPMC || !hotspotBoostSCAV))
                                 {
                                     #if DEBUG
                                         Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
@@ -580,6 +605,7 @@ namespace Donuts
 
             return false;
         }
+
         private async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
@@ -785,6 +811,7 @@ namespace Donuts
                     #if DEBUG
                         Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
                     #endif
+                    return;
                 }
 
                 ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
@@ -816,11 +843,11 @@ namespace Donuts
                     #if DEBUG
                         Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
                     #endif
+                    return;
                 }
 
                 await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, ibotCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);
             }
-
         }
 
         #region botGroups
@@ -1036,7 +1063,9 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                botCacheElement.AddPosition(spawnPosition);
+                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                // may need to check if null?
+                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
             #if DEBUG
                 DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
@@ -1064,7 +1093,9 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                botCacheElement.AddPosition(spawnPosition);
+                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                // may need to check if null?
+                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
                 #if DEBUG
                     DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
@@ -1080,7 +1111,8 @@ namespace Donuts
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
-            bot.AddPosition((Vector3)spawnPosition);
+            var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+            bot.AddPosition((Vector3)spawnPosition, closestCorePoint.Id);
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
             #if DEBUG
