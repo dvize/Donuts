@@ -540,7 +540,7 @@ namespace Donuts
             scenarioSelection = Config.Bind(
                 "1. Main Settings",
                 "Preset Selection",
-                "Random Live Like",
+                "Live Like (Random)",
                 new ConfigDescription("Select a preset to use for spawning",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
@@ -548,7 +548,7 @@ namespace Donuts
             scavScenarioSelection = Config.Bind(
                 "1. Main Settings",
                 "SCAV Raid Preset Selection",
-                "Random SCAV Raids",
+                "scav-raids",
                 new ConfigDescription("Select a preset to use for spawning for SCAV raids specifically.",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
