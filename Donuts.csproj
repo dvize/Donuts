@@ -159,12 +159,6 @@
     <Compile Include="Models\Position.cs" />
     <Compile Include="Models\Presets.cs" />
     <Compile Include="Models\SCAVBotLimitPresets.cs" />
-    <Compile Include="Patches\BotGroupAddEnemyPatch.cs" />
-    <Compile Include="Patches\BotMemoryAddEnemyPatch.cs" />
-    <Compile Include="Patches\BotProfilePreparationHook.cs" />
-    <Compile Include="Patches\PatchStandbyTeleport.cs" />
-    <Compile Include="Patches\MatchEndPlayerDisposePatch.cs" />
-    <Compile Include="Patches\AddEnemyPatch.cs" />
     <Compile Include="DonutComponent.cs" />
     <Compile Include="Tools\ConfigurationManagerAttributes.cs" />
     <Compile Include="Plugin.cs" />
@@ -172,11 +166,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tools\EditorFunctions.cs" />
     <Compile Include="Bots\SpawnChecks.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Patterns\CustomsPMC.json" />
-    <None Include="Patterns\CustomsScav.json" />
-    <None Include="Patterns\ReservePMC.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
