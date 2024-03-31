@@ -7,7 +7,7 @@ using EFT.AssetsManager;
 using HarmonyLib;
 using UnityEngine;
 
-namespace dvize.Donuts
+namespace Donuts
 {
     internal class MatchEndPlayerDisposePatch : ModulePatch
     {

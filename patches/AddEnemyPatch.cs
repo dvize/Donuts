@@ -1,17 +1,12 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Aki.Reflection.Patching;
-using Comfort.Common;
 using EFT;
 
 // Stolen from DanW's Questing Bots, thanks Dan!
 
-namespace dvize.Donuts
+namespace Donuts
 {
     public class AddEnemyPatch : ModulePatch
     {

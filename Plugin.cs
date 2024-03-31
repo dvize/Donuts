@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
-using dvize.Donuts;
 using EFT;
-using EFT.Communications;
-using Newtonsoft.Json;
-using UnityEngine;
 
 //disable the ide0007 warning for the entire file
 #pragma warning disable IDE0007
@@ -25,7 +20,6 @@ namespace Donuts
     //[BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
-
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
         public static ConfigEntry<float> coolDownTimer;
@@ -92,7 +86,8 @@ namespace Donuts
         public static ConfigEntry<int> groupNum;
         //make groupList of numbers 1-100
         public static int[] groupList = Enumerable.Range(1, 100).ToArray();
-        public ConfigEntry<string> wildSpawns;
+        public static ConfigEntry<string> wildSpawns;
+
         public string[] wildDropValues = new string[]
         {
             "arenafighterevent",
@@ -505,7 +500,6 @@ namespace Donuts
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
-            //new PatchBodySound().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
@@ -517,7 +511,7 @@ namespace Donuts
         private void SetupScenariosUI()
         {
             // populate the list of scenarios
-            LoadDonutsFolders();
+            EditorFunctions.LoadDonutsFolders();
 
             List<string> scenarioValuesList = new List<string>(scenarioValues);
             // scenarioValuesList.Add("Random");
@@ -553,270 +547,30 @@ namespace Donuts
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
         }
-        private void LoadDonutsFolders()
-        {
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
-
-            string filePath = Path.Combine(directoryPath, "ScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + filePath);
-
-            string file = File.ReadAllText(filePath);
-            scenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
-
-            if (scenarios.Count == 0)
-            {
-                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
-                Debug.Break();
-            }
-
-            Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
-
-            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + randFilePath);
-
-            string randFile = File.ReadAllText(randFilePath);
-            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
-        }
-
-        internal static Folder GrabDonutsFolder(string folderName)
-        {
-            return scenarios.FirstOrDefault(temp => temp.Name == folderName);
-        }
 
         private void Update()
         {
-            if (CreateSpawnMarkerKey.Value.IsDown())
+            if (IsKeyPressed(CreateSpawnMarkerKey.Value))
             {
-                CreateSpawnMarker();
+                EditorFunctions.CreateSpawnMarker();
             }
-            if (WriteToFileKey.Value.IsDown())
+            if (IsKeyPressed(WriteToFileKey.Value))
             {
-                WriteToJsonFile();
+                EditorFunctions.WriteToJsonFile();
             }
-            if (DeleteSpawnMarkerKey.Value.IsDown())
+            if (IsKeyPressed(DeleteSpawnMarkerKey.Value))
             {
-                DeleteSpawnMarker();
+                EditorFunctions.DeleteSpawnMarker();
             }
         }
 
-        private void DeleteSpawnMarker()
+        bool IsKeyPressed(KeyboardShortcut key)
         {
-            // Check if any of the required objects are null
-            if (Donuts.DonutComponent.gameWorld == null)
-            {
-                Logger.LogDebug("IBotGame Not Instantiated or gameWorld is null.");
-                return;
-            }
+            if (!UnityInput.Current.GetKeyDown(key.MainKey)) return false;
 
-            //need to be able to see it to delete it
-            if (DonutsPlugin.DebugGizmos.Value)
-            {
-                //temporarily combine fightLocations and sessionLocations so i can find the closest entry
-                var combinedLocations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList();
-
-                // if for some reason its empty already return
-                if (combinedLocations.Count == 0)
-                {
-                    return;
-                }
-
-                // Get the closest spawn marker to the player
-                var closestEntry = combinedLocations.OrderBy(x => Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(x.Position.x, x.Position.y, x.Position.z))).FirstOrDefault();
-
-                // Check if the closest entry is null
-                if (closestEntry == null)
-                {
-                    var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
-                    if (displayMessageNotificationMethod != null)
-                    {
-                        var txt = $"Donuts: The Spawn Marker could not be deleted because closest entry could not be found";
-                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.grey });
-                    }
-                    return;
-                }
-
-                // Remove the entry from the list if the distance from the player is less than 5m
-                if (Vector3.Distance(Donuts.DonutComponent.gameWorld.MainPlayer.Position, new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z)) < 5f)
-                {
-                    // check which list the entry is in and remove it from that list
-                    if (Donuts.DonutComponent.fightLocations.Locations.Count > 0 &&
-                        Donuts.DonutComponent.fightLocations.Locations.Contains(closestEntry))
-                    {
-                        Donuts.DonutComponent.fightLocations.Locations.Remove(closestEntry);
-                    }
-                    else if (Donuts.DonutComponent.sessionLocations.Locations.Count > 0 &&
-                        Donuts.DonutComponent.sessionLocations.Locations.Contains(closestEntry))
-                    {
-                        Donuts.DonutComponent.sessionLocations.Locations.Remove(closestEntry);
-                    }
-
-                    // Remove the timer if it exists from the list of hotspotTimer in DonutComponent.groupedHotspotTimers[closestEntry.GroupNum]
-                    if (Donuts.DonutComponent.groupedHotspotTimers.ContainsKey(closestEntry.GroupNum))
-                    {
-                        var timerList = Donuts.DonutComponent.groupedHotspotTimers[closestEntry.GroupNum];
-                        var timer = timerList.FirstOrDefault(x => x.Hotspot == closestEntry);
-
-                        if (timer != null)
-                        {
-                            timerList.Remove(timer);
-                        }
-                        else
-                        {
-                            // Handle the case where no timer was found
-                            Logger.LogDebug("Donuts: No matching timer found to delete.");
-                        }
-                    }
-                    else
-                    {
-                        Logger.LogDebug("Donuts: GroupNum does not exist in groupedHotspotTimers.");
-                    }
-
-                    // Display a message to the player
-                    var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
-                    if (displayMessageNotificationMethod != null)
-                    {
-                        var txt = $"Donuts: Spawn Marker Deleted for \n {closestEntry.Name}\n SpawnType: {closestEntry.WildSpawnType}\n Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}";
-                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-                    }
-
-                    // Edit the DonutComponent.drawnCoordinates and gizmoSpheres list to remove the objects
-                    var coordinate = new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z);
-                    DonutComponent.drawnCoordinates.Remove(coordinate);
-
-                    var sphere = DonutComponent.gizmoSpheres.FirstOrDefault(x => x.transform.position == coordinate);
-                    DonutComponent.gizmoSpheres.Remove(sphere);
-
-                    // Destroy the sphere game object in the actual game world
-                    if (sphere != null)
-                    {
-                        Destroy(sphere);
-                    }
-                }
-            }
+            return key.Modifiers.All(modifier => UnityInput.Current.GetKey(modifier));
         }
 
-        private void CreateSpawnMarker()
-        {
-            // Check if any of the required objects are null
-            if (DonutComponent.gameWorld == null)
-            {
-                Logger.LogDebug("IBotGame Not Instantiated or gameWorld is null.");
-                return;
-            }
-
-            // Create new Donuts.Entry
-            Entry newEntry = new Entry
-            {
-                Name = spawnName.Value,
-                GroupNum = groupNum.Value,
-                MapName = DonutComponent.maplocation,
-                WildSpawnType = wildSpawns.Value,
-                MinDistance = minSpawnDist.Value,
-                MaxDistance = maxSpawnDist.Value,
-                MaxRandomNumBots = maxRandNumBots.Value,
-                SpawnChance = spawnChance.Value,
-                BotTimerTrigger = botTimerTrigger.Value,
-                BotTriggerDistance = botTriggerDistance.Value,
-                Position = new Position
-                {
-                    x = DonutComponent.gameWorld.MainPlayer.Position.x,
-                    y = DonutComponent.gameWorld.MainPlayer.Position.y,
-                    z = DonutComponent.gameWorld.MainPlayer.Position.z
-                },
-
-                MaxSpawnsBeforeCoolDown = maxSpawnsBeforeCooldown.Value,
-                IgnoreTimerFirstSpawn = ignoreTimerFirstSpawn.Value,
-                MinSpawnDistanceFromPlayer = minSpawnDistanceFromPlayer.Value
-            };
-
-            // Add new entry to sessionLocations.Locations list since we adding new ones
-
-            // Check if Locations is null
-            if (DonutComponent.sessionLocations.Locations == null)
-            {
-                DonutComponent.sessionLocations.Locations = new List<Entry>();
-            }
-
-            DonutComponent.sessionLocations.Locations.Add(newEntry);
-
-            // make it testable immediately by adding the timer needed to the groupnum in DonutComponent.groupedHotspotTimers
-            if (!DonutComponent.groupedHotspotTimers.ContainsKey(newEntry.GroupNum))
-            {
-                //create a new list for the groupnum and add the timer to it
-                DonutComponent.groupedHotspotTimers.Add(newEntry.GroupNum, new List<HotspotTimer>());
-            }
-
-            //create a new timer for the entry and add it to the list
-            var timer = new HotspotTimer(newEntry);
-            DonutComponent.groupedHotspotTimers[newEntry.GroupNum].Add(timer);
-
-            var txt = $"Donuts: Wrote Entry for {newEntry.Name}\n SpawnType: {newEntry.WildSpawnType}\n Position: {newEntry.Position.x}, {newEntry.Position.y}, {newEntry.Position.z}";
-            var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
-            if (displayMessageNotificationMethod != null)
-            {
-                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-            }
-
-
-        }
-
-        private void WriteToJsonFile()
-        {
-            // Check if any of the required objects are null
-            if (Donuts.DonutComponent.gameWorld == null)
-            {
-                Logger.LogDebug("IBotGame Not Instantiated or gameWorld is null.");
-                return;
-            }
-
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFolderPath = Path.Combine(directoryPath, "patterns");
-            string json = string.Empty;
-            string fileName = string.Empty;
-
-            //check if saveNewFileOnly is true then we use the sessionLocations object to serialize.  Otherwise we use combinedLocations
-            if (saveNewFileOnly.Value)
-            {
-                // take the sessionLocations object only and serialize it to json
-                json = JsonConvert.SerializeObject(Donuts.DonutComponent.sessionLocations, Formatting.Indented);
-                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_NewLocOnly.json";
-            }
-            else
-            {
-                //combine the fightLocations and sessionLocations objects into one variable
-                FightLocations combinedLocations = new Donuts.FightLocations
-                {
-                    Locations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList()
-                };
-
-                json = JsonConvert.SerializeObject(combinedLocations, Formatting.Indented);
-                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_All.json";
-            }
-
-            //write json to file with filename == Donuts.DonutComponent.maplocation + random number
-            string jsonFilePath = Path.Combine(jsonFolderPath, fileName);
-            File.WriteAllText(jsonFilePath, json);
-
-            var txt = $"Donuts: Wrote Json File to: {jsonFilePath}";
-            var displayMessageNotificationMethod = DonutComponent.GetDisplayMessageNotificationMethod();
-            if (displayMessageNotificationMethod != null)
-            {
-                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-            }
-        }
-    }
-
-    //re-initializes each new game
-    internal class BotProfilePreparationHook : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod() => typeof(BotsController).GetMethod(nameof(BotsController.AddActivePLayer));
-
-        [PatchPrefix]
-        public static void PatchPrefix() => DonutsBotPrep.Enable();
     }
 
     //re-initializes each new game
@@ -828,172 +582,14 @@ namespace Donuts
         public static void PatchPrefix() => DonutComponent.Enable();
     }
 
-    // Don't add invalid enemies
-    internal class BotGroupAddEnemyPatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod() => typeof(BotsGroup).GetMethod("AddEnemy");
-        [PatchPrefix]
-        public static bool PatchPrefix(IPlayer person)
-        {
-            if (person == null || (person.IsAI && person.AIData?.BotOwner?.GetPlayer == null))
-            {
-                return false;
-            }
 
-            return true;
-        }
-    }
 
-    internal class BotMemoryAddEnemyPatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod() => typeof(BotMemoryClass).GetMethod("AddEnemy");
-        [PatchPrefix]
-        public static bool PatchPrefix(IPlayer enemy)
-        {
-            if (enemy == null || (enemy.IsAI && enemy.AIData?.BotOwner?.GetPlayer == null))
-            {
-                return false;
-            }
 
-            return true;
-        }
-    }
 
-    internal class Folder
-    {
-        public string Name
-        {
-            get; set;
-        }
-        public int Weight
-        {
-            get; set;
-        }
-        public bool RandomSelection
-        {
-            get; set;
-        }
 
-        public PMCBotLimitPresets PMCBotLimitPresets
-        {
-            get; set;
-        }
 
-        public SCAVBotLimitPresets SCAVBotLimitPresets
-        {
-            get; set;
-        }
 
-        public string RandomScenarioConfig
-        {
-            get; set;
-        }
 
-        public List<Presets> presets
-        {
-            get; set;
-        }
 
-    }
 
-    internal class Presets
-    {
-        public string Name
-        {
-            get; set;
-        }
-
-        public int Weight
-        {
-            get; set;
-        }
-    }
-
-    internal class PMCBotLimitPresets
-    {
-        public int FactoryBotLimit
-        {
-            get; set;
-        }
-        public int InterchangeBotLimit
-        {
-            get; set;
-        }
-        public int LaboratoryBotLimit
-        {
-            get; set;
-        }
-        public int LighthouseBotLimit
-        {
-            get; set;
-        }
-        public int ReserveBotLimit
-        {
-            get; set;
-        }
-        public int ShorelineBotLimit
-        {
-            get; set;
-        }
-        public int WoodsBotLimit
-        {
-            get; set;
-        }
-        public int CustomsBotLimit
-        {
-            get; set;
-        }
-        public int TarkovStreetsBotLimit
-        {
-            get; set;
-        }
-        public int GroundZeroBotLimit
-        {
-            get; set;
-        }
-    }
-
-    internal class SCAVBotLimitPresets
-    {
-        public int FactoryBotLimit
-        {
-            get; set;
-        }
-        public int InterchangeBotLimit
-        {
-            get; set;
-        }
-        public int LaboratoryBotLimit
-        {
-            get; set;
-        }
-        public int LighthouseBotLimit
-        {
-            get; set;
-        }
-        public int ReserveBotLimit
-        {
-            get; set;
-        }
-        public int ShorelineBotLimit
-        {
-            get; set;
-        }
-        public int WoodsBotLimit
-        {
-            get; set;
-        }
-        public int CustomsBotLimit
-        {
-            get; set;
-        }
-        public int TarkovStreetsBotLimit
-        {
-            get; set;
-        }
-        public int GroundZeroBotLimit
-        {
-            get; set;
-        }
-    }
 }
