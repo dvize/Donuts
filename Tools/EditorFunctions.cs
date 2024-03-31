@@ -28,38 +28,7 @@ namespace Donuts
             }
 
         }
-        internal static void LoadDonutsFolders()
-        {
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
-
-            string filePath = Path.Combine(directoryPath, "ScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + filePath);
-
-            string file = File.ReadAllText(filePath);
-            scenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
-
-            if (scenarios.Count == 0)
-            {
-                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
-                Debug.Break();
-            }
-
-            Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
-
-            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + randFilePath);
-
-            string randFile = File.ReadAllText(randFilePath);
-            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
-        }
-
-        internal static Folder GrabDonutsFolder(string folderName)
-        {
-            return scenarios.FirstOrDefault(temp => temp.Name == folderName);
-        }
+        
 
         internal static void DeleteSpawnMarker()
         {

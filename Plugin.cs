@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using EFT;
+using Newtonsoft.Json;
+using UnityEngine;
 
 //disable the ide0007 warning for the entire file
 #pragma warning disable IDE0007
@@ -511,7 +514,7 @@ namespace Donuts
         private void SetupScenariosUI()
         {
             // populate the list of scenarios
-            EditorFunctions.LoadDonutsFolders();
+            LoadDonutsFolders();
 
             List<string> scenarioValuesList = new List<string>(scenarioValues);
             // scenarioValuesList.Add("Random");
@@ -533,9 +536,9 @@ namespace Donuts
 
             scenarioSelection = Config.Bind(
                 "1. Main Settings",
-                "Preset Selection",
+                "PMC Raid Preset Selection",
                 "Live Like (Random)",
-                new ConfigDescription("Select a preset to use for spawning",
+                new ConfigDescription("Select a preset to use when spawning as PMC",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
@@ -543,7 +546,7 @@ namespace Donuts
                 "1. Main Settings",
                 "SCAV Raid Preset Selection",
                 "scav-raids",
-                new ConfigDescription("Select a preset to use for spawning for SCAV raids specifically.",
+                new ConfigDescription("Select a preset to use when spawning as SCAV",
                 new AcceptableValueList<string>(scenarioValues),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
         }
@@ -564,6 +567,38 @@ namespace Donuts
             }
         }
 
+        internal void LoadDonutsFolders()
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+
+            string filePath = Path.Combine(directoryPath, "ScenarioConfig.json");
+
+            Logger.LogWarning("Found file at: " + filePath);
+
+            string file = File.ReadAllText(filePath);
+            scenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
+
+            if (scenarios.Count == 0)
+            {
+                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
+                Debug.Break();
+            }
+
+            Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
+
+            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
+
+            Logger.LogWarning("Found file at: " + randFilePath);
+
+            string randFile = File.ReadAllText(randFilePath);
+            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
+        }
+
+        internal static Folder GrabDonutsFolder(string folderName)
+        {
+            return scenarios.FirstOrDefault(temp => temp.Name == folderName);
+        }
         bool IsKeyPressed(KeyboardShortcut key)
         {
             if (!UnityInput.Current.GetKeyDown(key.MainKey)) return false;

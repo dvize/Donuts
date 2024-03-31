@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -11,10 +9,6 @@ using EFT;
 using HarmonyLib;
 using Systems.Effects;
 using UnityEngine;
-using static Donuts.Gizmos;
-
-//custom using
-
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -292,7 +286,7 @@ namespace Donuts
             }
         }
 
-        
+
 
         private void DespawnFurthestBot(string bottype)
         {
