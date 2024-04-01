@@ -19,7 +19,7 @@ namespace Donuts
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
     //[BepInDependency("com.spt-aki.core", "3.8.0")]
     //[BepInDependency("xyz.drakia.bigbrain")]
-    //[BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("xyz.drakia.waypoints")]
     //[BepInDependency("me.sol.sain")]
     public class DonutsPlugin : BaseUnityPlugin
     {
@@ -249,7 +249,7 @@ namespace Donuts
 
             hardStopOptionPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "PMC Spawn Hard Stop",
+                "Spawn Hard Stop: PMC",
                 false,
                 new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
@@ -257,7 +257,7 @@ namespace Donuts
 
             hardStopTimePMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "PMC Hard Stop: Time Left in Raid",
+                "PMC Spawn Hard Stop: Time Left in Raid",
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
@@ -265,7 +265,7 @@ namespace Donuts
 
             hardStopOptionSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "SCAV Spawn Hard Stop",
+                "Spawn Hard Stop: SCAV",
                 false,
                 new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
@@ -273,7 +273,7 @@ namespace Donuts
 
             hardStopTimeSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "SCAV Hard Stop: Time Left in Raid",
+                "SCAV Spawn Hard Stop: Time Left in Raid",
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
@@ -281,7 +281,7 @@ namespace Donuts
 
             hotspotBoostPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hotspot PMC Spawn Boost",
+                "Hot Spot PMC Spawn Boost",
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
                 null,
@@ -289,7 +289,7 @@ namespace Donuts
 
             hotspotBoostSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hotspot SCAV Spawn Boost",
+                "Hot Spot SCAV Spawn Boost",
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
                 null,
@@ -297,7 +297,7 @@ namespace Donuts
 
             hotspotIgnoreHardCapPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "PMC Hotspot: Ignore Hard Cap",
+                "Hot Spot Ignore Hard Cap: PMC",
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
                 null,
@@ -305,9 +305,9 @@ namespace Donuts
 
             hotspotIgnoreHardCapSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "SCAV Hotspot: Ignore Hard Cap",
+                "Hot Spot Ignore Hard Cap: SCAV",
                 false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
