@@ -42,7 +42,7 @@ namespace Donuts
         internal static int currentInitialPMCs = 0;
         internal static int currentInitialSCAVs = 0;
 
-        public static GameWorld gameWorld;
+        internal static GameWorld gameWorld;
         internal static BotSpawner botSpawnerClass;
         internal static IBotCreator botCreator;
 
@@ -141,7 +141,6 @@ namespace Donuts
             Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
         }
-
 
         public static void Enable()
         {
