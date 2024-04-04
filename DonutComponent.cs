@@ -304,6 +304,10 @@ namespace Donuts
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
+                    if (bot.AIData.BotOwner == null)
+                    {
+                        continue;
+                    }
                     // Ignore bots on the invalid despawn list, and the player
                     if (bot.IsYourPlayer || !validDespawnListPMC.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
                     {
@@ -340,6 +344,10 @@ namespace Donuts
                 //don't know distances so have to loop through all bots
                 foreach (Player bot in bots)
                 {
+                    if (bot.AIData.BotOwner == null)
+                    {
+                        continue;
+                    }
                     // Ignore bots on the invalid despawn list, and the player
                     if (bot.IsYourPlayer || !validDespawnListScav.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
                     {
@@ -366,6 +374,10 @@ namespace Donuts
 
             if (furthestBot != null)
             {
+                if (furthestBot.AIData.BotOwner == null)
+                {
+                    return;
+                }
                 if (bottype == "pmc" && tempBotCount <= PMCBotLimit)
                 {
                     return;
