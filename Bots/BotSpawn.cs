@@ -193,11 +193,11 @@ namespace Donuts
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
             WildSpawnType wildSpawnType;
-            if (DonutsPlugin.forceAllBotType.PMC)
+            if (DonutsPlugin.forceAllBotType.Value == "PMC")
             {
                 wildSpawnType = BotSpawn.GetWildSpawnType("pmc");
             }
-            else if (DonutsPlugin.forceAllBotType.SCAV)
+            else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
             {
                 wildSpawnType = BotSpawn.GetWildSpawnType("assault");
             }
