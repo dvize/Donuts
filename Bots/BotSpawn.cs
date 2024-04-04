@@ -192,18 +192,29 @@ namespace Donuts
             bool group = maxCount > 1;
             int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
 
-            WildSpawnType wildSpawnType = BotSpawn.GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+            WildSpawnType wildSpawnType;
+            if (DonutsPlugin.forceAllBotType.PMC)
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType("pmc");
+            }
+            else if (DonutsPlugin.forceAllBotType.SCAV)
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType("assault");
+            }
+            else
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+            }
 
-            // check here for faction option, only applies to pmcs
-            if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptbear" || hotspotTimer.Hotspot.WildSpawnType == "sptusec")
+            if (wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
             {
                 if (DonutsPlugin.pmcFaction.Value == "USEC")
                 {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("sptusec");
+                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
                 }
                 else if (DonutsPlugin.pmcFaction.Value == "BEAR")
                 {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("sptbear");
+                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
                 }
             }
 
