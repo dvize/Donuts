@@ -331,8 +331,8 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayer = Config.Bind(
                 "2. Additional Spawn Settings",
                 "Global Min Distance From Player",
-                100,
-                new ConfigDescription("This value is the minimum distance that bots can spawn from the player. If Use Global Min Distance From Player is true, then this value applies to ALL spawns, ALL presets."),
+                150f,
+                new ConfigDescription("This value is the minimum distance that bots can spawn from the player. If Use Global Min Distance From Player is true, then this value applies to ALL spawns, ALL presets.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 

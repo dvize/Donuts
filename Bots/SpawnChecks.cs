@@ -132,7 +132,7 @@ namespace Donuts
             }
             else
             {
-                minDistanceFromPlayer = hotspot.minDistanceFromPlayer;
+                minDistanceFromPlayer = hotspot.MinSpawnDistanceFromPlayer;
             }
 
             //if distance between player and spawn position is less than the hotspot min distance
