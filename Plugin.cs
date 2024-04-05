@@ -16,7 +16,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.1")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     public class DonutsPlugin : BaseUnityPlugin
@@ -35,6 +35,9 @@ namespace Donuts
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
+        public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayer;
+
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
@@ -229,13 +232,21 @@ namespace Donuts
                 new AcceptableValueList<string>(botDiffList),
                 new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 8 }));
 
+            ShowRandomFolderChoice = Config.Bind(
+                "1. Main Settings",
+                "Show Random Scenario Selection",
+                true,
+                new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
             pmcFaction = Config.Bind(
                 "2. Additional Spawn Settings",
                 "Force PMC Faction",
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
 
             forceAllBotType = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -243,7 +254,7 @@ namespace Donuts
                 "Disabled",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(forceAllBotTypeList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
 
             hardStopOptionPMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -251,7 +262,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
 
             hardStopTimePMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -259,7 +270,7 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             hardStopOptionSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -267,7 +278,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             hardStopTimeSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -275,7 +286,7 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             hotspotBoostPMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -283,7 +294,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
 
             hotspotBoostSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -291,7 +302,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
 
             hotspotIgnoreHardCapPMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -299,7 +310,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
 
             hotspotIgnoreHardCapSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -307,13 +318,21 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
-            ShowRandomFolderChoice = Config.Bind(
-                "1. Main Settings",
-                "Show Random Scenario Selection",
-                true,
-                new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
+            globalMinSpawnDistanceFromPlayerBool = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Use Global Min Distance From Player",
+                false,
+                new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player defined here.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+
+            globalMinSpawnDistanceFromPlayer = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Global Min Distance From Player",
+                150f,
+                new ConfigDescription("This value is the minimum distance that bots can spawn from the player. If Use Global Min Distance From Player is true, then this value applies to ALL spawns, ALL presets.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 

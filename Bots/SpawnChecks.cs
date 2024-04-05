@@ -125,8 +125,18 @@ namespace Donuts
         }
         internal static bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
         {
+            float minDistanceFromPlayer;
+            if (DonutsPlugin.globalMinSpawnDistanceFromPlayerBool.Value)
+            {
+                minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayer.Value;
+            }
+            else
+            {
+                minDistanceFromPlayer = hotspot.MinSpawnDistanceFromPlayer;
+            }
+
             //if distance between player and spawn position is less than the hotspot min distance
-            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) < hotspot.MinSpawnDistanceFromPlayer)
+            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) < minDistanceFromPlayer)
             {
                 return true;
             }
