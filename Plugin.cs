@@ -35,8 +35,18 @@ namespace Donuts
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
+
+        // Global Min Distance From Player
         public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayer;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerFactory;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerCustoms;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerGroundZero;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerInterchange;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerLaboratory;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerLighthouse;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerReserve;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerStreets;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerWoods;
 
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
@@ -324,15 +334,87 @@ namespace Donuts
                 "2. Additional Spawn Settings",
                 "Use Global Min Distance From Player",
                 false,
-                new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player defined here.",
+                new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
-            globalMinSpawnDistanceFromPlayer = Config.Bind(
+            globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Global Min Distance From Player",
+                "Factory",
+                35f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerCustoms = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Customs",
+                100f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerReserve = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Reserve",
+                100f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerStreets = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Streets",
+                100f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerWoods = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Woods",
                 150f,
-                new ConfigDescription("This value is the minimum distance that bots can spawn from the player. If Use Global Min Distance From Player is true, then this value applies to ALL spawns, ALL presets.",
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerLaboratory = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Laboratory",
+                50f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Shoreline",
+                100f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerGroundZero = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Ground Zero",
+                70f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerInterchange = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Interchange",
+                100f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
+
+            globalMinSpawnDistanceFromPlayerLighthouse = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Lighthouse",
+                125f,
+                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
@@ -430,7 +512,7 @@ namespace Donuts
             botTriggerDistance = Config.Bind(
                 "6. Spawn Point Maker",
                 "Bot Spawn Trigger Distance",
-                150f,
+                100f,
                 new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
                 new AcceptableValueRange<float>(0.1f, 1000f),
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 9 }));
