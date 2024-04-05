@@ -16,7 +16,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.1")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.2")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     public class DonutsPlugin : BaseUnityPlugin
@@ -47,6 +47,7 @@ namespace Donuts
         public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerReserve;
         public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerStreets;
         public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerWoods;
+        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerShoreline;
 
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
@@ -331,7 +332,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
 
             globalMinSpawnDistanceFromPlayerBool = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Use Global Min Distance From Player",
                 false,
                 new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
@@ -339,7 +340,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
 
             globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Factory",
                 35f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -347,7 +348,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerCustoms = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Customs",
                 100f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -355,7 +356,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerReserve = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Reserve",
                 100f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -363,7 +364,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerStreets = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Streets",
                 100f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -371,7 +372,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerWoods = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Woods",
                 150f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -379,7 +380,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerLaboratory = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Laboratory",
                 50f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -387,7 +388,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Shoreline",
                 100f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -395,7 +396,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerGroundZero = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Ground Zero",
                 70f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -403,7 +404,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerInterchange = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Interchange",
                 100f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -411,7 +412,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             globalMinSpawnDistanceFromPlayerLighthouse = Config.Bind(
-                "2. Additional Spawn Settings",
+                "3. Global Minimum Spawn Distance From Player",
                 "Lighthouse",
                 125f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
@@ -420,7 +421,7 @@ namespace Donuts
 
             // advanced settings
             maxSpawnTriesPerBot = Config.Bind(
-                "3. Advanced Spawn Settings",
+                "4. Advanced Spawn Settings",
                 "Max Spawn Tries Per Bot",
                 20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
@@ -428,7 +429,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
             groupWeightDistroLow = Config.Bind(
-                "4. Group Chance Weight Distribution",
+                "5. Group Chance Weight Distribution",
                 "Low",
                 lowWeightsString,
                 new ConfigDescription("Weight Distribution for Group Chance 'Low'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
@@ -436,7 +437,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 3 }));
 
             groupWeightDistroDefault = Config.Bind(
-                "4. Group Chance Weight Distribution",
+                "5. Group Chance Weight Distribution",
                 "Default",
                 defaultWeightsString,
                 new ConfigDescription("Weight Distribution for Group Chance 'Default'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
@@ -444,7 +445,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             groupWeightDistroHigh = Config.Bind(
-                "4. Group Chance Weight Distribution",
+                "5. Group Chance Weight Distribution",
                 "High",
                 highWeightsString,
                 new ConfigDescription("Weight Distribution for Group Chance 'High'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
@@ -453,7 +454,7 @@ namespace Donuts
 
             //Debugging
             DebugGizmos = Config.Bind(
-                "5. Debugging",
+                "6. Debugging",
                 "Enable Debug Markers",
                 false,
                 new ConfigDescription("When enabled, draws debug spheres on set spawn from json",
@@ -461,7 +462,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             gizmoRealSize = Config.Bind(
-                "5. Debugging",
+                "6. Debugging",
                 "Debug Sphere Real Size",
                 false,
                 new ConfigDescription("When enabled, debug spheres will be the real size of the spawn radius",
@@ -470,7 +471,7 @@ namespace Donuts
 
             // Spawn Point Maker
             spawnName = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Name",
                 "Spawn Name Here",
                 new ConfigDescription("Name used to identify the spawn marker",
@@ -478,7 +479,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 14 }));
 
             groupNum = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Group Number",
                 1,
                 new ConfigDescription("Group Number used to identify the spawn marker",
@@ -486,7 +487,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 13 }));
 
             wildSpawns = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Wild Spawn Type",
                 "pmc",
                 new ConfigDescription("Select an option.",
@@ -494,7 +495,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 12 }));
 
             minSpawnDist = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Min Spawn Distance",
                 1f,
                 new ConfigDescription("Min Distance Bots will Spawn From Marker You Set.",
@@ -502,7 +503,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 11 }));
 
             maxSpawnDist = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Max Spawn Distance",
                 20f,
                 new ConfigDescription("Max Distance Bots will Spawn From Marker You Set.",
@@ -510,7 +511,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 10 }));
 
             botTriggerDistance = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Bot Spawn Trigger Distance",
                 100f,
                 new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
@@ -518,7 +519,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 9 }));
 
             botTimerTrigger = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Bot Spawn Timer Trigger",
                 180f,
                 new ConfigDescription("In seconds before it spawns next wave while player in the fight zone area",
@@ -526,7 +527,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 8 }));
 
             maxRandNumBots = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Max Random Bots",
                 2,
                 new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
@@ -534,7 +535,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
 
             spawnChance = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Spawn Chance for Marker",
                 50,
                 new ConfigDescription("Chance bot will be spawn here after timer is reached",
@@ -542,7 +543,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 6 }));
 
             maxSpawnsBeforeCooldown = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Max Spawns Before Cooldown",
                 5,
                 new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
@@ -550,7 +551,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
 
             ignoreTimerFirstSpawn = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Ignore Timer for First Spawn",
                 false,
                 new ConfigDescription("When enabled for this point, it will still spawn even if timer is not ready for first spawn only",
@@ -558,7 +559,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
             minSpawnDistanceFromPlayer = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Min Spawn Distance From Player",
                 40f,
                 new ConfigDescription("How far the random selected spawn near the spawn marker needs to be from player",
@@ -566,7 +567,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 3 }));
 
             CreateSpawnMarkerKey = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Create Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to create a spawn marker at your current location",
@@ -574,7 +575,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             DeleteSpawnMarkerKey = Config.Bind(
-                "6. Spawn Point Maker",
+                "7. Spawn Point Maker",
                 "Delete Spawn Marker Key",
                 new BepInEx.Configuration.KeyboardShortcut(),
                 new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
@@ -583,7 +584,7 @@ namespace Donuts
 
             //Save Settings
             saveNewFileOnly = Config.Bind(
-                "5. Save Settings",
+                "8. Save Settings",
                 "Save New Locations Only",
                 false,
                 new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
@@ -591,7 +592,7 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
 
             WriteToFileKey = Config.Bind(
-                "5. Save Settings",
+                "8. Save Settings",
                 "Create Temp Json File",
                 new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
                 new ConfigDescription("Press this key to write the json file with all entries so far",
