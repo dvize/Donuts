@@ -104,14 +104,14 @@ namespace Donuts
             {
                 Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
-                if (!spawnPosition.HasValue)
-                {
-                    // Failed to get a valid spawn position, move on to generating the next bot
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
-#endif
-                    return;
-                }
+//                 if (!spawnPosition.HasValue)
+//                 {
+//                     // Failed to get a valid spawn position, move on to generating the next bot
+// #if DEBUG
+//                     DonutComponent.Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, for {maxCount} grouped number of bots, moving on to next bot anyways");
+// #endif
+//                     return;
+//                 }
 
                 int maxInitialPMCs = PMCBotLimit;
                 int maxInitialSCAVs = SCAVBotLimit;
@@ -260,14 +260,14 @@ namespace Donuts
             {
                 Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
 
-                if (!spawnPosition.HasValue)
-                {
-                    // Failed to get a valid spawn position, move on to generating the next bot
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
-#endif
-                    return;
-                }
+//                 if (!spawnPosition.HasValue)
+//                 {
+//                     // Failed to get a valid spawn position, move on to generating the next bot
+// #if DEBUG
+//                     DonutComponent.Logger.LogDebug($"Actually Failed to get a valid spawn position for {hotspotTimer.Hotspot.Name} after {maxSpawnAttempts}, moving on to next bot anyways");
+// #endif
+//                     return;
+//                 }
 
                 int maxInitialPMCs = PMCBotLimit;
                 int maxInitialSCAVs = SCAVBotLimit;
