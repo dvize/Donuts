@@ -382,12 +382,12 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerLaboratory = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Laboratory",
-                50f,
+                40f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
-            globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
+            globalMinSpawnDistanceFromPlayerShoreline = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Shoreline",
                 100f,
