@@ -24,7 +24,8 @@ namespace Donuts
         public static ConfigEntry<bool> PluginEnabled;
         public static ConfigEntry<float> botTimerTrigger;
         public static ConfigEntry<float> coolDownTimer;
-        public static ConfigEntry<bool> DespawnEnabled;
+        public static ConfigEntry<bool> DespawnEnabledPMC;
+        public static ConfigEntry<bool> DespawnEnabledSCAV;
         public static ConfigEntry<bool> HardCapEnabled;
         public static ConfigEntry<bool> hardStopOptionPMC;
         public static ConfigEntry<bool> hardStopOptionSCAV;
@@ -179,11 +180,19 @@ namespace Donuts
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 16 }));
 
-            DespawnEnabled = Config.Bind(
+            DespawnEnabledPMC = Config.Bind(
                 "1. Main Settings",
-                "Despawn Option",
+                "Despawn PMCs",
                 true,
-                new ConfigDescription("When enabled, removes furthest bots from player for each new dynamic spawn bot",
+                new ConfigDescription("When enabled, removes furthest PMC bots from player for each new dynamic spawn bot",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
+
+            DespawnEnabledSCAV = Config.Bind(
+                "1. Main Settings",
+                "Despawn SCAVs",
+                true,
+                new ConfigDescription("When enabled, removes furthest SCAV bots from player for each new dynamic spawn bot that is over your Donuts bot caps (ScenarioConfig.json).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
 
@@ -269,7 +278,7 @@ namespace Donuts
 
             hardStopOptionPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Spawn Hard Stop: PMC",
+                "PMC Spawn Hard Stop",
                 false,
                 new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
@@ -285,7 +294,7 @@ namespace Donuts
 
             hardStopOptionSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Spawn Hard Stop: SCAV",
+                "SCAV Spawn Hard Stop",
                 false,
                 new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
@@ -301,7 +310,7 @@ namespace Donuts
 
             hotspotBoostPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hot Spot PMC Spawn Boost",
+                "PMC Hot Spot Spawn Boost",
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
                 null,
@@ -309,7 +318,7 @@ namespace Donuts
 
             hotspotBoostSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hot Spot SCAV Spawn Boost",
+                "SCAV Hot Spot Spawn Boost",
                 false,
                 new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
                 null,
@@ -317,7 +326,7 @@ namespace Donuts
 
             hotspotIgnoreHardCapPMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hot Spot Ignore Hard Cap: PMC",
+                "PMC Hot Spot Ignore Hard Cap",
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
                 null,
@@ -325,7 +334,7 @@ namespace Donuts
 
             hotspotIgnoreHardCapSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "Hot Spot Ignore Hard Cap: SCAV",
+                "SCAV Hot Spot Ignore Hard Cap",
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
                 null,
@@ -350,7 +359,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerCustoms = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Customs",
-                100f,
+                85f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -358,7 +367,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerReserve = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Reserve",
-                100f,
+                80f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -366,7 +375,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerStreets = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Streets",
-                100f,
+                80f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -398,7 +407,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerGroundZero = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Ground Zero",
-                70f,
+                65f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -406,7 +415,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerInterchange = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Interchange",
-                100f,
+                80f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
@@ -414,7 +423,7 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerLighthouse = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
                 "Lighthouse",
-                125f,
+                80f,
                 new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));

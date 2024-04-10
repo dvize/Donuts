@@ -277,9 +277,10 @@ namespace Donuts
 
                 Gizmos.DisplayMarkerInformation();
 
-                if (DonutsPlugin.DespawnEnabled.Value)
+                if (DonutsPlugin.DespawnEnabledPMC.Value)
                 {
                     DespawnFurthestBot("pmc");
+                else if (DonutsPlugin.DespawnEnabledSCAV.Value)
                     DespawnFurthestBot("scav");
                 }
             }
