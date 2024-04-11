@@ -184,7 +184,7 @@ namespace Donuts
                 "1. Main Settings",
                 "Despawn PMCs",
                 true,
-                new ConfigDescription("When enabled, removes furthest PMC bots from player for each new dynamic spawn bot",
+                new ConfigDescription("When enabled, removes furthest PMC bots from player for each new dynamic spawn bot that is over your Donuts bot caps (ScenarioConfig.json).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
 

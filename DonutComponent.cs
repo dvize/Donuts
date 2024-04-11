@@ -280,7 +280,10 @@ namespace Donuts
                 if (DonutsPlugin.DespawnEnabledPMC.Value)
                 {
                     DespawnFurthestBot("pmc");
-                else if (DonutsPlugin.DespawnEnabledSCAV.Value)
+                }
+
+                if (DonutsPlugin.DespawnEnabledSCAV.Value)
+                {
                     DespawnFurthestBot("scav");
                 }
             }
