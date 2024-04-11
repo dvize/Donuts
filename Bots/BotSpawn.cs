@@ -18,6 +18,14 @@ namespace Donuts
 {
     internal class BotSpawn
     {
+        internal static AICorePoint GetClosestCorePoint(Vector3 position)
+        {
+            var botGame = Singleton<IBotGame>.Instance;
+            var coversData = botGame.BotsController.CoversData;
+            var groupPoint = coversData.GetClosest(position);
+            return groupPoint.CorePointInGame;
+        }
+
         internal static async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
@@ -571,7 +579,7 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                var closestCorePoint = GetClosestCorePoint(spawnPosition);
                 // may need to check if null?
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
@@ -601,7 +609,7 @@ namespace Donuts
                 botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+                var closestCorePoint = GetClosestCorePoint(spawnPosition);
                 // may need to check if null?
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
@@ -619,7 +627,7 @@ namespace Donuts
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
-            var closestCorePoint = CorePointFinder.GetClosest(spawnPosition);
+            var closestCorePoint = GetClosestCorePoint(spawnPosition);
             bot.AddPosition((Vector3)spawnPosition, closestCorePoint.Id);
 
             var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
