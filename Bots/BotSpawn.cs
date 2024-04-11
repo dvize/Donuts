@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Aki.PrePatch;
+using Comfort.Common;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
