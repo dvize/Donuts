@@ -128,7 +128,45 @@ namespace Donuts
             float minDistanceFromPlayer;
             if (DonutsPlugin.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayer.Value;
+                string mapName = hotspot.MapName.ToLower();
+
+                switch (mapName)
+                {
+                    case "bigmap":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerCustoms.Value;
+                        break;
+                    case "factory4_day":
+                    case "factory4_night":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerFactory.Value;
+                        break;
+                    case "tarkovstreets":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerStreets.Value;
+                        break;
+                    case "sandbox":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerGroundZero.Value;
+                        break;
+                    case "rezervbase":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerReserve.Value;
+                        break;
+                    case "lighthouse":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerLighthouse.Value;
+                        break;
+                    case "shoreline":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerShoreline.Value;
+                        break;
+                    case "woods":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerWoods.Value;
+                        break;
+                    case "laboratory":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerLaboratory.Value;
+                        break;
+                    case "interchange":
+                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerInterchange.Value;
+                        break;
+                    default:
+                        minDistanceFromPlayer = hotspot.MinSpawnDistanceFromPlayer;
+                        break;
+                }
             }
             else
             {
@@ -143,6 +181,8 @@ namespace Donuts
 
             return false;
         }
+
+
         #endregion
     }
 }
