@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Comfort.Common;
+using EFT;
 using UnityEngine;
 using UnityEngine.AI;
 using static Donuts.DonutComponent;
@@ -51,7 +54,7 @@ namespace Donuts
                 return !IsSpawnPositionInsideWall(spawnPosition) &&
                        !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
                        !IsSpawnInAir(spawnPosition) &&
-                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
+                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot) &&
                        !IsPositionTooCloseToOtherBots(spawnPosition, hotspot);
             }
             return false;
