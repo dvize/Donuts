@@ -434,7 +434,6 @@ namespace Donuts
             {
                 var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
                 var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
-
                 botList.Add(botGroup);
 
                 //add all profiles to orignalbotspawntypes list but change role to spawnType

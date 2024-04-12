@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using Comfort.Common;
+using EFT;
 using UnityEngine;
 using UnityEngine.AI;
 using static Donuts.DonutComponent;
@@ -38,8 +41,8 @@ namespace Donuts
 
         private static Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
         {
-            float randomX = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-            float randomZ = UnityEngine.Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            float randomX = Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            float randomZ = Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
 
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
@@ -48,33 +51,53 @@ namespace Donuts
         {
             if (spawnPosition != null && hotspot != null)
             {
-                return !IsSpawnPositionInsideWall(spawnPosition) &&
-                       !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
-                       !IsSpawnInAir(spawnPosition) &&
-                       !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
+                bool validPosition = !IsSpawnPositionInsideWall(spawnPosition) &&
+                                    !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
+                                    !IsSpawnInAir(spawnPosition) &&
+                                    !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
+
+                // Only check proximity to other bots if the corresponding setting is enabled
+                if (DonutsPlugin.globalMinSpawnDistanceFromOtherBotsBool.Value)
+                {
+                    validPosition &= !IsPositionTooCloseToOtherBots(spawnPosition, hotspot);
+                }
+
+                return validPosition;
             }
             return false;
         }
+
         internal static bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
             //add try catch for when player is null at end of raid
             try
             {
-                Vector3 playerPosition = gameWorld.MainPlayer.MainParts[BodyPartType.head].Position;
-                Vector3 direction = (playerPosition - spawnPosition).normalized;
-                float distance = Vector3.Distance(spawnPosition, playerPosition);
-
-                RaycastHit hit;
-                if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
+                foreach (var player in playerList)
                 {
-                    // No objects found between spawn point and player
-                    return true;
+                    if (player == null || player.HealthController == null)
+                    {
+                        continue;
+                    }
+                    if (!player.HealthController.IsAlive)
+                    {
+                        continue;
+                    }
+                    Vector3 playerPosition = player.MainParts[BodyPartType.head].Position;
+                    Vector3 direction = (playerPosition - spawnPosition).normalized;
+                    float distance = Vector3.Distance(spawnPosition, playerPosition);
+                    RaycastHit hit;
+                    if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
+                    {
+                        // No objects found between spawn point and player
+                        return true;
+                    }
                 }
             }
             catch { }
 
             return false;
         }
+
         internal static bool IsSpawnPositionInsideWall(Vector3 position)
         {
             // Check if any game object parent has the name "WALLS" in it
@@ -123,62 +146,90 @@ namespace Donuts
             }
             return true;
         }
-        internal static bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
+
+        private static float GetMinDistanceFromPlayer(Entry hotspot)
         {
-            float minDistanceFromPlayer;
             if (DonutsPlugin.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                string mapName = hotspot.MapName.ToLower();
-
-                switch (mapName)
+                switch (hotspot.MapName.ToLower())
                 {
-                    case "bigmap":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerCustoms.Value;
-                        break;
-                    case "factory4_day":
-                    case "factory4_night":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerFactory.Value;
-                        break;
-                    case "tarkovstreets":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerStreets.Value;
-                        break;
-                    case "sandbox":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerGroundZero.Value;
-                        break;
-                    case "rezervbase":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerReserve.Value;
-                        break;
-                    case "lighthouse":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerLighthouse.Value;
-                        break;
-                    case "shoreline":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerShoreline.Value;
-                        break;
-                    case "woods":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerWoods.Value;
-                        break;
-                    case "laboratory":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerLaboratory.Value;
-                        break;
-                    case "interchange":
-                        minDistanceFromPlayer = DonutsPlugin.globalMinSpawnDistanceFromPlayerInterchange.Value;
-                        break;
-                    default:
-                        minDistanceFromPlayer = hotspot.MinSpawnDistanceFromPlayer;
-                        break;
+                    case "bigmap": return DonutsPlugin.globalMinSpawnDistanceFromPlayerCustoms.Value;
+                    case "factory4_day": return DonutsPlugin.globalMinSpawnDistanceFromPlayerFactory.Value;
+                    case "factory4_night": return DonutsPlugin.globalMinSpawnDistanceFromPlayerFactory.Value;
+                    case "tarkovstreets": return DonutsPlugin.globalMinSpawnDistanceFromPlayerStreets.Value;
+                    case "sandbox": return DonutsPlugin.globalMinSpawnDistanceFromPlayerGroundZero.Value;
+                    case "rezervbase": return DonutsPlugin.globalMinSpawnDistanceFromPlayerReserve.Value;
+                    case "lighthouse": return DonutsPlugin.globalMinSpawnDistanceFromPlayerLighthouse.Value;
+                    case "shoreline": return DonutsPlugin.globalMinSpawnDistanceFromPlayerShoreline.Value;
+                    case "woods": return DonutsPlugin.globalMinSpawnDistanceFromPlayerWoods.Value;
+                    case "laboratory": return DonutsPlugin.globalMinSpawnDistanceFromPlayerLaboratory.Value;
+                    case "interchange": return DonutsPlugin.globalMinSpawnDistanceFromPlayerInterchange.Value;
+                    default: return hotspot.MinSpawnDistanceFromPlayer;
                 }
             }
             else
             {
-                minDistanceFromPlayer = hotspot.MinSpawnDistanceFromPlayer;
+                return hotspot.MinSpawnDistanceFromPlayer;
             }
+        }
 
-            //if distance between player and spawn position is less than the hotspot min distance
-            if (Vector3.Distance(gameWorld.MainPlayer.Position, position) < minDistanceFromPlayer)
+        private static float GetMinDistanceFromOtherBots(Entry hotspot)
+        {
+            switch (hotspot.MapName.ToLower())
             {
-                return true;
+                case "bigmap": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsCustoms.Value;
+                case "factory4_day": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsFactory.Value;
+                case "factory4_night": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsFactory.Value;
+                case "tarkovstreets": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsStreets.Value;
+                case "sandbox": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsGroundZero.Value;
+                case "rezervbase": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsReserve.Value;
+                case "lighthouse": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsLighthouse.Value;
+                case "shoreline": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsShoreline.Value;
+                case "woods": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsWoods.Value;
+                case "laboratory": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsLaboratory.Value;
+                case "interchange": return DonutsPlugin.globalMinSpawnDistanceFromOtherBotsInterchange.Value;
+                default: return 0f;
             }
+        }
 
+        internal static bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
+        {
+            float minDistanceFromPlayer = GetMinDistanceFromPlayer(hotspot);
+            foreach (var player in playerList)
+            {
+                if (player == null || player.HealthController == null)
+                {
+                    continue;
+                }
+
+                if (!player.HealthController.IsAlive)
+                {
+                    continue;
+                }
+
+                if ((player.Position - position).sqrMagnitude < (minDistanceFromPlayer * minDistanceFromPlayer))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool IsPositionTooCloseToOtherBots(Vector3 position, Entry hotspot)
+        {
+            float minDistanceFromOtherBots = GetMinDistanceFromOtherBots(hotspot);
+            List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
+
+            foreach (var player in players)
+            {
+                if (player == null || !player.HealthController.IsAlive || player.IsYourPlayer)
+                    continue;
+
+                if ((player.Position - position).sqrMagnitude < minDistanceFromOtherBots * minDistanceFromOtherBots)
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
