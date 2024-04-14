@@ -10,7 +10,6 @@ using HarmonyLib;
 using UnityEngine;
 using static Donuts.DonutComponent;
 using BotCacheClass = GClass591;
-using CorePointFinder = AICorePointHolder;
 using IProfileData = GClass592;
 
 #pragma warning disable IDE0007, IDE0044
@@ -29,7 +28,7 @@ namespace Donuts
 
         internal static bool HasElapsedThresholdBeenMet(int elapsedThresholdSeconds)
         {
-            int elapsedTime = (int)RaidChangesUtil.GetElapsedRaidSeconds();
+            int elapsedTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetElapsedRaidSeconds();
 
 #if DEBUG
             DonutComponent.Logger.LogDebug($"Elapsed time: {elapsedTime} seconds, Threshold: {elapsedThresholdSeconds} seconds");

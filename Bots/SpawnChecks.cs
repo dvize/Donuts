@@ -190,11 +190,15 @@ namespace Donuts
         {
             float minDistanceFromOtherBots = GetMinDistanceFromOtherBots(hotspot);
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
+
             foreach (var player in players)
             {
-                if (player != null && player.HealthController.IsAlive && (player.Position - position).sqrMagnitude < minDistanceFromOtherBots * minDistanceFromOtherBots)
+                if (player == null || !player.HealthController.IsAlive || player.IsYourPlayer)
+                    continue; 
+
+                if ((player.Position - position).sqrMagnitude < minDistanceFromOtherBots * minDistanceFromOtherBots)
                 {
-                    return true;
+                    return true; 
                 }
             }
             return false;
