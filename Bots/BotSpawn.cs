@@ -26,40 +26,39 @@ namespace Donuts
             return groupPoint.CorePointInGame;
         }
 
-        internal static bool HasElapsedThresholdBeenMet(int elapsedThresholdSeconds)
-        {
-            int elapsedTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetElapsedRaidSeconds();
-
-#if DEBUG
-            DonutComponent.Logger.LogDebug($"Elapsed time: {elapsedTime} seconds, Threshold: {elapsedThresholdSeconds} seconds");
-#endif
-
-            return elapsedTime >= elapsedThresholdSeconds;
-        }
-
-        internal static int GetElapsedThreshold(string spawnType)
-        {
-            if (DonutsPlugin.hardStopOptionPMC.Value && (spawnType == "pmc" || spawnType == "sptusec" || spawnType == "sptbear"))
-            {
-                return DonutsPlugin.hardStopTimePMC.Value;
-            }
-            else if (DonutsPlugin.hardStopOptionSCAV.Value && spawnType == "assault")
-            {
-                return DonutsPlugin.hardStopTimeSCAV.Value;
-            }
-            return 0;
-        }
-
         internal static async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
-            int elapsedThresholdSeconds = GetElapsedThreshold(hotspotSpawnType) * 60;
-            if (elapsedThresholdSeconds > 0 && HasElapsedThresholdBeenMet(elapsedThresholdSeconds))
+            if (DonutsPlugin.hardStopOptionPMC.Value && (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear"))
             {
 #if DEBUG
-                DonutComponent.Logger.LogDebug($"Elapsed time threshold met for {hotspotSpawnType} - skipping this spawn");
+                DonutComponent.Logger.LogDebug($"Hard stop PMCs is enabled, checking raid time");
 #endif
-                return;
+                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimePMC.Value;
+                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+                if (raidTimeLeft < DonutsPlugin.hardStopTimePMC.Value)
+                {
+#if DEBUG
+                    DonutComponent.Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimePMC.Value} - skipping this spawn");
+#endif
+                    return;
+                }
+            }
+
+            else if (DonutsPlugin.hardStopOptionSCAV.Value && hotspotSpawnType == "assault")
+            {
+#if DEBUG
+                DonutComponent.Logger.LogDebug($"Hard stop SCAVs is enabled, checking raid time");
+#endif
+                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimeSCAV;
+                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+                if (raidTimeLeft < DonutsPlugin.hardStopTimeSCAV.Value)
+                {
+#if DEBUG
+                    DonutComponent.Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimeSCAV.Value} - skipping this spawn");
+#endif
+                    return;
+                }
             }
 
             int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;

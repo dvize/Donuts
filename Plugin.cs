@@ -294,15 +294,15 @@ namespace Donuts
                 "2. Additional Spawn Settings",
                 "PMC Spawn Hard Stop",
                 false,
-                new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time has elapsed in your raid. This is configurable in minutes (see below).",
+                new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
 
             hardStopTimePMC = Config.Bind(
                 "2. Additional Spawn Settings",
-                "PMC Spawn Hard Stop: Time Elapsed In Raid (minutes)",
-                30,
-                new ConfigDescription("If PMC hard stop is enabled, this is the time (in minutes) that must elapse in your raid for all PMC spawns to stop. Default is 30 minutes.",
+                "PMC Spawn Hard Stop: Time Left in Raid",
+                300,
+                new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
@@ -310,15 +310,15 @@ namespace Donuts
                 "2. Additional Spawn Settings",
                 "SCAV Spawn Hard Stop",
                 false,
-                new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time has elapsed in your raid. This is configurable in minutes (see below).",
+                new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             hardStopTimeSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
-                "SCAV Spawn Hard Stop: Time Elapsed In Raid (minutes)",
-                35,
-                new ConfigDescription("If SCAV hard stop is enabled, this is the time (in minutes) that must elapse in your raid for all SCAV spawns to stop. Default is 35 minutes.",
+                "SCAV Spawn Hard Stop: Time Left in Raid",
+                300,
+                new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
