@@ -29,445 +29,213 @@ namespace Donuts
         internal static async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
-            if (DonutsPlugin.hardStopOptionPMC.Value && (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear"))
+
+            if (!IsRaidTimeRemaining(hotspotSpawnType))
             {
-#if DEBUG
-                DonutComponent.Logger.LogDebug($"Hard stop PMCs is enabled, checking raid time");
-#endif
-                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimePMC.Value;
-                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
-                if (raidTimeLeft < DonutsPlugin.hardStopTimePMC.Value)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimePMC.Value} - skipping this spawn");
-#endif
-                    return;
-                }
+             DonutComponent.Logger.LogDebug("Spawn not allowed due to raid time conditions - skipping this spawn");
+                return;
             }
 
-            else if (DonutsPlugin.hardStopOptionSCAV.Value && hotspotSpawnType == "assault")
+            WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
+
+            int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
+            maxCount = CheckBotCaps(hotspotSpawnType, maxCount);
+            if (maxCount == 0) return;
+
+            if (DonutsPlugin.HardCapEnabled.Value)
             {
-#if DEBUG
-                DonutComponent.Logger.LogDebug($"Hard stop SCAVs is enabled, checking raid time");
-#endif
-                var pluginRaidTimeLeft = DonutsPlugin.hardStopTimeSCAV;
-                var raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
-                if (raidTimeLeft < DonutsPlugin.hardStopTimeSCAV.Value)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Time left {raidTimeLeft} is less than your hard stop time {DonutsPlugin.hardStopTimeSCAV.Value} - skipping this spawn");
-#endif
-                    return;
-                }
+                maxCount = HandleHardCap(hotspotSpawnType, maxCount);
+                if (maxCount == 0) return;
             }
 
-            int maxCount = hotspotTimer.Hotspot.MaxRandomNumBots;
-            if (hotspotSpawnType == "pmc" || hotspotSpawnType == "sptusec" || hotspotSpawnType == "sptbear")
+            bool isGroup = maxCount > 1;
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            if (!spawnPosition.HasValue)
             {
-                string pluginGroupChance = DonutsPlugin.pmcGroupChance.Value;
-                maxCount = BotSpawn.getActualBotCount(pluginGroupChance, maxCount);
-            }
-            else if (hotspotSpawnType == "assault")
-            {
-                string pluginGroupChance = DonutsPlugin.scavGroupChance.Value;
-                maxCount = BotSpawn.getActualBotCount(pluginGroupChance, maxCount);
+             DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                return;
             }
 
-            bool group = maxCount > 1;
-            int maxSpawnAttempts = DonutsPlugin.maxSpawnTriesPerBot.Value;
+            await SetupSpawn(hotspotTimer, spawnPosition.Value, maxCount, isGroup, wildSpawnType);
+        }
 
-            //check if we are spawning a group or a single bot
-            if (group)
+        private static int HandleHardCap(string spawnType, int requestedCount)
+        {
+            int currentBotsAlive = GetRegisteredPlayers(spawnType);
+            int botLimit = GetBotLimit(spawnType);
+            if (currentBotsAlive + requestedCount > botLimit)
             {
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
+                requestedCount = botLimit - currentBotsAlive;
+                DonutComponent.Logger.LogDebug($"{spawnType} hard cap exceeded. Current: {currentBots}, Limit: {botLimit}, Adjusted count: {requestedCount}");
+                return Math.Max(0, requestedCount);
+            }
+            return requestedCount;
+        }
 
-                int maxInitialPMCs = PMCBotLimit;
-                int maxInitialSCAVs = SCAVBotLimit;
+        private static int CheckBotCaps(string spawnType, int requestedCount)
+        {
+            int currentBots = GetRegisteredPlayers(spawnType);
+            int botLimit = GetBotLimit(spawnType);
+            if (currentBots + requestedCount > botLimit)
+            {
+                requestedCount = botLimit - currentBots;
+                DonutComponent.Logger.LogDebug($"{spawnType} bot limit reached. Current: {currentBots}, Limit: {botLimit}, Adjusted count: {requestedCount}");
+                return Math.Max(0, requestedCount);
+            }
+            return requestedCount;
+        }
 
-                // quick and dirty, this will likely become some sort of new spawn parameter eventually
-                if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
+        private static int GetRegisteredPlayers(string spawnType)
+        {
+            int count = 0;
+            foreach (Player bot in gameWorld.RegisteredPlayers)
+            {
+                if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
+                                          (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
                 {
-                    if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
-                    {
-                        // current doesn't reset until the next raid
-                        // doesn't matter right now since we only care about starting bots
-                        if (currentInitialPMCs >= maxInitialPMCs)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
-#endif
-                            return;
-                        }
-                        else
-                        {
-                            int originalInitialPMCs = currentInitialPMCs;
-                            currentInitialPMCs += maxCount;
-                            // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                            if (currentInitialPMCs > maxInitialPMCs)
-                            {
-                                maxCount = maxInitialPMCs - originalInitialPMCs;
-
-#if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
-#endif
-                            }
-                        }
-                    }
-                    else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
-                    {
-                        // current doesn't reset until the next raid
-                        // doesn't matter right now since we only care about starting bots
-                        if (currentInitialSCAVs >= maxInitialSCAVs)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
-#endif
-                            return;
-                        }
-                        else
-                        {
-                            int originalInitialSCAVs = currentInitialSCAVs;
-                            currentInitialSCAVs += maxCount;
-                            // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                            if (currentInitialSCAVs > maxInitialSCAVs)
-                            {
-                                maxCount = maxInitialSCAVs - originalInitialSCAVs;
-#if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
-#endif
-                            }
-                        }
-                    }
+                    count++;
                 }
+            }
+            return count;
+        }
 
-                const string PmcSpawnTypes = "pmc,sptusec,sptbear";
-                const string ScavSpawnType = "assault";
+        private static bool IsPMC(WildSpawnType role)
+        {
+            return role == WildSpawnType.pmc || role == WildSpawnType.sptUsec || role == WildSpawnType.sptBear;
+        }
 
-                bool IsPMC(WildSpawnType role)
-                {
-                    return role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-                }
+        private static bool IsSCAV(WildSpawnType role)
+        {
+            return role == WildSpawnType.assault;
+        }
 
-                bool IsSCAV(WildSpawnType role)
-                {
-                    return role == WildSpawnType.assault;
-                }
+        private static bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int requestedCount)
+        {
+            return currentBots + requestedCount > botLimit;
+        }
 
-                bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int count)
-                {
-                    if (currentBots + count > botLimit)
-                    {
-                        count = botLimit - currentBots;
+        private static bool IsRaidTimeRemaining(string hotspotSpawnType)
+        {
+            int hardStopTime = GetHardStopTime(hotspotSpawnType);
+            int raidTimeLeft = Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+            return raidTimeLeft >= hardStopTime;
+        }
 
-                        // as long as we "owe" bots then we need to spawn them up to the cap
-                        if (count > 0)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"Reaching {spawnType} BotLimit {botLimit}, spawning {count} instead");
-#endif
-                            return false;
-                        }
+        private static int GetHardStopTime(string hotspotSpawnType)
+        {
+            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
+                (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
+            {
+                return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopTimeSCAV.Value : DonutsPlugin.hardStopTimePMC.Value;
+            }
+            return int.MaxValue;
+        }
 
-                        // if count is <= 0 for some reason then we're already at or over the cap so we can skip
-                        else
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
+        private static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
+        {
+            string groupChance = spawnType == "assault" ? DonutsPlugin.scavGroupChance.Value : DonutsPlugin.pmcGroupChance.Value;
+            return BotSpawn.getActualBotCount(groupChance, defaultMaxCount);
+        }
 
-                if (DonutsPlugin.HardCapEnabled.Value)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
-#endif
-
-                    int currentPMCsAlive = 0;
-                    int currentSCAVsAlive = 0;
-                    foreach (Player bot in gameWorld.RegisteredPlayers)
-                    {
-                        // is this a PMC or SCAV raid?
-                        if (!bot.IsYourPlayer)
-                        {
-                            if (IsPMC(bot.Profile.Info.Settings.Role))
-                            {
-                                currentPMCsAlive++;
-                            }
-                            else if (IsSCAV(bot.Profile.Info.Settings.Role))
-                            {
-                                currentSCAVsAlive++;
-                            }
-                        }
-                    }
-
-                    if (PmcSpawnTypes.Contains(hotspotTimer.Hotspot.WildSpawnType))
-                    {
-                        if (IsSpawnLimitExceeded("PMC", currentPMCsAlive, PMCBotLimit, maxCount) && !DonutsPlugin.hotspotIgnoreHardCapPMC.Value)
-                        {
-                            return;
-                        }
-                        // if Ignore Hard Cap is enabled then skip
-                        else
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogWarning("PMC Ignore Hard Cap is enabled - spawning bots over hard cap anyway");
-#endif
-                        }
-                    }
-                    else if (hotspotTimer.Hotspot.WildSpawnType == ScavSpawnType)
-                    {
-                        if (!DonutsPlugin.hotspotIgnoreHardCapSCAV.Value && IsSpawnLimitExceeded("SCAV", currentSCAVsAlive, SCAVBotLimit, maxCount))
-                        {
-                            return;
-                        }
-                        else
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogWarning("PMC Ignore Hard Cap is enabled - spawning bots over hard cap anyway");
-#endif
-                        }
-                    }
-                }
-
-                WildSpawnType wildSpawnType;
-                if (DonutsPlugin.forceAllBotType.Value == "PMC")
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("pmc");
-                }
-                else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("assault");
-                }
-                else
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
-                }
-
-                if (wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
-                {
-                    if (DonutsPlugin.pmcFaction.Value == "USEC")
-                    {
-                        wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                    }
-                    else if (DonutsPlugin.pmcFaction.Value == "BEAR")
-                    {
-                        wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-                    }
-                }
-
-                EPlayerSide side = BotSpawn.GetSideForWildSpawnType(wildSpawnType);
-                var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-                BotDifficulty botDifficulty = BotSpawn.GetBotDifficulty(wildSpawnType);
-                var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
-
-                ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
-
-                //check if group bots exist in cache or else create it
-                if (DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, maxCount) != null)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
-#endif
-                    await BotSpawn.SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
-                }
-                else
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {maxCount} grouped number of bots.");
-#endif
-                    await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount, 1);
-                    await BotSpawn.SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
-                }
+        private static async Task SetupSpawn(HotspotTimer hotspotTimer, Vector3 spawnPosition, int maxCount, bool isGroup)
+        {
+            DonutComponent.Logger.LogDebug($"Spawning {(isGroup ? "group" : "solo")} at {spawnPosition} with bot count {maxCount}");
+            if (isGroup)
+            {
+                await SpawnGroupBots(hotspotTimer, spawnPosition, maxCount);
             }
             else
             {
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnAttempts);
-
-                int maxInitialPMCs = PMCBotLimit;
-                int maxInitialSCAVs = SCAVBotLimit;
-
-                // quick and dirty, this will likely become some sort of new spawn parameter eventually
-                if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
-                {
-                    if (hotspotTimer.Hotspot.WildSpawnType == "pmc" || hotspotTimer.Hotspot.WildSpawnType == "sptusec" || hotspotTimer.Hotspot.WildSpawnType == "sptbear")
-                    {
-                        // current doesn't reset until the next raid
-                        // doesn't matter right now since we only care about starting bots
-                        if (currentInitialPMCs >= maxInitialPMCs)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"currentInitialPMCs {currentInitialPMCs} is >= than maxInitialPMCs {maxInitialPMCs}, skipping this spawn");
-#endif
-                            return;
-                        }
-                        else
-                        {
-                            int originalInitialPMCs = currentInitialPMCs;
-                            currentInitialPMCs += maxCount;
-                            // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                            if (currentInitialPMCs > maxInitialPMCs)
-                            {
-                                maxCount = maxInitialPMCs - originalInitialPMCs;
-
-#if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching maxInitialPMCs {maxInitialPMCs}, spawning {maxCount} instead");
-#endif
-                            }
-                        }
-                    }
-                    else if (hotspotTimer.Hotspot.WildSpawnType == "assault")
-                    {
-                        // current doesn't reset until the next raid
-                        // doesn't matter right now since we only care about starting bots
-                        if (currentInitialSCAVs >= maxInitialSCAVs)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"currentInitialSCAVs {currentInitialSCAVs} is >= than maxInitialSCAVs {maxInitialSCAVs}, skipping this spawn");
-#endif
-                            return;
-                        }
-                        else
-                        {
-                            int originalInitialSCAVs = currentInitialSCAVs;
-                            currentInitialSCAVs += maxCount;
-                            // if the next spawn takes it count over the limit, then find the difference and fill up to the cap instead
-                            if (currentInitialSCAVs > maxInitialSCAVs)
-                            {
-                                maxCount = maxInitialSCAVs - originalInitialSCAVs;
-#if DEBUG
-                                DonutComponent.Logger.LogDebug($"Reaching maxInitialSCAVs {maxInitialSCAVs}, spawning {maxCount} instead");
-#endif
-                            }
-                        }
-                    }
-                }
-
-                const string PmcSpawnTypes = "pmc,sptusec,sptbear";
-                const string ScavSpawnType = "assault";
-
-                bool IsPMC(WildSpawnType role)
-                {
-                    return role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-                }
-
-                bool IsSCAV(WildSpawnType role)
-                {
-                    return role == WildSpawnType.assault;
-                }
-
-                bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int count)
-                {
-                    if (currentBots + count > botLimit)
-                    {
-                        count = botLimit - currentBots;
-
-                        // as long as we "owe" bots then we need to spawn them up to the cap
-                        if (count > 0)
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogDebug($"Reaching {spawnType} BotLimit {botLimit}, spawning {count} instead");
-#endif
-                            return false;
-                        }
-
-                        // if count is <= 0 for some reason then we're already at or over the cap so we can skip
-                        else
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                if (DonutsPlugin.HardCapEnabled.Value)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"Hard cap is enabled, checking bot counts before spawn");
-#endif
-
-                    int currentPMCsAlive = 0;
-                    int currentSCAVsAlive = 0;
-                    foreach (Player bot in gameWorld.RegisteredPlayers)
-                    {
-                        if (!bot.IsYourPlayer)
-                        {
-                            if (IsPMC(bot.Profile.Info.Settings.Role))
-                            {
-                                currentPMCsAlive++;
-                            }
-                            else if (IsSCAV(bot.Profile.Info.Settings.Role))
-                            {
-                                currentSCAVsAlive++;
-                            }
-                        }
-                    }
-
-                    if (PmcSpawnTypes.Contains(hotspotTimer.Hotspot.WildSpawnType))
-                    {
-                        if (IsSpawnLimitExceeded("PMC", currentPMCsAlive, PMCBotLimit, maxCount) && !DonutsPlugin.hotspotIgnoreHardCapPMC.Value)
-                        {
-                            return;
-                        }
-                        // if Ignore Hard Cap is enabled then skip
-                        else
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogWarning("PMC Ignore Hard Cap is enabled - spawning bots over hard cap anyway");
-#endif
-                        }
-                    }
-                    else if (hotspotTimer.Hotspot.WildSpawnType == ScavSpawnType)
-                    {
-                        if (!DonutsPlugin.hotspotIgnoreHardCapSCAV.Value && IsSpawnLimitExceeded("SCAV", currentSCAVsAlive, SCAVBotLimit, maxCount))
-                        {
-                            return;
-                        }
-                        else
-                        {
-#if DEBUG
-                            DonutComponent.Logger.LogWarning("PMC Ignore Hard Cap is enabled - spawning bots over hard cap anyway");
-#endif
-                        }
-                    }
-                }
-
-
-                WildSpawnType wildSpawnType;
-                if (DonutsPlugin.forceAllBotType.Value == "PMC")
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("pmc");
-                }
-                else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType("assault");
-                }
-                else
-                {
-                    wildSpawnType = BotSpawn.GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
-                }
-
-                if (wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
-                {
-                    if (DonutsPlugin.pmcFaction.Value == "USEC")
-                    {
-                        wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                    }
-                    else if (DonutsPlugin.pmcFaction.Value == "BEAR")
-                    {
-                        wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-                    }
-                }
-
-                EPlayerSide side = BotSpawn.GetSideForWildSpawnType(wildSpawnType);
-                var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-                BotDifficulty botDifficulty = BotSpawn.GetBotDifficulty(wildSpawnType);
-                var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
-
-                await BotSpawn.SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);
+                await SpawnSingleBot(hotspotTimer, spawnPosition);
             }
         }
 
+        private static async Task SpawnGroupBots(HotspotTimer hotspotTimer, Vector3 spawnPosition, int count)
+        {
+            DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots at {spawnPosition}.");
+            EPlayerSide side = BotSpawn.GetSideForWildSpawnType(wildSpawnType);
+            var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
+            BotDifficulty botDifficulty = BotSpawn.GetBotDifficulty(wildSpawnType);
+            var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
+
+            ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, maxCount);
+            if (DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, maxCount) != null)
+            {
+#if DEBUG
+                DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
+#endif
+                await BotSpawn.SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
+            }
+            else
+            {
+#if DEBUG
+                DonutComponent.Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {maxCount} grouped number of bots.");
+#endif
+                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, maxCount, 1);
+                await BotSpawn.SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, maxCount, hotspotTimer);
+            }
+        }
+
+        private static async Task SpawnSingleBot(HotspotTimer hotspotTimer, Vector3 spawnPosition)
+        {
+            DonutComponent.Logger.LogDebug($"Spawning a single bot at {spawnPosition}.");
+            EPlayerSide side = BotSpawn.GetSideForWildSpawnType(wildSpawnType);
+            var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
+            BotDifficulty botDifficulty = BotSpawn.GetBotDifficulty(wildSpawnType);
+            var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
+
+            await BotSpawn.SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);
+        }
+
+        private static WildSpawnType DetermineWildSpawnType(HotspotTimer hotspotTimer, string hotspotSpawnType)
+        {
+            WildSpawnType wildSpawnType;
+            if (DonutsPlugin.forceAllBotType.Value == "PMC")
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType("pmc");
+            }
+            else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType("assault");
+            }
+            else
+            {
+                wildSpawnType = BotSpawn.GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
+            }
+
+            if (wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
+            {
+                if (DonutsPlugin.pmcFaction.Value == "USEC")
+                {
+                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                }
+                else if (DonutsPlugin.pmcFaction.Value == "BEAR")
+                {
+                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+                }
+            }
+            return wildSpawnType;
+        }
+
+        private static int GetCurrentBotCount(string spawnType)
+        {
+            // Here we assume that the current counts are properly updated elsewhere
+            if (spawnType.Contains("pmc"))
+                return currentInitialPMCs;
+            else if (spawnType.Contains("assault"))
+                return currentInitialSCAVs;
+            return 0;
+        }
+
+        private static int GetBotLimit(string spawnType)
+        {
+            // Limits are defined elsewhere, here we use them directly
+            if (spawnType.Contains("pmc"))
+                return PMCBotLimit;
+            else if (spawnType.Contains("assault"))
+                return SCAVBotLimit;
+            return 0;
+        }
 
 
         #region botHelperMethods
