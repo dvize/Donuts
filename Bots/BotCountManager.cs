@@ -1,35 +1,81 @@
 public static class BotCountManager
 {
+    public static int PMCBotLimit { get; set; } = 10;
+    public static int SCAVBotLimit { get; set; } = 10;
     public static int CurrentInitialPMCs { get; private set; } = 0;
     public static int CurrentInitialSCAVs { get; private set; } = 0;
 
-    public static void IncrementPMC()
+    public static int HandleHardCap(string spawnType, int requestedCount)
     {
-        if (CurrentInitialPMCs < PMCBotLimit)
-            CurrentInitialPMCs++;
+        int currentBotsAlive = GetRegisteredPlayers(spawnType);
+        int botLimit = GetBotLimit(spawnType);
+        if (currentBotsAlive + requestedCount > botLimit)
+        {
+            requestedCount = botLimit - currentBotsAlive;
+            LogDebug($"{spawnType} hard cap exceeded. Current: {currentBotsAlive}, Limit: {botLimit}, Adjusted count: {requestedCount}");
+            return Math.Max(0, requestedCount);
+        }
+        return requestedCount;
     }
 
-    public static void IncrementSCAV()
+    public static int AllocateBots(string spawnType, int requestedCount)
     {
-        if (CurrentInitialSCAVs < SCAVBotLimit)
-            CurrentInitialSCAVs++;
+        int currentCount = GetCurrentBotCount(spawnType);
+        int maxLimit = GetBotLimit(spawnType);
+        if (currentCount + requestedCount > maxLimit)
+        {
+            int adjustedCount = maxLimit - currentCount;
+            SetCurrentBotCount(spawnType, currentCount + adjustedCount);
+            LogDebug($"{spawnType} preset bot cap exceeded. Current: {currentCount}, Limit: {maxLimit}, Adjusted count: {adjustedCount}");
+            return adjustedCount;
+        }
+        SetCurrentBotCount(spawnType, currentCount + requestedCount);
+        return requestedCount;
     }
 
-    public static void DecrementPMC()
+    private static int GetCurrentBotCount(string spawnType)
     {
-        if (CurrentInitialPMCs > 0)
-            CurrentInitialPMCs--;
+        if (spawnType.Contains("pmc"))
+            return CurrentInitialPMCs;
+        else if (spawnType.Contains("assault"))
+            return CurrentInitialSCAVs;
+        return 0;
     }
 
-    public static void DecrementSCAV()
+    private static void SetCurrentBotCount(string spawnType, int newCount)
     {
-        if (CurrentInitialSCAVs > 0)
-            CurrentInitialSCAVs--;
+        if (spawnType.Contains("pmc"))
+            CurrentInitialPMCs = newCount;
+        else if (spawnType.Contains("assault"))
+            CurrentInitialSCAVs = newCount;
     }
 
-    public static void ResetCounts()
+    private static int GetBotLimit(string spawnType)
     {
-        CurrentInitialPMCs = 0;
-        CurrentInitialSCAVs = 0;
+        return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
+    }
+
+    private static int GetRegisteredPlayers(string spawnType)
+    {
+        int count = 0;
+        foreach (Player bot in gameWorld.RegisteredPlayers)
+        {
+            if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
+                                      (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static bool IsPMC(WildSpawnType role)
+    {
+        return role == WildSpawnType.pmc || role == WildSpawnType.sptUsec || role == WildSpawnType.sptBear;
+    }
+
+    private static bool IsSCAV(WildSpawnType role)
+    {
+        return role == WildSpawnType.assault;
     }
 }

@@ -34,6 +34,15 @@ namespace Donuts
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
 
+            // Check for a valid spawn position
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            if (!spawnPosition.HasValue)
+            {
+                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                return;
+            }
+
+            // Check Spawn Hard Stop
             if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
                 (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
             {
@@ -44,100 +53,31 @@ namespace Donuts
                 }
             }
 
+            // Handle starting bots first
             int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
-                maxCount = CheckBotCaps(hotspotTimer, hotspotSpawnType, maxCount);
-                if (maxCount == 0) return;
+                maxCount = BotCountManager.AllocateBots(hotspotSpawnType, maxCount);
+                if (maxCount == 0)
+                {
+                    DonutComponent.Logger.LogDebug("Starting bot cap reached - no bots can be spawned");
+                    return;
+                }
             }
 
+            // Check Hard Cap
             if (DonutsPlugin.HardCapEnabled.Value)
             {
-                maxCount = HandleHardCap(hotspotSpawnType, maxCount);
-                if (maxCount == 0) return;
+                maxCount = BotCountManager.HandleHardCap(hotspotSpawnType, maxCount);
+                if (maxCount == 0)
+                {
+                    DonutComponent.Logger.LogDebug("Hard cap exceeded - no bots can be spawned");
+                    return;
+                }
             }
 
             bool isGroup = maxCount > 1;
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
-            if (!spawnPosition.HasValue)
-            {
-             DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                return;
-            }
-
             await SetupSpawn(hotspotTimer, spawnPosition.Value, maxCount, isGroup, wildSpawnType);
-        }
-
-        private static int HandleHardCap(string spawnType, int requestedCount)
-        {
-            int currentBotsAlive = GetRegisteredPlayers(spawnType);
-            int botLimit = GetBotLimit(spawnType);
-            if (currentBotsAlive + requestedCount > botLimit)
-            {
-                requestedCount = botLimit - currentBotsAlive;
-                DonutComponent.Logger.LogDebug($"{spawnType} hard cap exceeded. Current: {currentBotsAlive}, Limit: {botLimit}, Adjusted count: {requestedCount}");
-                return requestedCount;
-            }
-            return requestedCount;
-        }
-
-        private static int CheckBotCaps(HotspotTimer hotspotTimer, string spawnType, int requestedCount)
-        {
-            // "spawn once" bots only
-            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
-            {
-                if (PmcSpawnTypes.Contains(spawnType))
-                {
-                    return AdjustBotCounts(ref BotCountManager.CurrentInitialPMCs, PMCBotLimit, requestedCount, spawnType);
-                }
-                else if (spawnType == ScavSpawnType)
-                {
-                    return AdjustBotCounts(ref BotCountManager.CurrentInitialSCAVs, SCAVBotLimit, requestedCount, spawnType);
-                }
-            }
-            return requestedCount;
-        }
-
-        private static int AdjustBotCounts(ref int currentCount, int maxLimit, int requestedCount, string spawnType)
-        {
-            if (currentCount + requestedCount > maxLimit)
-            {
-                int adjustedCount = maxLimit - currentCount;
-                DonutComponent.Logger.LogDebug($"{spawnType} preset bot cap exceeded. Current: {currentCount}, Limit: {maxLimit}, Adjusted count: {adjustedCount}");
-                currentCount += adjustedCount;
-                return adjustedCount;
-            }
-            currentCount += requestedCount;
-            return requestedCount;
-        }
-
-        private static int GetRegisteredPlayers(string spawnType)
-        {
-            int count = 0;
-            foreach (Player bot in gameWorld.RegisteredPlayers)
-            {
-                if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
-                                          (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
-                {
-                    count++;
-                }
-            }
-            return count;
-        }
-
-        private static bool IsPMC(WildSpawnType role)
-        {
-            return role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-        }
-
-        private static bool IsSCAV(WildSpawnType role)
-        {
-            return role == WildSpawnType.assault;
-        }
-
-        private static bool IsSpawnLimitExceeded(string spawnType, int currentBots, int botLimit, int requestedCount)
-        {
-            return currentBots + requestedCount > botLimit;
         }
 
         private static bool IsRaidTimeRemaining(string hotspotSpawnType)
