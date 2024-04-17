@@ -45,8 +45,11 @@ namespace Donuts
             }
 
             int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
-            maxCount = CheckBotCaps(hotspotSpawnType, maxCount);
-            if (maxCount == 0) return;
+            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
+            {
+                maxCount = CheckBotCaps(hotspotTimer, hotspotSpawnType, maxCount);
+                if (maxCount == 0) return;
+            }
 
             if (DonutsPlugin.HardCapEnabled.Value)
             {
@@ -73,21 +76,38 @@ namespace Donuts
             {
                 requestedCount = botLimit - currentBotsAlive;
                 DonutComponent.Logger.LogDebug($"{spawnType} hard cap exceeded. Current: {currentBotsAlive}, Limit: {botLimit}, Adjusted count: {requestedCount}");
-                return Math.Max(0, requestedCount);
+                return requestedCount;
             }
             return requestedCount;
         }
 
-        private static int CheckBotCaps(string spawnType, int requestedCount)
+        private static int CheckBotCaps(HotspotTimer hotspotTimer, string spawnType, int requestedCount)
         {
-            int currentBots = GetRegisteredPlayers(spawnType);
-            int botLimit = GetBotLimit(spawnType);
-            if (currentBots + requestedCount > botLimit)
+            // "spawn once" bots only
+            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
-                requestedCount = botLimit - currentBots;
-                DonutComponent.Logger.LogDebug($"{spawnType} bot limit reached. Current: {currentBots}, Limit: {botLimit}, Adjusted count: {requestedCount}");
-                return Math.Max(0, requestedCount);
+                if (PmcSpawnTypes.Contains(spawnType))
+                {
+                    return AdjustBotCounts(ref BotCountManager.CurrentInitialPMCs, PMCBotLimit, requestedCount, spawnType);
+                }
+                else if (spawnType == ScavSpawnType)
+                {
+                    return AdjustBotCounts(ref BotCountManager.CurrentInitialSCAVs, SCAVBotLimit, requestedCount, spawnType);
+                }
             }
+            return requestedCount;
+        }
+
+        private static int AdjustBotCounts(ref int currentCount, int maxLimit, int requestedCount, string spawnType)
+        {
+            if (currentCount + requestedCount > maxLimit)
+            {
+                int adjustedCount = maxLimit - currentCount;
+                DonutComponent.Logger.LogDebug($"{spawnType} preset bot cap exceeded. Current: {currentCount}, Limit: {maxLimit}, Adjusted count: {adjustedCount}");
+                currentCount += adjustedCount;
+                return adjustedCount;
+            }
+            currentCount += requestedCount;
             return requestedCount;
         }
 
