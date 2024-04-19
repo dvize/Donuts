@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Aki.PrePatch;
@@ -71,6 +73,17 @@ namespace Donuts
                 Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
             }
 
+        }
+        public static void Enable()
+        {
+            if (Singleton<IBotGame>.Instantiated)
+            {
+                gameWorld = Singleton<GameWorld>.Instance;
+                gameWorld.GetOrAddComponent<DonutComponent>();
+
+                Logger.LogDebug("Donuts Enabled");
+
+            }
         }
 
         public void Awake()
@@ -191,7 +204,7 @@ namespace Donuts
         private bool CanSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             // Check if the timer trigger is greater than the threshold and conditions are met
-            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspot.MapName)
+            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspotTimer.Hotspot.MapName)
             {
                 if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DonutsPlugin.hotspotBoostPMC.Value) ||
                     (hotspotTimer.Hotspot.WildSpawnType == "scav" && DonutsPlugin.hotspotBoostSCAV.Value))
