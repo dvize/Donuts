@@ -47,10 +47,10 @@ namespace Donuts
         internal static IBotCreator botCreator;
 
         internal float PMCdespawnCooldown = 0f;
-        internal float PMCdespawnCooldownDuration = 10f;
+        internal float PMCdespawnCooldownDuration = DonutsPlugin.despawnInterval.Value;
 
         internal float SCAVdespawnCooldown = 0f;
-        internal float SCAVdespawnCooldownDuration = 10f;
+        internal float SCAVdespawnCooldownDuration = DonutsPlugin.despawnInterval.Value;
 
         internal static List<HotspotTimer> hotspotTimers;
         internal static Dictionary<string, MethodInfo> methodCache;
@@ -126,6 +126,9 @@ namespace Donuts
             };
         }
 
+        private readonly Stopwatch spawnCheckTimer = new Stopwatch();
+        private const int SpawnCheckInterval = 1000;
+
         private void Start()
         {
             // setup the rest of donuts for the selected folder
@@ -140,156 +143,89 @@ namespace Donuts
 
             Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
-        }
 
-        public static void Enable()
-        {
-            if (Singleton<IBotGame>.Instantiated)
-            {
-                gameWorld = Singleton<GameWorld>.Instance;
-                gameWorld.GetOrAddComponent<DonutComponent>();
-
-                Logger.LogDebug("Donuts Enabled");
-            }
+            spawnCheckTimer.Start();
         }
 
         private void Update()
         {
-            if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
+            if (!DonutsPlugin.PluginEnabled.Value || !fileLoaded)
+                return;
+
+            if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
             {
-                //every hotspottimer should be updated every frame
-                foreach (var hotspotTimer in hotspotTimers)
-                {
-                    hotspotTimer.UpdateTimer();
-                }
+                spawnCheckTimer.Restart();
+                StartCoroutine(StartSpawnProcess());
+            }
+        }
 
-                if (groupedHotspotTimers.Count > 0)
+        private IEnumerator StartSpawnProcess()
+        {
+            Gizmos.DisplayMarkerInformation();
+
+            if (DonutsPlugin.DespawnEnabledPMC.Value)
+            {
+                DespawnFurthestBot("pmc");
+            }
+
+            if (DonutsPlugin.DespawnEnabledSCAV.Value)
+            {
+                DespawnFurthestBot("scav");
+            }
+
+            foreach (var hotspotTimer in hotspotTimers)
+            {
+                if (hotspotTimer.ShouldSpawn())
                 {
-                    foreach (var groupHotspotTimers in groupedHotspotTimers.Values)
+                    Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
+
+                    if (CanSpawn(hotspotTimer, coordinate))
                     {
-                        //check if randomIndex is possible
-                        if (!(groupHotspotTimers.Count > 0))
-                        {
-                            continue;
-                        }
-
-                        // Get a random hotspotTimer from the group (grouped by groupNum}
-                        var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
-                        var hotspotTimer = groupHotspotTimers[randomIndex];
-
-                        if (hotspotTimer.ShouldSpawn())
-                        {
-                            var hotspot = hotspotTimer.Hotspot;
-                            var coordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
-                            bool hotspotBoostPMC = DonutsPlugin.hotspotBoostPMC.Value;
-                            bool hotspotBoostSCAV = DonutsPlugin.hotspotBoostSCAV.Value;
-
-                            if (BotSpawn.IsWithinBotActivationDistance(hotspot, coordinate) && maplocation == hotspot.MapName)
-                            {
-
-                                // hotspot check here?
-                                if (hotspotBoostPMC && hotspot.Name.ToLower().Contains("hotspot_pmc"))
-                                {
-#if DEBUG
-                                    Logger.LogDebug($"Hotspot boost enabled for PMCs - juicing up spawns");
-#endif
-                                    hotspot.SpawnChance = 100;
-                                }
-                                else if (hotspotBoostSCAV && hotspot.Name.ToLower().Contains("hotspot_scav"))
-                                {
-#if DEBUG
-                                    Logger.LogDebug($"Hotspot boost enabled for SCAVs - juicing up spawns");
-#endif
-                                    hotspot.SpawnChance = 100;
-                                }
-
-                                // Check if passes hotspot.spawnChance
-                                if (UnityEngine.Random.Range(0, 100) >= hotspot.SpawnChance)
-                                {
-#if DEBUG
-                                    Logger.LogDebug("SpawnChance of " + hotspot.SpawnChance + "% Failed for hotspot: " + hotspot.Name);
-#endif
-
-                                    //reset timer if spawn chance fails for all hotspots with same groupNum
-                                    foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
-                                    {
-                                        timer.ResetTimer();
-
-                                        if (timer.Hotspot.IgnoreTimerFirstSpawn)
-                                        {
-                                            timer.Hotspot.IgnoreTimerFirstSpawn = false;
-                                        }
-
-#if DEBUG
-                                        Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
-#endif
-                                    }
-                                    continue;
-                                }
-
-                                // if hotspot boost is enabled then skip the cooldown
-                                if (hotspotTimer.inCooldown && (!hotspotBoostPMC || !hotspotBoostSCAV))
-                                {
-#if DEBUG
-                                    Logger.LogDebug("Hotspot: " + hotspot.Name + " is in cooldown, skipping spawn");
-#endif
-                                    continue;
-                                }
-
-#if DEBUG
-                                Logger.LogWarning("SpawnChance of " + hotspot.SpawnChance + "% Passed for hotspot: " + hotspot.Name);
-#endif
-
-                                BotSpawn.SpawnBots(hotspotTimer, coordinate);
-                                hotspotTimer.timesSpawned++;
-
-                                // Make sure to check the times spawned in hotspotTimer and set cooldown bool if needed
-                                if (hotspotTimer.timesSpawned >= hotspot.MaxSpawnsBeforeCoolDown)
-                                {
-                                    hotspotTimer.inCooldown = true;
-#if DEBUG
-                                    Logger.LogDebug("Hotspot: " + hotspot.Name + " is now in cooldown");
-#endif
-                                }
-
-#if DEBUG
-                                Logger.LogDebug("Resetting Regular Spawn Timer (after successful spawn): " + hotspotTimer.GetTimer() + " for hotspot: " + hotspot.Name);
-#endif
-
-                                //reset timer if spawn chance passes for all hotspots with same groupNum
-                                foreach (var timer in groupedHotspotTimers[hotspot.GroupNum])
-                                {
-                                    timer.ResetTimer();
-
-                                    if (timer.Hotspot.IgnoreTimerFirstSpawn)
-                                    {
-                                        timer.Hotspot.IgnoreTimerFirstSpawn = false;
-                                    }
-
-#if DEBUG
-                                    Logger.LogDebug($"Resetting all grouped timers for groupNum: {hotspot.GroupNum} for hotspot: {timer.Hotspot.Name} at time: {timer.GetTimer()}");
-#endif
-                                }
-                            }
-                        }
+                        TriggerSpawn(hotspotTimer, coordinate);
+                        yield return null;
                     }
-                }
-
-                Gizmos.DisplayMarkerInformation();
-
-                if (DonutsPlugin.DespawnEnabledPMC.Value)
-                {
-                    DespawnFurthestBot("pmc");
-                }
-
-                if (DonutsPlugin.DespawnEnabledSCAV.Value)
-                {
-                    DespawnFurthestBot("scav");
                 }
             }
         }
 
+        private bool CanSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
+        {
+            // Check if the timer trigger is greater than the threshold and conditions are met
+            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspot.MapName)
+            {
+                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DonutsPlugin.hotspotBoostPMC.Value) ||
+                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && DonutsPlugin.hotspotBoostSCAV.Value))
+                {
+                    hotspotTimer.Hotspot.SpawnChance = 100;  // Boosting spawn chance
+                }
 
+                return UnityEngine.Random.Range(0, 100) < hotspotTimer.Hotspot.SpawnChance;
+            }
+            return false;
+        }
+
+        private void TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
+        {
+            BotSpawn.SpawnBots(hotspotTimer, coordinate);
+            hotspotTimer.timesSpawned++;
+
+            if (hotspotTimer.timesSpawned >= hotspotTimer.Hotspot.MaxSpawnsBeforeCoolDown)
+            {
+                hotspotTimer.inCooldown = true;
+            }
+
+            ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
+        }
+
+        private void ResetGroupTimers(int groupNum)
+        {
+            foreach (var timer in groupedHotspotTimers[groupNum])
+            {
+                timer.ResetTimer();
+                if (timer.Hotspot.IgnoreTimerFirstSpawn)
+                    timer.Hotspot.IgnoreTimerFirstSpawn = false;
+            }
+        }
 
         private void DespawnFurthestBot(string bottype)
         {

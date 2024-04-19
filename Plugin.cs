@@ -36,6 +36,7 @@ namespace Donuts
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
+        public static ConfigEntry<float> despawnInterval;
 
         // Global Min Distance From Player
         public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -536,6 +537,14 @@ namespace Donuts
                 "Max Spawn Tries Per Bot",
                 20,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
+
+            despawnInterval = Config.Bind(
+                "5. Advanced Spawn Settings",
+                "Despawn Bot Interval",
+                10f,
+                new ConfigDescription("This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
 
