@@ -7,9 +7,6 @@ namespace Donuts
 {
     public static class BotCountManager
     {
-        public static int CurrentInitialPMCs { get; private set; } = 0;
-        public static int CurrentInitialSCAVs { get; private set; } = 0;
-
         public static int HandleHardCap(string spawnType, int requestedCount)
         {
             int currentBotsAlive = GetRegisteredPlayers(spawnType);
@@ -41,18 +38,18 @@ namespace Donuts
         private static int GetCurrentBotCount(string spawnType)
         {
             if (spawnType.Contains("pmc"))
-                return CurrentInitialPMCs;
+                return currentInitialPMCs;
             else if (spawnType.Contains("assault"))
-                return CurrentInitialSCAVs;
+                return currentInitialSCAVs;
             return 0;
         }
 
         private static void SetCurrentBotCount(string spawnType, int newCount)
         {
             if (spawnType.Contains("pmc"))
-                CurrentInitialPMCs = newCount;
+                currentInitialPMCs = newCount;
             else if (spawnType.Contains("assault"))
-                CurrentInitialSCAVs = newCount;
+                currentInitialSCAVs = newCount;
         }
 
         private static int GetBotLimit(string spawnType)
