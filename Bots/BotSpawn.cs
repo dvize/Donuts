@@ -379,9 +379,25 @@ namespace Donuts
         {
             try
             {
-                float distanceSquared = (gameWorld.MainPlayer.Position - position).sqrMagnitude;
-                float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
-                return distanceSquared <= activationDistanceSquared;
+                foreach (var player in playerList)
+                {
+                    if (player == null || player.HealthController == null)
+                    {
+                        continue;
+                    }
+                    if (!player.HealthController.IsAlive)
+                    {
+                        continue;
+                    }
+                    float distanceSquared = (player.Position - position).sqrMagnitude;
+
+                    float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
+                    if (distanceSquared <= activationDistanceSquared)
+                    {
+                        //TODO - this may be true when it shouldn't, e.g. player 1 is in correct range, player 2 is standing next to spawn point
+                        return true;
+                    }
+                }
             }
             catch { }
 

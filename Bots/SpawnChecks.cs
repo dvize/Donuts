@@ -64,15 +64,25 @@ namespace Donuts
             //add try catch for when player is null at end of raid
             try
             {
-                Vector3 playerPosition = gameWorld.MainPlayer.MainParts[BodyPartType.head].Position;
-                Vector3 direction = (playerPosition - spawnPosition).normalized;
-                float distance = Vector3.Distance(spawnPosition, playerPosition);
-
-                RaycastHit hit;
-                if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
+                foreach (var player in playerList)
                 {
-                    // No objects found between spawn point and player
-                    return true;
+                    if (player == null || player.HealthController == null)
+                    {
+                        continue;
+                    }
+                    if (!player.HealthController.IsAlive)
+                    {
+                        continue;
+                    }
+                    Vector3 playerPosition = player.MainParts[BodyPartType.head].Position;
+                    Vector3 direction = (playerPosition - spawnPosition).normalized;
+                    float distance = Vector3.Distance(spawnPosition, playerPosition);
+                    RaycastHit hit;
+                    if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
+                    {
+                        // No objects found between spawn point and player
+                        return true;
+                    }
                 }
             }
             catch { }
@@ -183,7 +193,25 @@ namespace Donuts
         internal static bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
         {
             float minDistanceFromPlayer = GetMinDistanceFromPlayer(hotspot);
-            return (gameWorld.MainPlayer.Position - position).sqrMagnitude < minDistanceFromPlayer * minDistanceFromPlayer;
+            foreach (var player in playerList)
+            {
+                if (player == null || player.HealthController == null)
+                {
+                    continue;
+                }
+
+                if (!player.HealthController.IsAlive)
+                {
+                    continue;
+                }
+
+                if ((player.Position - position).sqrMagnitude < (minDistanceFromPlayer * minDistanceFromPlayer))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal static bool IsPositionTooCloseToOtherBots(Vector3 position, Entry hotspot)

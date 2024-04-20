@@ -47,6 +47,7 @@ namespace Donuts
         internal static GameWorld gameWorld;
         internal static BotSpawner botSpawnerClass;
         internal static IBotCreator botCreator;
+        internal static List<Player> playerList = new List<Player>();
 
         internal float PMCdespawnCooldown = 0f;
         internal float PMCdespawnCooldownDuration = DonutsPlugin.despawnInterval.Value;
@@ -113,11 +114,27 @@ namespace Donuts
                 methodCache[methodInfo.Name] = methodInfo;
             }
 
+            if (gameWorld.RegisteredPlayers.Count > 0)
+            {
+                foreach (var player in gameWorld.AllPlayersEverExisted)
+                {
+                    // Only add humans
+                    if (!player.IsAI)
+                    {
+                        playerList.Add(player);
+                    }
+                }
+            }
+
             // Remove despawned bots from bot EnemyInfos list.
             botSpawnerClass.OnBotRemoved += removedBot =>
             {
                 // Clear the enemy list, and memory about the main player
-                removedBot.Memory.DeleteInfoAboutEnemy(gameWorld.MainPlayer);
+                foreach (var player in playerList)
+                {
+                    // Remove each player from enemy
+                    removedBot.Memory.DeleteInfoAboutEnemy(player);
+                }
                 removedBot.EnemiesController.EnemyInfos.Clear();
 
                 // Loop through the rest of the bots on the map, andd clear this bot from its memory/group info
@@ -246,6 +263,7 @@ namespace Donuts
             float maxDistance = -1f;
             Player furthestBot = null;
             var tempBotCount = 0;
+            Dictionary<Player, float> botClosestDistanceToAnyPlayerDict = new Dictionary<Player, float>();
 
             if (bottype == "pmc")
             {
@@ -261,12 +279,12 @@ namespace Donuts
                     {
                         continue;
                     }
+
                     // Ignore bots on the invalid despawn list, and the player
                     if (bot.IsYourPlayer || !validDespawnListPMC.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
                     {
                         continue;
                     }
-
 
                     // Don't include bots that have spawned within the last 10 seconds
                     if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
@@ -274,18 +292,22 @@ namespace Donuts
                         continue;
                     }
 
+                    // Hydrate dictionary of bot with its shortest distance to a player
+                    GetShortestDistanceBetweenBotAndPlayers(bot, botClosestDistanceToAnyPlayerDict);
+
+                    // Get the bot that is furthest away from any player
+                    var furthestAwayBotKvp = botClosestDistanceToAnyPlayerDict.FirstOrDefault(botDistKvp => botDistKvp.Value == botClosestDistanceToAnyPlayerDict.Values.Max());
+
+                    // Flag furthest away bot if it's beyond the desired range for later removal
                     float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
                     if (distance > maxDistance)
                     {
-                        maxDistance = distance;
-                        furthestBot = bot;
+                        maxDistance = furthestAwayBotKvp.Value;
+                        furthestBot = furthestAwayBotKvp.Key;
                     }
-
-                    //add bots that match criteria but distance doesn't matter
-                    tempBotCount++;
                 }
 
-
+                tempBotCount = botClosestDistanceToAnyPlayerDict.Count;
             }
             else if (bottype == "scav")
             {
@@ -313,16 +335,21 @@ namespace Donuts
                         continue;
                     }
 
-                    float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
-                    if (distance > maxDistance)
-                    {
-                        maxDistance = distance;
-                        furthestBot = bot;
-                    }
+                    // Hydrate dict with bot + shortest distance to any player
+                    GetShortestDistanceBetweenBotAndPlayers(bot, botClosestDistanceToAnyPlayerDict);
 
-                    //add bots that match criteria but distance doesn't matter
-                    tempBotCount++;
+                    // Get the bot that is furthest away from any player
+                    var furthestAwayBotKvp = botClosestDistanceToAnyPlayerDict.FirstOrDefault(botDistKvp => botDistKvp.Value == botClosestDistanceToAnyPlayerDict.Values.Max());
+
+                    // Flag furthest away bot if its beyond the desired range for later removal
+                    if (furthestAwayBotKvp.Value > maxDistance)
+                    {
+                        // Found a bot further than allowed distance, flag them
+                        maxDistance = furthestAwayBotKvp.Value;
+                        furthestBot = furthestAwayBotKvp.Key;
+                    }
                 }
+                tempBotCount = botClosestDistanceToAnyPlayerDict.Count;
             }
 
             if (furthestBot != null)
@@ -364,18 +391,52 @@ namespace Donuts
                     SCAVdespawnCooldown = Time.time;
                 }
             }
-
         }
 
+        /// <summary>
+        /// Hydrate passed in dictionary with a bot + their shortest distance to a living player
+        /// </summary>
+        /// <param name="bot">AI bot to add to dictionary</param>
+        /// <param name="botClosestDistanceToAnyPlayerDict">Dictionary of bots and the shortest distance to a living player</param>
+        private void GetShortestDistanceBetweenBotAndPlayers(Player bot, Dictionary<Player, float> botClosestDistanceToAnyPlayerDict)
+        {
+            // Check each player against each bot
+            foreach (var player in playerList)
+            {
+                // Skip errored players
+                if (player == null || player.HealthController == null)
+                {
+                    continue;
+                }
 
+                // Skip dead players
+                if (!player.HealthController.IsAlive)
+                {
+                    continue;
+                }
 
+                // Get distance from player to bot
+                float currentBotDistance = (bot.Position - player.Position).sqrMagnitude;
+                if (botClosestDistanceToAnyPlayerDict.ContainsKey(bot))
+                {
+                    if (botClosestDistanceToAnyPlayerDict[bot] > currentBotDistance)
+                    {
+                        // Bot is closer to a player than current closest distance, update
+                        botClosestDistanceToAnyPlayerDict[bot] = currentBotDistance;
+                    }
+                }
+                else
+                {
+                    // First time processing bot, store distance from player to bot
+                    botClosestDistanceToAnyPlayerDict[bot] = currentBotDistance;
+                }
+            }
+        }
 
         private void OnGUI()
         {
             gizmos.ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
         }
-
     }
-
 }
 
