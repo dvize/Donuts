@@ -18,7 +18,7 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.4")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.5")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     public class DonutsPlugin : BaseUnityPlugin
@@ -39,6 +39,7 @@ namespace Donuts
         public static ConfigEntry<int> hardStopTimeSCAV;
         public static ConfigEntry<string> forceAllBotType;
         public static ConfigEntry<float> despawnInterval;
+        public static ConfigEntry<int> pmcFactionRatio;
 
         // Global Min Distance From Player
         public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -535,12 +536,19 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             // advanced settings
-
             battleStateCoolDown = Config.Bind(
                 "5. Advanced Spawn Settings",
                 "Battlestate CoolDown",
                 20f,
                 new ConfigDescription("It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
+
+            pmcFactionRatio = Config.Bind(
+                "5. Advanced Spawn Settings",
+                "PMC Faction Ratio",
+                50,
+                new ConfigDescription("USEC/Bear Default Ratio. Default is 50%. Lower value = lower USEC chance, so: 20 would be 20% USEC, 80% Bear, etc.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 6 }));
 
