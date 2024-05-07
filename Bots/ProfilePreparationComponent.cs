@@ -317,7 +317,7 @@ namespace Donuts
             isReplenishing = false;
         }
 
-        private bool NeedReplenishment(PrepBotInfo botInfo)
+        private static bool NeedReplenishment(PrepBotInfo botInfo)
         {
             // Assuming that botInfo.Bots is null or its count is zero when it needs replenishment
             return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
@@ -340,7 +340,7 @@ namespace Donuts
         public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
             // Find the bot info that matches the spawn type and difficulty
-            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots.Profiles.Count == targetCount);
+            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && NeedReplenishment(b) && b.Bots.Profiles.Count == targetCount);
 
             if (botInfo != null)
             {

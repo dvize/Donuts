@@ -84,7 +84,7 @@ namespace Donuts
                     }
                 }
 
-                return validPosition;
+                return true;
             }
 
             DonutComponent.Logger.LogDebug("Spawn position or hotspot is null.");
