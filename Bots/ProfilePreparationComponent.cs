@@ -340,7 +340,7 @@ namespace Donuts
         public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
             // Find the bot info that matches the spawn type and difficulty
-            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && NeedReplenishment(b) && b.Bots.Profiles.Count == targetCount);
+            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots.Profiles.Count == targetCount);
 
             if (botInfo != null)
             {
