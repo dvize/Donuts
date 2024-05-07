@@ -268,14 +268,16 @@ namespace Donuts
                 StartCoroutine(ReplenishAllBots());
             }
         }
-
         private IEnumerator ReplenishAllBots()
         {
             isReplenishing = true;
             int singleBotsCount = 0;
             int groupBotsCount = 0;
 
-            foreach (var botInfo in BotInfos)
+            // Create a copy of BotInfos for safe iteration
+            var safeBotInfos = new List<PrepBotInfo>(BotInfos);
+
+            foreach (var botInfo in safeBotInfos)
             {
                 if (NeedReplenishment(botInfo))
                 {
