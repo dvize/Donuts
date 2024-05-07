@@ -139,12 +139,7 @@ namespace Donuts
                     timeSinceLastReplenish = 0f;
                 }
             }
-            else
-            {
-#if DEBUG
-                Logger.LogWarning("Memory or GoalEnemy or Owner is null, check bot or player state.");
-#endif
-            }
+           
         }
 
         private void Mainplayer_BeingHitAction(DamageInfo arg1, EBodyPart arg2, float arg3)
@@ -193,7 +188,7 @@ namespace Donuts
             foreach (var difficulty in difficultiesForSetting)
             {
                 // Create three single bots
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     var botInfoUsec = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, false, 1);
                     await CreateBot(botInfoUsec, botInfoUsec.IsGroup, botInfoUsec.GroupSize);
@@ -205,7 +200,7 @@ namespace Donuts
                 }
 
                 // Create group bots of sizes 2, 3, and 4
-                foreach (int groupSize in new int[] { 2, 3, 4 })
+                foreach (int groupSize in new int[] { 2, 2, 3, 3, 4 })
                 {
                     var botInfoUsecGroup = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, true, groupSize);
                     await CreateBot(botInfoUsecGroup, botInfoUsecGroup.IsGroup, botInfoUsecGroup.GroupSize);
@@ -248,7 +243,7 @@ namespace Donuts
             foreach (var difficulty in difficultiesForSetting)
             {
                 // Create three single bots
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
                     await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
@@ -256,7 +251,7 @@ namespace Donuts
                 }
 
                 // Create group bots of sizes 2, 3, and 4
-                foreach (int groupSize in new int[] { 2, 3, 4 })
+                foreach (int groupSize in new int[] { 2, 2, 3, 3, 4 })
                 {
                     var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, true, groupSize);
                     await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
