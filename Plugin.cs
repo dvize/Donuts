@@ -67,6 +67,7 @@ namespace Donuts
 
         public static ConfigEntry<bool> DebugGizmos;
         public static ConfigEntry<bool> gizmoRealSize;
+        public static ConfigEntry<float> battleStateCoolDown;
         public static ConfigEntry<int> maxSpawnTriesPerBot;
         public static ConfigEntry<bool> ShowRandomFolderChoice;
 
@@ -533,6 +534,15 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             // advanced settings
+
+            battleStateCoolDown = Config.Bind(
+                "5. Advanced Spawn Settings",
+                "Battlestate CoolDown",
+                20f,
+                new ConfigDescription("It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 6 }));
+
             maxSpawnTriesPerBot = Config.Bind(
                 "5. Advanced Spawn Settings",
                 "Max Spawn Tries Per Bot",

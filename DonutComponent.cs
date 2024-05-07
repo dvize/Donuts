@@ -197,7 +197,10 @@ namespace Donuts
         private IEnumerator BattleStateCooldown()
         {
             isInBattle = true;
-            yield return new WaitForSeconds(15); // Wait for 15 seconds if no more hits
+#if DEBUG
+            Logger.LogWarning("Starting/Restarting BattleState Cooldowns for actual spawns since the player was hit. Delay(s):" + DonutsPlugin.battleStateCoolDown.Value);
+#endif
+            yield return new WaitForSeconds(DonutsPlugin.battleStateCoolDown.Value); // Wait for 15 seconds if no more hits
             isInBattle = false;
         }
 
