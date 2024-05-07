@@ -36,7 +36,7 @@ namespace Donuts
         public static List<PrepBotInfo> BotInfos { get; set; }
 
         private float replenishInterval = 30.0f;
-        private float timeSinceLastReplenish = 0f;
+        internal float timeSinceLastReplenish = 0f;
 
         private bool isReplenishing = false;
 

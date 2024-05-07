@@ -397,6 +397,8 @@ namespace Donuts
             var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
             if (botInfo != null)
             {
+                //reset the bot spawn timer since we don't want it immediately refreshing bots after a spawn
+                DonutsBotPrep.timeSinceLastReplenish = 0f;
                 botInfo.Bots = null; // Clear the Bots property
 #if DEBUG
                 DonutComponent.Logger.LogDebug($"Cleared cached bot info for bot type: {botInfo.SpawnType}");
