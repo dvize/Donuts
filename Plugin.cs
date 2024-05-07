@@ -273,9 +273,9 @@ namespace Donuts
 
             ShowRandomFolderChoice = Config.Bind(
                 "1. Main Settings",
-                "Show Random Scenario Selection",
+                "Show Random Spawn Preset Selection",
                 true,
-                new ConfigDescription("Shows the Random Scenario Selected on Raid Start in bottom right",
+                new ConfigDescription("Shows the Random Spawn Preset Selected on Raid Start in bottom right",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
@@ -778,7 +778,7 @@ namespace Donuts
 
             scenarioSelection = Config.Bind(
                 "1. Main Settings",
-                "PMC Raid Preset Selection",
+                "PMC Raid Spawn Preset Selection",
                 "Live Like (Random)",
                 new ConfigDescription("Select a preset to use when spawning as PMC",
                 new AcceptableValueList<string>(scenarioValues),
@@ -786,7 +786,7 @@ namespace Donuts
 
             scavScenarioSelection = Config.Bind(
                 "1. Main Settings",
-                "SCAV Raid Preset Selection",
+                "SCAV Raid Spawn Preset Selection",
                 "scav-raids",
                 new ConfigDescription("Select a preset to use when spawning as SCAV",
                 new AcceptableValueList<string>(scenarioValues),
