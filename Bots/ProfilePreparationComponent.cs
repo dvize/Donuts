@@ -150,10 +150,22 @@ namespace Donuts
         private void Mainplayer_BeingHitAction(DamageInfo arg1, EBodyPart arg2, float arg3)
         {
             // Stop Replenishing bots when player in combat (when shot at)
+            switch (arg1.DamageType)
+            {
+                case EDamageType.Btr:
+                case EDamageType.Melee:
+                case EDamageType.Bullet:
+                case EDamageType.Explosion:
+                case EDamageType.GrenadeFragment:
+                case EDamageType.Sniper:
 #if DEBUG
-            Logger.LogWarning("You were hit and in active combat, resetting replenishment timer.");
+                    Logger.LogWarning("You were hit and in active combat, resetting replenishment timer.");
 #endif
-            timeSinceLastReplenish = 0f;
+                    timeSinceLastReplenish = 0f;
+                    break;
+                default:
+                    break;
+            }
         }
 
         private async Task InitializeAllBotInfos()
