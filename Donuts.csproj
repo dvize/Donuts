@@ -148,6 +148,7 @@
     <Compile Include="Bots\BotSpawn.cs" />
     <Compile Include="Models\CreateBotCallbackWrapper.cs" />
     <Compile Include="Models\GetGroupWrapper.cs" />
+    <Compile Include="Models\PrepBotInfo.cs" />
     <Compile Include="Patches\AddEnemyPatch.cs" />
     <Compile Include="Patches\BotGroupAddEnemyPatch.cs" />
     <Compile Include="Patches\BotMemoryAddEnemyPatch.cs" />

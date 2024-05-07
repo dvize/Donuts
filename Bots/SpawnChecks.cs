@@ -51,19 +51,43 @@ namespace Donuts
         {
             if (spawnPosition != null && hotspot != null)
             {
-                bool validPosition = !IsSpawnPositionInsideWall(spawnPosition) &&
-                                    !IsSpawnPositionInPlayerLineOfSight(spawnPosition) &&
-                                    !IsSpawnInAir(spawnPosition) &&
-                                    !IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot);
+                if (IsSpawnPositionInsideWall(spawnPosition))
+                {
+                    DonutComponent.Logger.LogDebug("Spawn position is inside a wall.");
+                    return false;
+                }
 
-                // Only check proximity to other bots if the corresponding setting is enabled
+                if (IsSpawnPositionInPlayerLineOfSight(spawnPosition))
+                {
+                    DonutComponent.Logger.LogDebug("Spawn position is in player line of sight.");
+                    return false;
+                }
+
+                if (IsSpawnInAir(spawnPosition))
+                {
+                    DonutComponent.Logger.LogDebug("Spawn position is in air.");
+                    return false;
+                }
+
+                if (IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot))
+                {
+                    DonutComponent.Logger.LogDebug("Spawn position is too close to a player.");
+                    return false;
+                }
+
                 if (DonutsPlugin.globalMinSpawnDistanceFromOtherBotsBool.Value)
                 {
-                    validPosition &= !IsPositionTooCloseToOtherBots(spawnPosition, hotspot);
+                    if (IsPositionTooCloseToOtherBots(spawnPosition, hotspot))
+                    {
+                        DonutComponent.Logger.LogDebug("Spawn position is too close to other bots.");
+                        return false;
+                    }
                 }
 
                 return validPosition;
             }
+
+            DonutComponent.Logger.LogDebug("Spawn position or hotspot is null.");
             return false;
         }
 

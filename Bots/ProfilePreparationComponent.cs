@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
+using dvize.Donuts;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
@@ -23,58 +25,55 @@ namespace Donuts
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
 
-        private static Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>> botLists;
-
         //use dictionary of profile.id and wildspawntype
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        private float replenishInterval;
-        private float timeSinceLastReplenish;
-        private int botsReplenishedCount;
-        private int maxBotsToReplenish;
-        private int maxGroupBotsToReplenish;
-        private int scavMaxBotsToReplenish = 1;
-        private int scavMaxGroupBotsToReplenish = 1;
+        public static List<PrepBotInfo> BotInfos { get; set; } = new List<PrepBotInfo>();
 
-        private List<WildSpawnType> wildSpawnList = new List<WildSpawnType>
-            {
-                WildSpawnType.arenaFighterEvent,
-                WildSpawnType.assaultGroup,
-                WildSpawnType.bossBoar,
-                WildSpawnType.bossBoarSniper,
-                WildSpawnType.bossBully,
-                WildSpawnType.bossGluhar,
-                WildSpawnType.bossKilla,
-                WildSpawnType.bossKojaniy,
-                WildSpawnType.bossSanitar,
-                WildSpawnType.bossTagilla,
-                WildSpawnType.bossZryachiy,
-                WildSpawnType.crazyAssaultEvent,
-                WildSpawnType.cursedAssault,
-                WildSpawnType.exUsec,
-                WildSpawnType.followerBoar,
-                WildSpawnType.followerBully,
-                WildSpawnType.followerGluharAssault,
-                WildSpawnType.followerGluharScout,
-                WildSpawnType.followerGluharSecurity,
-                WildSpawnType.followerGluharSnipe,
-                WildSpawnType.followerKojaniy,
-                WildSpawnType.followerSanitar,
-                WildSpawnType.followerTagilla,
-                WildSpawnType.followerZryachiy,
-                WildSpawnType.marksman,
-                WildSpawnType.pmcBot,
-                WildSpawnType.sectantPriest,
-                WildSpawnType.sectantWarrior,
-                WildSpawnType.followerBigPipe,
-                WildSpawnType.followerBirdEye,
-                WildSpawnType.bossKnight
-            };
+        private float replenishInterval = 20.0f;
+        private float timeSinceLastReplenish = 0f;
 
+        private Queue<PrepBotInfo> replenishQueue = new Queue<PrepBotInfo>();
+        private bool isReplenishing = false;
 
+        private Dictionary<WildSpawnType, EPlayerSide> spawnTypeToSideMapping = new Dictionary<WildSpawnType, EPlayerSide>
+        {
+            { WildSpawnType.arenaFighterEvent, EPlayerSide.Savage },
+            { WildSpawnType.assault, EPlayerSide.Savage },
+            { WildSpawnType.assaultGroup, EPlayerSide.Savage },
+            { WildSpawnType.bossBoar, EPlayerSide.Savage },
+            { WildSpawnType.bossBoarSniper, EPlayerSide.Savage },
+            { WildSpawnType.bossBully, EPlayerSide.Savage },
+            { WildSpawnType.bossGluhar, EPlayerSide.Savage },
+            { WildSpawnType.bossKilla, EPlayerSide.Savage },
+            { WildSpawnType.bossKojaniy, EPlayerSide.Savage },
+            { WildSpawnType.bossSanitar, EPlayerSide.Savage },
+            { WildSpawnType.bossTagilla, EPlayerSide.Savage },
+            { WildSpawnType.bossZryachiy, EPlayerSide.Savage },
+            { WildSpawnType.crazyAssaultEvent, EPlayerSide.Savage },
+            { WildSpawnType.cursedAssault, EPlayerSide.Savage },
+            { WildSpawnType.exUsec, EPlayerSide.Savage },
+            { WildSpawnType.followerBoar, EPlayerSide.Savage },
+            { WildSpawnType.followerBully, EPlayerSide.Savage },
+            { WildSpawnType.followerGluharAssault, EPlayerSide.Savage },
+            { WildSpawnType.followerGluharScout, EPlayerSide.Savage },
+            { WildSpawnType.followerGluharSecurity, EPlayerSide.Savage },
+            { WildSpawnType.followerGluharSnipe, EPlayerSide.Savage },
+            { WildSpawnType.followerKojaniy, EPlayerSide.Savage },
+            { WildSpawnType.followerSanitar, EPlayerSide.Savage },
+            { WildSpawnType.followerTagilla, EPlayerSide.Savage },
+            { WildSpawnType.followerZryachiy, EPlayerSide.Savage },
+            { WildSpawnType.marksman, EPlayerSide.Savage },
+            { WildSpawnType.pmcBot, EPlayerSide.Savage },
+            { WildSpawnType.sectantPriest, EPlayerSide.Savage },
+            { WildSpawnType.sectantWarrior, EPlayerSide.Savage },
+            { WildSpawnType.followerBigPipe, EPlayerSide.Savage },
+            { WildSpawnType.followerBirdEye, EPlayerSide.Savage },
+            { WildSpawnType.bossKnight, EPlayerSide.Savage },
+        };
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -98,408 +97,266 @@ namespace Donuts
 
         public async void Awake()
         {
-            //init the main vars
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
-            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            replenishInterval = 60.0f;
-            timeSinceLastReplenish = 0f;
-            botsReplenishedCount = 0;
-            maxBotsToReplenish = 2;
-            maxGroupBotsToReplenish = 1;
-            scavMaxBotsToReplenish = 1;
-            scavMaxGroupBotsToReplenish = 1;
 
-            botLists = new Dictionary<WildSpawnType, Dictionary<BotDifficulty, List<BotCacheClass>>>();
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
 
-            InitializeBotLists();
-        }
-
-        private void InitializeBotLists()
-        {
-
-            botLists.Add(WildSpawnType.assault, new Dictionary<BotDifficulty, List<BotCacheClass>>());
-            botLists.Add(sptUsec, new Dictionary<BotDifficulty, List<BotCacheClass>>());
-            botLists.Add(sptBear, new Dictionary<BotDifficulty, List<BotCacheClass>>());
-
-            foreach (WildSpawnType botType in wildSpawnList)
-            {
-                botLists.Add(botType, new Dictionary<BotDifficulty, List<BotCacheClass>>());
-            }
-
-            //create dictionary entries based on donuts difficulty settings
-            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
-            {
-                case "asonline":
-                    botLists[sptUsec].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    botLists[sptUsec].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    botLists[sptUsec].Add(BotDifficulty.hard, new List<BotCacheClass>());
-
-                    botLists[sptBear].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    break;
-                case "easy":
-                    botLists[sptUsec].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    break;
-                case "normal":
-                    botLists[sptUsec].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    break;
-                case "hard":
-                    botLists[sptUsec].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    break;
-                case "impossible":
-                    botLists[sptUsec].Add(BotDifficulty.impossible, new List<BotCacheClass>());
-                    botLists[sptBear].Add(BotDifficulty.impossible, new List<BotCacheClass>());
-                    break;
-                default:
-#if DEBUG
-                    Logger.LogWarning("Could not find a valid difficulty for PMC bots. Please check method.");
-#endif
-                    break;
-            }
-
-            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
-            {
-                case "asonline":
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    break;
-                case "easy":
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    break;
-                case "normal":
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    break;
-                case "hard":
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    break;
-                case "impossible":
-                    botLists[WildSpawnType.assault].Add(BotDifficulty.impossible, new List<BotCacheClass>());
-                    break;
-                default:
-#if DEBUG
-                    Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
-#endif
-                    break;
-            }
-
-            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
-            {
-                case "asonline":
-                    foreach (WildSpawnType botType in wildSpawnList)
-                    {
-                        botLists[botType].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                        botLists[botType].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                        botLists[botType].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    }
-                    break;
-                case "easy":
-                    foreach (WildSpawnType botType in wildSpawnList)
-                    {
-                        botLists[botType].Add(BotDifficulty.easy, new List<BotCacheClass>());
-                    }
-                    break;
-                case "normal":
-                    foreach (WildSpawnType botType in wildSpawnList)
-                    {
-                        botLists[botType].Add(BotDifficulty.normal, new List<BotCacheClass>());
-                    }
-                    break;
-                case "hard":
-                    foreach (WildSpawnType botType in wildSpawnList)
-                    {
-                        botLists[botType].Add(BotDifficulty.hard, new List<BotCacheClass>());
-                    }
-                    break;
-                case "impossible":
-                    foreach (WildSpawnType botType in wildSpawnList)
-                    {
-                        botLists[botType].Add(BotDifficulty.impossible, new List<BotCacheClass>());
-                    }
-                    break;
-                default:
-#if DEBUG
-                    Logger.LogWarning("Could not find a valid difficulty for SCAV bots. Please check method.");
-#endif
-                    break;
-            }
-
-        }
-
-        private async void Start()
-        {
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
-                //remove bot from originalbotspawntypes dictionary
+                // Remove bot from OriginalBotSpawnTypes dictionary
                 OriginalBotSpawnTypes.Remove(bot.Profile.Id);
             };
 
-            // Initialize the bot pool at the beginning of the round
-            await InitializeBotPool();
+            await InitializeAllBotInfos();
         }
-
-        // maybe we can check the difficulty here? also preset? this happens pre-raid...
-        private async Task InitializeBotPool()
+        private async Task InitializeAllBotInfos()
         {
-#if DEBUG
-            Logger.LogWarning("Profile Generation is Creating for Donuts Difficulties");
-#endif
-
-            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;
-
-            // Create bots for PMC difficulties
-            foreach (var entry in botLists[sptBear])
-            {
-                if (pmcGroupChance == "None")
-                {
-                    CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
-                    continue;
-                }
-                else if (pmcGroupChance == "Max")
-                {
-                    maxGroupBotsToReplenish = 3;
-                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
-                    continue;
-                }
-                else
-                {
-                    CreateBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, maxBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
-                }
-            }
-
-            foreach (var entry in botLists[sptUsec])
-            {
-                if (pmcGroupChance == "None")
-                {
-                    CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
-                    continue;
-                }
-                else if (pmcGroupChance == "Max")
-                {
-                    maxGroupBotsToReplenish = 3;
-                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
-                    continue;
-                }
-                else
-                {
-                    CreateBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, maxBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 2), 2, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 3), 3, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 4), 4, maxGroupBotsToReplenish);
-                    CreateGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key, new ShallBeGroupParams(true, true, 5), 5, maxGroupBotsToReplenish);
-                }
-            }
-
-            // Create bots for SCAV difficulties
-            foreach (var entry in botLists[WildSpawnType.assault])
-            {
-                CreateBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, scavMaxBotsToReplenish);
-                CreateGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key, new ShallBeGroupParams(true, true, 2), 2, scavMaxGroupBotsToReplenish);
-            }
-
+            await Task.WhenAll(InitializeBotInfos(), InitializeScavBotInfos(), InitializeOtherBotInfos());
         }
-        private async void Update()
+        private async Task InitializeBotInfos()
+        {
+            string difficultySetting = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
+
+            // Define difficulties that might be configured for each setting
+            List<BotDifficulty> difficultiesForSetting;
+
+            switch (difficultySetting)
+            {
+                case "asonline":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    break;
+                case "easy":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
+                    break;
+                case "normal":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
+                    break;
+                case "hard":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
+                    break;
+                case "impossible":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
+                    break;
+                default:
+                    Logger.LogError("Unsupported difficulty setting: " + difficultySetting);
+                    return;
+            }
+
+            // Apply these difficulties to sptUsec and sptBear with both single and group bots
+            foreach (var difficulty in difficultiesForSetting)
+            {
+                // Create three single bots
+                for (int i = 0; i < 3; i++)
+                {
+                    var botInfoUsec = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, false, 1);
+                    await CreateBot(botInfoUsec, botInfoUsec.IsGroup, botInfoUsec.GroupSize);
+                    BotInfos.Add(botInfoUsec);
+
+                    var botInfoBear = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, false, 1);
+                    await CreateBot(botInfoBear, botInfoBear.IsGroup, botInfoBear.GroupSize);
+                    BotInfos.Add(botInfoBear);
+                }
+
+                // Create group bots of sizes 2, 3, and 4
+                foreach (int groupSize in new int[] { 2, 3, 4 })
+                {
+                    var botInfoUsecGroup = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, true, groupSize);
+                    await CreateBot(botInfoUsecGroup, botInfoUsecGroup.IsGroup, botInfoUsecGroup.GroupSize);
+                    BotInfos.Add(botInfoUsecGroup);
+
+                    var botInfoBearGroup = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, true, groupSize);
+                    await CreateBot(botInfoBearGroup, botInfoBearGroup.IsGroup, botInfoBearGroup.GroupSize);
+                    BotInfos.Add(botInfoBearGroup);
+                }
+            }
+        }
+        private async Task InitializeScavBotInfos()
+        {
+            string difficultySetting = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
+            List<BotDifficulty> difficultiesForSetting;
+
+            switch (difficultySetting)
+            {
+                case "asonline":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    break;
+                case "easy":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
+                    break;
+                case "normal":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
+                    break;
+                case "hard":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
+                    break;
+                case "impossible":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
+                    break;
+                default:
+                    Logger.LogWarning("Unsupported difficulty setting for SCAV bots: " + difficultySetting);
+                    return;
+            }
+
+            // Adding SCAV bot info for the assault type with both single and group bots
+            foreach (var difficulty in difficultiesForSetting)
+            {
+                // Create three single bots
+                for (int i = 0; i < 3; i++)
+                {
+                    var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
+                    await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                    BotInfos.Add(botInfo);
+                }
+
+                // Create group bots of sizes 2, 3, and 4
+                foreach (int groupSize in new int[] { 2, 3, 4 })
+                {
+                    var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, true, groupSize);
+                    await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                    BotInfos.Add(botInfo);
+                }
+            }
+        }
+        private async Task InitializeOtherBotInfos()
+        {
+            string difficultySetting = DonutsPlugin.botDifficultiesOther.Value.ToLower();
+            List<BotDifficulty> difficultiesForSetting;
+
+            switch (difficultySetting)
+            {
+                case "asonline":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    break;
+                case "easy":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
+                    break;
+                case "normal":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
+                    break;
+                case "hard":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
+                    break;
+                case "impossible":
+                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
+                    break;
+                default:
+                    Logger.LogWarning("Unsupported difficulty setting for Other bots: " + difficultySetting);
+                    return;
+            }
+
+            // Apply these difficulties to each spawn type available
+            foreach (WildSpawnType botType in spawnTypeToSideMapping.Keys)
+            {
+                foreach (var difficulty in difficultiesForSetting)
+                {
+                    // Create one single bot
+                    var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
+                    await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                    BotInfos.Add(botInfo);
+
+                }
+            }
+        }
+
+        private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
-
-            if (timeSinceLastReplenish >= replenishInterval)
+            if (timeSinceLastReplenish >= replenishInterval && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
+                StartCoroutine(ReplenishAllBots());
+            }
+        }
 
+        private IEnumerator ReplenishAllBots()
+        {
+            isReplenishing = true;
+            int singleBotsCount = 0;
+            int groupBotsCount = 0;
+
+            foreach (var botInfo in BotInfos)
+            {
+                if (NeedReplenishment(botInfo))
+                {
+                    Task creationTask;
+
+                    if (botInfo.IsGroup && groupBotsCount < 1)
+                    {
 #if DEBUG
-                Logger.LogWarning("Donuts: ReplenishAllBots() running");
+                        Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-
-                // Replenish bots for PMC difficulties
-                foreach (var entry in botLists[sptBear])
-                {
-                    ReplenishBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key);
-                    ReplenishGroupBots(entry.Value, EPlayerSide.Bear, sptBear, entry.Key);
-                }
-
-                foreach (var entry in botLists[sptUsec])
-                {
-                    ReplenishBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key);
-                    ReplenishGroupBots(entry.Value, EPlayerSide.Usec, sptUsec, entry.Key);
-                }
-
-                // Replenish bots for SCAV difficulties
-                foreach (var entry in botLists[WildSpawnType.assault])
-                {
-                    ReplenishBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key);
-                    ReplenishGroupBots(entry.Value, EPlayerSide.Savage, WildSpawnType.assault, entry.Key);
-                }
-
-                botsReplenishedCount = 0;
-            }
-        }
-
-
-        private async Task ReplenishBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, int maxCount = 5)
-        {
-            int currentCount = botList.Count;
-            int botsToAdd = maxCount - currentCount;
-
-            if (botsToAdd > 0 && botsReplenishedCount < maxBotsToReplenish)
-            {
-                await CreateBots(botList, side, spawnType, difficulty, botsToAdd);
-                botsReplenishedCount += botsToAdd;
-            }
-        }
-
-        private async Task ReplenishGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
-        {
-            // Calculate the number of groups needed for 2, 3, and 4 bots
-            int groupsOf2Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 2);
-            int groupsOf3Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 3);
-            int groupsOf4Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 4);
-            int groupsOf5Needed = maxGroupBotsToReplenish - botList.Count(bot => bot.Profiles.Count == 5);
-
-            int groupsNeeded = groupsOf2Needed + groupsOf3Needed + groupsOf4Needed + groupsOf5Needed;
-
-            if (groupsNeeded > 0)
-            {
-                for (int i = 0; i < groupsOf2Needed && botsReplenishedCount < 5; i++)
-                {
-                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 2), 2, 1);
-                    botsReplenishedCount += 2;
-                }
-
-                for (int i = 0; i < groupsOf3Needed && botsReplenishedCount < 5; i++)
-                {
-                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 3), 3, 1);
-                    botsReplenishedCount += 3;
-                }
-
-                for (int i = 0; i < groupsOf4Needed && botsReplenishedCount < 5; i++)
-                {
-                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 4), 4, 1);
-                    botsReplenishedCount += 4;
-                }
-
-                for (int i = 0; i < groupsOf5Needed && botsReplenishedCount < 5; i++)
-                {
-                    await CreateGroupBots(botList, side, spawnType, difficulty, new ShallBeGroupParams(true, true, 5), 5, 1);
-                    botsReplenishedCount += 5;
-                }
-            }
-        }
-
-        //regular create bots used internally within the component for caching
-        private async Task CreateBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty, int count = 1)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                CreateBot(botList, side, spawnType, difficulty);
-            }
-        }
-
-        private async Task CreateBot(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty)
-        {
-            var botData = new IProfileData(side, spawnType, difficulty, 0f, null);
-            var bot = await BotCacheClass.Create(botData, botCreator, 1, botSpawnerClass);
-            botList.Add(bot);
-            OriginalBotSpawnTypes.Add(bot.Profiles[0].Id, spawnType);
-        }
-
-        internal static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
-        {
-            return botLists[spawnType][botDifficulty];
-        }
-
-        // create cached bots for groups.
-        internal static async Task CreateGroupBots(EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-    ShallBeGroupParams groupParams, int maxCount, int iterations)
-        {
-            List<BotCacheClass> botList = botLists[spawnType][difficulty];
-
-            var botSpawnParams = new BotSpawnParams
-            {
-                TriggerType = SpawnTriggerType.none,
-                ShallBeGroup = groupParams
-            };
-
-            for (int i = 0; i < iterations; i++)
-            {
-                var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
-                botList.Add(botGroup);
-
-                //add all profiles to orignalbotspawntypes list but change role to spawnType
-                foreach (var profile in botGroup.Profiles)
-                {
-                    profile.Info.Settings.Role = spawnType;
-
-                    //add to originalbotspawntypes dictionary. profile.id is the key, spawnType is the value
-                    OriginalBotSpawnTypes.Add(profile.Id, spawnType);
-                }
-            }
-        }
-
-        //overloaded method for if we know the botList for initial spawns
-        internal static async Task CreateGroupBots(List<BotCacheClass> botList, EPlayerSide side, WildSpawnType spawnType, BotDifficulty difficulty,
-    ShallBeGroupParams groupParams, int maxCount, int iterations)
-        {
-            var botSpawnParams = new BotSpawnParams
-            {
-                TriggerType = SpawnTriggerType.none,
-                ShallBeGroup = groupParams
-            };
-
-            for (int i = 0; i < iterations; i++)
-            {
-                var botData = new IProfileData(side, spawnType, difficulty, 0f, botSpawnParams);
-                var botGroup = await BotCacheClass.Create(botData, botCreator, maxCount, botSpawnerClass);
-
-                botList.Add(botGroup);
-
-                //add all profiles to orignalbotspawntypes list but change role to spawnType
-                foreach (var profile in botGroup.Profiles)
-                {
-                    profile.Info.Settings.Role = spawnType;
-                    //Logger.LogWarning("Assigning Profile Role: " + profile.Info.Settings.Role.ToString() + " to OriginalBotSpawnTypes");
-                    //add to originalbotspawntypes dictionary. profile.id is the key, spawnType is the value
-                    OriginalBotSpawnTypes.Add(profile.Id, spawnType);
-                }
-            }
-        }
-
-        //find a botcacheclass list that has X amount of bots in the groupParams
-        internal static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty botDifficulty, int targetCount)
-        {
-            var botList = botLists[spawnType][botDifficulty];
+                        creationTask = CreateBot(botInfo, true, botInfo.GroupSize);
+                        groupBotsCount++;
+                    }
+                    else if (!botInfo.IsGroup && singleBotsCount < 3)
+                    {
 #if DEBUG
-            Logger.LogWarning($"Trying to Find CachedBots that match: {targetCount} bot(s) for {spawnType} and difficulty: {botDifficulty}");
+                        Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
+                        creationTask = CreateBot(botInfo, false, 1);
+                        singleBotsCount++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
 
-            var matchingEntry = botList.FirstOrDefault(entry => entry.Profiles.Count == targetCount);
+                    yield return new WaitUntil(() => creationTask.IsCompleted);
 
-            if (matchingEntry != null)
-            {
-                foreach (var profile in matchingEntry.Profiles)
-                {
-#if DEBUG
-                    Logger.LogWarning($"Contained Profile[{matchingEntry.Profiles.IndexOf(profile)}]: {profile.Nickname} Difficulty: {profile.Info.Settings.BotDifficulty}, Role: {profile.Info.Settings.Role}");
-#endif
+                    if (creationTask.Status == TaskStatus.Faulted)
+                    {
+                        Logger.LogError("Bot creation failed: " + creationTask.Exception.ToString());
+                    }
+
+                    if (singleBotsCount >= 3 && groupBotsCount >= 1)
+                        break;
                 }
-                return matchingEntry;
             }
 
-#if DEBUG
-            Logger.LogWarning("FindCachedBots: Did not find a group cached bot that matches the target count");
-#endif
+            isReplenishing = false;
+        }
+
+        private bool NeedReplenishment(PrepBotInfo botInfo)
+        {
+            // Assuming that botInfo.Bots is null or its count is zero when it needs replenishment
+            return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
+        }
+
+        private async void ReplenishBots(PrepBotInfo botInfo)
+        {
+            // Logic to create bots using await directly here
+            await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+        }
+
+        internal static async Task CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
+        {
+            var botData = new IProfileData(botInfo.Side, botInfo.SpawnType, botInfo.Difficulty, 0f, null);
+            BotCacheClass bot = await BotCacheClass.Create(botData, botCreator, groupSize, botSpawnerClass);
+
+            botInfo.Bots = bot;
+        }
+
+        public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
+        {
+            // Find the bot info that matches the spawn type and difficulty
+            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots.Profiles.Count == targetCount);
+
+            if (botInfo != null)
+            {
+                return botInfo.Bots;
+            }
+
             return null;
+        }
+
+        public static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
+        {
+            // Filter the BotInfos list for entries matching the given spawn type and difficulty
+            return BotInfos
+                .Where(b => b.SpawnType == spawnType && b.Difficulty == botDifficulty)
+                .Select(b => b.Bots) // Assuming Bots is a BotCacheClass instance.
+                .ToList();
         }
 
         //return the original wildspawntype of a bot that was converted to a group

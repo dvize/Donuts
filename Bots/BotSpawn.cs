@@ -5,12 +5,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aki.PrePatch;
 using Comfort.Common;
+using dvize.Donuts;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
 using static Donuts.DonutComponent;
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
+using Random = System.Random;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -110,41 +112,39 @@ namespace Donuts
 
         private static async Task SpawnGroupBots(HotspotTimer hotspotTimer, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
+#if DEBUG
             DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots.");
+#endif
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
-            var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
-            ShallBeGroupParams groupParams = new ShallBeGroupParams(true, true, count);
-            if (DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, count) != null)
-            {
-#if DEBUG
-                DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
-#endif
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
-                if (!spawnPosition.HasValue)
-                {
-                    DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                    return;
-                }
-                await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, count, hotspotTimer);
-            }
-            else
+            // Attempt to find a cached group of bots matching the required count and type
+            var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, count);
+            if (cachedBotGroup == null)
             {
 #if DEBUG
                 DonutComponent.Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {count} grouped number of bots.");
 #endif
-                await DonutsBotPrep.CreateGroupBots(side, wildSpawnType, botDifficulty, groupParams, count, 1);
-
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
-                if (!spawnPosition.HasValue)
-                {
-                    DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                    return;
-                }
-                await SpawnBotForGroup(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, count, hotspotTimer);
+                var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, true, count);
+                await DonutsBotPrep.CreateBot(botInfo, true, count);
+                DonutsBotPrep.BotInfos.Add(botInfo);
+                cachedBotGroup = botInfo.Bots;
             }
+            else
+            {
+                DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
+            }
+
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            if (!spawnPosition.HasValue)
+            {
+                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                return;
+            }
+
+            // Assuming a method exists to handle the spawning process
+            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, count, hotspotTimer);
         }
 
         private static async Task SpawnSingleBot(HotspotTimer hotspotTimer, WildSpawnType wildSpawnType, Vector3 coordinate)
@@ -335,15 +335,11 @@ namespace Donuts
             }
         }
 
-        internal static async Task SpawnBotForGroup(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, HotspotTimer hotspotTimer)
+        internal static async Task SpawnBotForGroup(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+    BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, HotspotTimer hotspotTimer)
         {
-            if (botCacheList != null && botCacheList.Count > 0)
+            if (botCacheElement != null)
             {
-                //since last element was the group that was just added, remove it
-                var botCacheElement = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, maxCount);
-                botCacheList.Remove(botCacheElement);
-
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);
                 // may need to check if null?
@@ -355,6 +351,10 @@ namespace Donuts
 #endif
 
                 ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+            }
+            else
+            {
+                DonutComponent.Logger.LogError("Attempted to spawn a group bot but the botCacheElement was null.");
             }
         }
         internal static async Task CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource)
@@ -385,6 +385,22 @@ namespace Donuts
             // Call ActivateBot directly, using our own group callback and bot created callback
             // NOTE: Make sure to pass "false" for the third parameter to avoid "assaultGroup" conversion
             botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
+
+            // Reset or clear the Bots property after successful activation
+            ClearBotCacheAfterActivation(botData);
+        }
+
+        internal static void ClearBotCacheAfterActivation(BotCacheClass botData)
+        {
+            // Find the corresponding PrepBotInfo and clear its Bots property
+            var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
+            if (botInfo != null)
+            {
+                botInfo.Bots = null; // Clear the Bots property
+#if DEBUG
+                DonutComponent.Logger.LogDebug($"Cleared cached bot info for bot type: {botInfo.SpawnType}");
+#endif
+            }
         }
 
         internal static bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
