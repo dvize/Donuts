@@ -24,6 +24,7 @@ namespace Donuts
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
+        private static Player mainplayer;
 
         //use dictionary of profile.id and wildspawntype
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
@@ -33,7 +34,7 @@ namespace Donuts
 
         public static List<PrepBotInfo> BotInfos { get; set; } = new List<PrepBotInfo>();
 
-        private float replenishInterval = 20.0f;
+        private float replenishInterval = 30.0f;
         private float timeSinceLastReplenish = 0f;
 
         private Queue<PrepBotInfo> replenishQueue = new Queue<PrepBotInfo>();
@@ -99,7 +100,7 @@ namespace Donuts
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
-
+            mainplayer = gameWorld.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
@@ -108,8 +109,44 @@ namespace Donuts
                 OriginalBotSpawnTypes.Remove(bot.Profile.Id);
             };
 
+            botSpawnerClass.OnBotCreated += (BotOwner bot) =>
+            {
+                //attach to see if goalenemy is mainplayer, meaning they see us and probably in combat
+                bot.Memory.OnGoalEnemyChanged += Memory_OnGoalEnemyChanged;
+            };
+
+            //nullcheck mainplayer, might be too early
+            if (mainplayer != null)
+            {
+                Logger.LogDebug("Mainplayer is not null, attaching event handlers");
+                mainplayer.BeingHitAction += Mainplayer_BeingHitAction;
+            }
+
             await InitializeAllBotInfos();
         }
+
+        private void Memory_OnGoalEnemyChanged(BotOwner owner)
+        {
+            if (owner.Memory.GoalEnemy == (IPlayer)mainplayer.InteractablePlayer && owner.Memory.GoalEnemy.IsVisible)
+            {
+                // Stop Replenishing bots when player in combat (when shot at)
+
+#if DEBUG
+                    Logger.LogWarning("Bot set goal enemy as you, resetting replenishment timer.");
+#endif
+                    timeSinceLastReplenish = 0f;
+            }
+        }
+
+        private void Mainplayer_BeingHitAction(DamageInfo arg1, EBodyPart arg2, float arg3)
+        {
+            // Stop Replenishing bots when player in combat (when shot at)
+#if DEBUG
+            Logger.LogWarning("You were hit and in active combat, resetting replenishment timer.");
+#endif
+            timeSinceLastReplenish = 0f;
+        }
+
         private async Task InitializeAllBotInfos()
         {
             await Task.WhenAll(InitializeBotInfos(), InitializeScavBotInfos(), InitializeOtherBotInfos());
@@ -385,5 +422,6 @@ namespace Donuts
             }
         }
     }
+
 }
 
