@@ -306,7 +306,7 @@ namespace Donuts
             BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, HotspotTimer hotspotTimer)
         {
 #if DEBUG
-            DonutComponent.Logger.LogDebug("Bot Cache is not empty. Finding Cached Bot");
+            DonutComponent.Logger.LogDebug("Finding Cached Bot");
 #endif
             var botCacheElement = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, 1);
 

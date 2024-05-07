@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using dvize.Donuts;
@@ -102,6 +103,9 @@ namespace Donuts
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             mainplayer = gameWorld.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
+
+            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
@@ -375,13 +379,34 @@ namespace Donuts
         internal static async Task CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
         {
             var botData = new IProfileData(botInfo.Side, botInfo.SpawnType, botInfo.Difficulty, 0f, null);
+#if DEBUG
+            Logger.LogDebug($"Creating bot: Type={botInfo.SpawnType}, Difficulty={botInfo.Difficulty}, Side={botInfo.Side}, GroupSize={groupSize}");
+#endif
             BotCacheClass bot = await BotCacheClass.Create(botData, botCreator, groupSize, botSpawnerClass);
+            if (bot == null || bot.Profiles == null || !bot.Profiles.Any())
+            {
+#if DEBUG
+                Logger.LogError($"Failed to create or properly initialize bot for {botInfo.SpawnType}");
+#endif
+                return;
+            }
 
             botInfo.Bots = bot;
+#if DEBUG
+            Logger.LogDebug($"Bot created and assigned successfully: {bot.Profiles.Count} profiles loaded.");
+#endif
         }
 
         public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
+#if DEBUG
+            Logger.LogDebug("Dumping BotInfos contents:");
+            foreach (var info in BotInfos)
+            {
+                Logger.LogDebug($"Type: {info.SpawnType}, Difficulty: {info.Difficulty}, Profiles Count: {info.Bots?.Profiles.Count ?? 0}");
+            }
+#endif
+
             // Find the bot info that matches the spawn type and difficulty
             var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots.Profiles.Count == targetCount);
 
