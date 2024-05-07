@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -62,6 +63,9 @@ namespace Donuts
         internal static WildSpawnType sptUsec;
         internal static WildSpawnType sptBear;
 
+        internal Coroutine battleCooldownCoroutine = null;
+        internal static bool isInBattle;
+        internal static Player mainplayer;
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -164,6 +168,8 @@ namespace Donuts
             // setup the rest of donuts for the selected folder
             Initialization.InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
+            mainplayer = gameWorld.MainPlayer;
+            isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + maplocation);
             Initialization.LoadFightLocations();
             if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
@@ -175,6 +181,24 @@ namespace Donuts
             Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
 
             spawnCheckTimer.Start();
+
+            mainplayer.BeingHitAction += BeingHitBattleCoolDown;
+        }
+
+        private void BeingHitBattleCoolDown(DamageInfo info, EBodyPart part, float arg3)
+        {
+            if (battleCooldownCoroutine != null)
+            {
+                StopCoroutine(battleCooldownCoroutine); // Stop the existing coroutine if it's running
+            }
+            battleCooldownCoroutine = StartCoroutine(BattleStateCooldown());
+        }
+
+        private IEnumerator BattleStateCooldown()
+        {
+            isInBattle = true;
+            yield return new WaitForSeconds(15); // Wait for 15 seconds if no more hits
+            isInBattle = false;
         }
 
         private void Update()
@@ -212,19 +236,23 @@ namespace Donuts
             {
                 foreach (var groupHotspotTimers in groupedHotspotTimers.Values)
                 {
-                    //check if randomIndex is possible
                     if (!(groupHotspotTimers.Count > 0))
                     {
                         continue;
                     }
 
-                    // Get a random hotspotTimer from the group (grouped by groupNum}
                     var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
                     var hotspotTimer = groupHotspotTimers[randomIndex];
 
                     if (hotspotTimer.ShouldSpawn())
                     {
                         Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
+
+                        // Wait here if in battle
+                        while (isInBattle)
+                        {
+                            yield return new WaitForSeconds(1); // Check every second if still in battle
+                        }
 
                         if (CanSpawn(hotspotTimer, coordinate))
                         {
