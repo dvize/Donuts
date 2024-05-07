@@ -33,12 +33,11 @@ namespace Donuts
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        public static List<PrepBotInfo> BotInfos { get; set; } = new List<PrepBotInfo>();
+        public static List<PrepBotInfo> BotInfos { get; set; }
 
         private float replenishInterval = 30.0f;
         private float timeSinceLastReplenish = 0f;
 
-        private Queue<PrepBotInfo> replenishQueue = new Queue<PrepBotInfo>();
         private bool isReplenishing = false;
 
         private Dictionary<WildSpawnType, EPlayerSide> spawnTypeToSideMapping = new Dictionary<WildSpawnType, EPlayerSide>
@@ -103,6 +102,7 @@ namespace Donuts
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             mainplayer = gameWorld.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
+            BotInfos = new List<PrepBotInfo>();
 
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -449,6 +449,13 @@ namespace Donuts
 #endif
                 return null;
             }
+        }
+        void OnDestroy()
+        {
+            StopAllCoroutines();
+#if DEBUG
+            Logger.LogWarning("Stopping All Coroutines");
+#endif
         }
     }
 
