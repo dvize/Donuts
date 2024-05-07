@@ -274,180 +274,100 @@ namespace Donuts
                     timer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
         }
-
         private void DespawnFurthestBot(string bottype)
         {
-            var bots = gameWorld.RegisteredPlayers;
-            float maxDistance = -1f;
-            Player furthestBot = null;
-            var tempBotCount = 0;
-            Dictionary<Player, float> botClosestDistanceToAnyPlayerDict = new Dictionary<Player, float>();
+            if (bottype != "pmc" && bottype != "scav")
+                return;  // Return immediately if bot type is not recognized
 
-            if (bottype == "pmc")
+            float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
+            float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
+            if (Time.time - despawnCooldown < despawnCooldownDuration)
             {
-                if (Time.time - PMCdespawnCooldown < PMCdespawnCooldownDuration)
-                {
-                    return; // Exit the method without despawning
-                }
-
-                //don't know distances so have to loop through all bots
-                foreach (Player bot in bots)
-                {
-                    if (bot.AIData.BotOwner == null)
-                    {
-                        continue;
-                    }
-
-                    // Ignore bots on the invalid despawn list, and the player
-                    if (bot.IsYourPlayer || !validDespawnListPMC.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
-                    {
-                        continue;
-                    }
-
-                    // Don't include bots that have spawned within the last 10 seconds
-                    if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
-                    {
-                        continue;
-                    }
-
-                    // Hydrate dictionary of bot with its shortest distance to a player
-                    GetShortestDistanceBetweenBotAndPlayers(bot, botClosestDistanceToAnyPlayerDict);
-
-                    // Get the bot that is furthest away from any player
-                    var furthestAwayBotKvp = botClosestDistanceToAnyPlayerDict.FirstOrDefault(botDistKvp => botDistKvp.Value == botClosestDistanceToAnyPlayerDict.Values.Max());
-
-                    // Flag furthest away bot if it's beyond the desired range for later removal
-                    float distance = (bot.Position - gameWorld.MainPlayer.Position).sqrMagnitude;
-                    if (distance > maxDistance)
-                    {
-                        maxDistance = furthestAwayBotKvp.Value;
-                        furthestBot = furthestAwayBotKvp.Key;
-                    }
-                }
-
-                tempBotCount = botClosestDistanceToAnyPlayerDict.Count;
+                return; // Cooldown not completed
             }
-            else if (bottype == "scav")
+
+            var bots = gameWorld.AllAlivePlayersList;
+            if (!ShouldConsiderDespawning(bots, bottype))
             {
-                if (Time.time - SCAVdespawnCooldown < SCAVdespawnCooldownDuration)
+                return;
+            }
+
+            Dictionary<Player, float> botFurthestDistanceToAnyPlayerDict = new Dictionary<Player, float>();
+            UpdateFurthestDistances(botFurthestDistanceToAnyPlayerDict);
+
+            Player furthestBot = null;
+            float maxDistance = float.MinValue;
+
+            foreach (var botKvp in botFurthestDistanceToAnyPlayerDict)
+            {
+                if (botKvp.Value > maxDistance)
                 {
-                    return;
+                    maxDistance = botKvp.Value;
+                    furthestBot = botKvp.Key;
                 }
-
-                //don't know distances so have to loop through all bots
-                foreach (Player bot in bots)
-                {
-                    if (bot.AIData.BotOwner == null)
-                    {
-                        continue;
-                    }
-                    // Ignore bots on the invalid despawn list, and the player
-                    if (bot.IsYourPlayer || !validDespawnListScav.Contains(bot.Profile.Info.Settings.Role) || bot.AIData.BotOwner.BotState != EBotState.Active)
-                    {
-                        continue;
-                    }
-
-                    // Don't include bots that have spawned within the last 10 seconds
-                    if (Time.time - 10 < bot.AIData.BotOwner.ActivateTime)
-                    {
-                        continue;
-                    }
-
-                    // Hydrate dict with bot + shortest distance to any player
-                    GetShortestDistanceBetweenBotAndPlayers(bot, botClosestDistanceToAnyPlayerDict);
-
-                    // Get the bot that is furthest away from any player
-                    var furthestAwayBotKvp = botClosestDistanceToAnyPlayerDict.FirstOrDefault(botDistKvp => botDistKvp.Value == botClosestDistanceToAnyPlayerDict.Values.Max());
-
-                    // Flag furthest away bot if its beyond the desired range for later removal
-                    if (furthestAwayBotKvp.Value > maxDistance)
-                    {
-                        // Found a bot further than allowed distance, flag them
-                        maxDistance = furthestAwayBotKvp.Value;
-                        furthestBot = furthestAwayBotKvp.Key;
-                    }
-                }
-                tempBotCount = botClosestDistanceToAnyPlayerDict.Count;
             }
 
             if (furthestBot != null)
             {
-                if (furthestBot.AIData.BotOwner == null)
-                {
-                    return;
-                }
-                if (bottype == "pmc" && tempBotCount <= PMCBotLimit)
-                {
-                    return;
-                }
-                else if (bottype == "scav" && tempBotCount <= SCAVBotLimit)
-                {
-                    return;
-                }
-
-                // Despawn the bot
-#if DEBUG
-                Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
-#endif
-                BotOwner botOwner = furthestBot.AIData.BotOwner;
-
-                var botgame = Singleton<IBotGame>.Instance;
-                Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
-                botOwner.Deactivate();
-                botOwner.Dispose();
-                botgame.BotsController.BotDied(botOwner);
-                botgame.BotsController.DestroyInfo(botOwner.GetPlayer);
-                DestroyImmediate(botOwner.gameObject);
-                Destroy(botOwner);
-
-                if (bottype == "pmc")
-                {
-                    PMCdespawnCooldown = Time.time;
-                }
-                else if (bottype == "scav")
-                {
-                    SCAVdespawnCooldown = Time.time;
-                }
+                DespawnBot(furthestBot, bottype);
             }
         }
-
-        /// <summary>
-        /// Hydrate passed in dictionary with a bot + their shortest distance to a living player
-        /// </summary>
-        /// <param name="bot">AI bot to add to dictionary</param>
-        /// <param name="botClosestDistanceToAnyPlayerDict">Dictionary of bots and the shortest distance to a living player</param>
-        private void GetShortestDistanceBetweenBotAndPlayers(Player bot, Dictionary<Player, float> botClosestDistanceToAnyPlayerDict)
+        private bool ShouldConsiderDespawning(IEnumerable<Player> bots, string bottype)
         {
-            // Check each player against each bot
-            foreach (var player in playerList)
+            int botLimit = bottype == "pmc" ? PMCBotLimit : SCAVBotLimit;
+            int activeBotCount = bots.Count(bot => bot.AIData.BotOwner != null && bot.AIData.BotOwner.BotState == EBotState.Active);
+
+            return activeBotCount > botLimit; // Only consider despawning if the number of active bots exceeds the limit
+        }
+        private void DespawnBot(Player furthestBot, string bottype)
+        {
+            BotOwner botOwner = furthestBot.AIData.BotOwner;
+            if (botOwner == null)
+                return;
+
+#if DEBUG
+            Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
+#endif
+
+            gameWorld.RegisteredPlayers.Remove(botOwner);
+            gameWorld.AllAlivePlayersList.Remove(botOwner.GetPlayer);
+
+            var botgame = Singleton<IBotGame>.Instance;
+            Singleton<Effects>.Instance.EffectsCommutator.StopBleedingForPlayer(botOwner.GetPlayer);
+            botOwner.Deactivate();
+            botOwner.Dispose();
+            botgame.BotsController.BotDied(botOwner);
+            botgame.BotsController.DestroyInfo(botOwner.GetPlayer);
+            DestroyImmediate(botOwner.gameObject);
+            Destroy(botOwner);
+
+            // Update the cooldown
+            if (bottype == "pmc")
             {
-                // Skip errored players
-                if (player == null || player.HealthController == null)
+                PMCdespawnCooldown = Time.time;
+            }
+            else if (bottype == "scav")
+            {
+                SCAVdespawnCooldown = Time.time;
+            }
+        }
+        private void UpdateFurthestDistances(Dictionary<Player, float> botFurthestFromPlayer)
+        {
+            foreach (var bot in gameWorld.AllAlivePlayersList) 
+            {
+                float furthestDistance = float.MinValue;
+                foreach (var player in playerList)
                 {
-                    continue;
-                }
+                    if (player == null || player.HealthController == null || !player.HealthController.IsAlive)
+                        continue;
 
-                // Skip dead players
-                if (!player.HealthController.IsAlive)
-                {
-                    continue;
-                }
-
-                // Get distance from player to bot
-                float currentBotDistance = (bot.Position - player.Position).sqrMagnitude;
-                if (botClosestDistanceToAnyPlayerDict.ContainsKey(bot))
-                {
-                    if (botClosestDistanceToAnyPlayerDict[bot] > currentBotDistance)
+                    float currentDistance = (bot.Position - player.Position).sqrMagnitude;
+                    if (currentDistance > furthestDistance)
                     {
-                        // Bot is closer to a player than current closest distance, update
-                        botClosestDistanceToAnyPlayerDict[bot] = currentBotDistance;
+                        furthestDistance = currentDistance;
                     }
                 }
-                else
-                {
-                    // First time processing bot, store distance from player to bot
-                    botClosestDistanceToAnyPlayerDict[bot] = currentBotDistance;
-                }
+                botFurthestFromPlayer[bot] = furthestDistance;
             }
         }
 

@@ -6,6 +6,7 @@ using System.Reflection;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using dvize.Donuts.Patches;
 using EFT;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -727,6 +728,7 @@ namespace Donuts
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
             new AddEnemyPatch().Enable();
+            new ShootDataNullRefPatch().Enable();
 
             SetupScenariosUI();
         }

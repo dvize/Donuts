@@ -155,6 +155,7 @@
     <Compile Include="Patches\BotProfilePreparationHook.cs" />
     <Compile Include="Patches\MatchEndPlayerDisposePatch.cs" />
     <Compile Include="Patches\PatchStandbyTeleport.cs" />
+    <Compile Include="Patches\ShootDataNullRefPatch.cs" />
     <Compile Include="Tools\DependencyChecker.cs" />
     <Compile Include="Tools\Gizmos.cs" />
     <Compile Include="Bots\Initialization.cs" />
