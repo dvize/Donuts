@@ -187,11 +187,23 @@ namespace Donuts
 
         private void BeingHitBattleCoolDown(DamageInfo info, EBodyPart part, float arg3)
         {
-            if (battleCooldownCoroutine != null)
+            switch (info.DamageType)
             {
-                StopCoroutine(battleCooldownCoroutine); // Stop the existing coroutine if it's running
+                case EDamageType.Btr:
+                case EDamageType.Melee:
+                case EDamageType.Bullet:
+                case EDamageType.Explosion:
+                case EDamageType.GrenadeFragment:
+                case EDamageType.Sniper:
+                    if (battleCooldownCoroutine != null)
+                    {
+                        StopCoroutine(battleCooldownCoroutine); // Stop the existing coroutine if it's running
+                    }
+                    battleCooldownCoroutine = StartCoroutine(BattleStateCooldown());
+                    break;
+                default:
+                    break;
             }
-            battleCooldownCoroutine = StartCoroutine(BattleStateCooldown());
         }
 
         private IEnumerator BattleStateCooldown()
