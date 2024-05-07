@@ -739,6 +739,7 @@ namespace Donuts
             new BotProfilePreparationHook().Enable();
             new AddEnemyPatch().Enable();
             new ShootDataNullRefPatch().Enable();
+            new CoverPointMasterNullRef().Enable();
 
             SetupScenariosUI();
         }
