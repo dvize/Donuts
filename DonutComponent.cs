@@ -156,7 +156,7 @@ namespace Donuts
             };
         }
 
-        private readonly Stopwatch spawnCheckTimer = new Stopwatch();
+        private Stopwatch spawnCheckTimer = new Stopwatch();
         private const int SpawnCheckInterval = 1000;
 
         private void Start()
@@ -454,6 +454,56 @@ namespace Donuts
         private void OnGUI()
         {
             gizmos.ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
+        }
+
+        private void OnDestroy()
+        {
+            //unregister events
+            botSpawnerClass.OnBotRemoved -= removedBot =>
+            {
+
+                foreach (var player in playerList)
+                {
+
+                    removedBot.Memory.DeleteInfoAboutEnemy(player);
+                }
+                removedBot.EnemiesController.EnemyInfos.Clear();
+
+                foreach (var player in gameWorld.AllAlivePlayersList)
+                {
+
+                    if (!player.IsAI)
+                    {
+
+                        continue;
+                    }
+
+                    var botOwner = player.AIData.BotOwner;
+                    botOwner.Memory.DeleteInfoAboutEnemy(removedBot);
+                    botOwner.BotsGroup.RemoveInfo(removedBot);
+                    botOwner.BotsGroup.RemoveEnemy(removedBot, EBotEnemyCause.death);
+                    botOwner.BotsGroup.RemoveAlly(removedBot);
+                }
+            };
+
+            StopAllCoroutines();
+
+            if (spawnCheckTimer != null)
+            {
+                spawnCheckTimer.Stop();
+                spawnCheckTimer.Reset();
+                spawnCheckTimer = null;
+            }
+
+            // Clear static references
+            groupedFightLocations = null;
+            groupedHotspotTimers = null;
+            hotspotTimers = null;
+            methodCache = null;
+
+#if DEBUG
+            Logger.LogWarning("Donuts Component cleaned up and disabled.");
+#endif
         }
     }
 }

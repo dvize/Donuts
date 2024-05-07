@@ -452,9 +452,39 @@ namespace Donuts
         }
         void OnDestroy()
         {
+            // Unsubscribe from the OnBotRemoved event
+            if (botSpawnerClass != null)
+            {
+                botSpawnerClass.OnBotRemoved -= (BotOwner bot) =>
+                {
+                    OriginalBotSpawnTypes.Remove(bot.Profile.Id);
+                };
+            }
+
+            // Unsubscribe from the OnBotCreated event
+            botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
+            {
+                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
+            };
+
+            // Detach event handler from main player
+            if (mainplayer != null)
+            {
+                mainplayer.BeingHitAction -= Mainplayer_BeingHitAction;
+            }
+
             StopAllCoroutines();
+
+            // Nullify static references to ensure they can be garbage collected
+            gameWorld = null;
+            botCreator = null;
+            botSpawnerClass = null;
+            mainplayer = null;
+            OriginalBotSpawnTypes = null;
+            BotInfos = null;
+
 #if DEBUG
-            Logger.LogWarning("Stopping All Coroutines");
+            Logger.LogWarning("DonutsBotPrep component cleaned up and disabled.");
 #endif
         }
     }
