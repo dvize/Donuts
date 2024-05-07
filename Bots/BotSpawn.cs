@@ -312,7 +312,8 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                botCacheList.Remove(botCacheElement);
+                //don't need to remove this bot from the cache, it will be removed when it is activated
+                //botCacheList.Remove(botCacheElement);
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);

@@ -128,14 +128,11 @@ namespace Donuts
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
         {
             // null checks for dying bots
-            if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null)
+            if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null && owner.Memory.HaveEnemy)
             {
-                // Also checking mainplayer and mainplayer.InteractablePlayer for null
-                if (mainplayer != null && mainplayer.InteractablePlayer != null &&
-                    owner.Memory.GoalEnemy == (IPlayer)mainplayer.InteractablePlayer &&
-                    owner.Memory.GoalEnemy.IsVisible)
+                if (owner.Memory.GoalEnemy.HaveSeenPersonal && owner.Memory.GoalEnemy.IsVisible)
                 {
-                    // Stop Replenishing bots when player in combat (when shot at)
+                    // Stop Replenishing bots when player in combat (when you can be shot at)
 #if DEBUG
                     Logger.LogWarning("Bot set goal enemy as you, resetting replenishment timer.");
 #endif
