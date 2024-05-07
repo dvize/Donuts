@@ -544,7 +544,7 @@ namespace Donuts
             despawnInterval = Config.Bind(
                 "5. Advanced Spawn Settings",
                 "Despawn Bot Interval",
-                10f,
+                30f,
                 new ConfigDescription("This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
