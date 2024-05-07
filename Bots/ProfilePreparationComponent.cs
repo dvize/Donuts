@@ -36,7 +36,7 @@ namespace Donuts
         public static List<PrepBotInfo> BotInfos { get; set; }
 
         private float replenishInterval = 30.0f;
-        internal float timeSinceLastReplenish = 0f;
+        internal static float timeSinceLastReplenish = 0f;
 
         private bool isReplenishing = false;
 
@@ -103,6 +103,7 @@ namespace Donuts
             mainplayer = gameWorld.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
             BotInfos = new List<PrepBotInfo>();
+            timeSinceLastReplenish = 0;
 
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -482,7 +483,7 @@ namespace Donuts
             mainplayer = null;
             OriginalBotSpawnTypes = null;
             BotInfos = null;
-
+            timeSinceLastReplenish = 0;
 #if DEBUG
             Logger.LogWarning("DonutsBotPrep component cleaned up and disabled.");
 #endif
