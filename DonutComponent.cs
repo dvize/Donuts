@@ -406,23 +406,19 @@ namespace Donuts
 
         private void OnDestroy()
         {
-            //unregister events
+            // Unregister on-bot-removed event
             botSpawnerClass.OnBotRemoved -= removedBot =>
             {
-
                 foreach (var player in playerList)
                 {
-
                     removedBot.Memory.DeleteInfoAboutEnemy(player);
                 }
                 removedBot.EnemiesController.EnemyInfos.Clear();
 
                 foreach (var player in gameWorld.AllAlivePlayersList)
                 {
-
                     if (!player.IsAI)
                     {
-
                         continue;
                     }
 
@@ -434,7 +430,15 @@ namespace Donuts
                 }
             };
 
+            mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
+
+            // Stop and clear all coroutines
             StopAllCoroutines();
+            if (battleCooldownCoroutine != null)
+            {
+                StopCoroutine(battleCooldownCoroutine);
+                battleCooldownCoroutine = null;
+            }
 
             if (spawnCheckTimer != null)
             {
@@ -443,12 +447,14 @@ namespace Donuts
                 spawnCheckTimer = null;
             }
 
-            // Clear static references
+            // Reset static and instance variables
+            isInBattle = false;  // Resetting static variable
             groupedFightLocations = null;
             groupedHotspotTimers = null;
             hotspotTimers = null;
             methodCache = null;
 
+            // Log cleanup action if debugging
 #if DEBUG
             Logger.LogWarning("Donuts Component cleaned up and disabled.");
 #endif
