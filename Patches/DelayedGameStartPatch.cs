@@ -26,15 +26,22 @@ namespace Donuts.Patches
         {
             // Now also wait for all bots to be fully initialized
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
+            float lastLogTime = Time.time;
+
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
                 yield return new WaitForSeconds(0.1f); // Check every 100ms
-                Logger.LogInfo("Donuts is processing still.");
+
+                if (Time.time - lastLogTime >= 1.0f)
+                {
+                    lastLogTime = Time.time; // Update the last log time
+                    Logger.LogWarning("Donuts still waiting...");
+                }
             }
 
             // Continue with the original task
-            yield return originalTask;
             Logger.LogWarning("Donuts bot preparation is complete...");
+            yield return originalTask;
         }
 
         
