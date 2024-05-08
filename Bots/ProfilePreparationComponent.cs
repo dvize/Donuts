@@ -39,6 +39,7 @@ namespace Donuts
         internal static float timeSinceLastReplenish = 0f;
 
         private bool isReplenishing = false;
+        public static bool IsBotPreparationComplete { get; private set; } = false;
 
         private Dictionary<WildSpawnType, EPlayerSide> spawnTypeToSideMapping = new Dictionary<WildSpawnType, EPlayerSide>
         {
@@ -128,6 +129,7 @@ namespace Donuts
             }
 
             await InitializeAllBotInfos();
+            IsBotPreparationComplete = true;
         }
 
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
@@ -170,7 +172,7 @@ namespace Donuts
 
         private async Task InitializeAllBotInfos()
         {
-            await Task.WhenAll(InitializeBotInfos(), InitializeScavBotInfos(), InitializeOtherBotInfos());
+            await Task.WhenAll(InitializeBotInfos(), InitializeScavBotInfos());
         }
         private async Task InitializeBotInfos()
         {
@@ -273,46 +275,6 @@ namespace Donuts
                     var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, true, groupSize);
                     await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
                     BotInfos.Add(botInfo);
-                }
-            }
-        }
-        private async Task InitializeOtherBotInfos()
-        {
-            string difficultySetting = DonutsPlugin.botDifficultiesOther.Value.ToLower();
-            List<BotDifficulty> difficultiesForSetting;
-
-            switch (difficultySetting)
-            {
-                case "asonline":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
-                    break;
-                case "easy":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
-                    break;
-                case "normal":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
-                    break;
-                case "hard":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
-                    break;
-                case "impossible":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
-                    break;
-                default:
-                    Logger.LogWarning("Unsupported difficulty setting for Other bots: " + difficultySetting);
-                    return;
-            }
-
-            // Apply these difficulties to each spawn type available
-            foreach (WildSpawnType botType in spawnTypeToSideMapping.Keys)
-            {
-                foreach (var difficulty in difficultiesForSetting)
-                {
-                    // Create one single bot
-                    var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
-                    await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
-                    BotInfos.Add(botInfo);
-
                 }
             }
         }

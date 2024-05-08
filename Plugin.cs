@@ -8,6 +8,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using Donuts.Models;
 using Donuts.Patches;
+using dvize.Donuts.Patches;
 using EFT;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -741,7 +742,7 @@ namespace Donuts
             new AddEnemyPatch().Enable();
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
-
+            new DelayedGameStartPatch().Enable();
             SetupScenariosUI();
         }
 

@@ -153,6 +153,7 @@
     <Compile Include="Patches\BotGroupAddEnemyPatch.cs" />
     <Compile Include="Patches\BotMemoryAddEnemyPatch.cs" />
     <Compile Include="Patches\BotProfilePreparationHook.cs" />
+    <Compile Include="Patches\DelayedGameStartPatch.cs" />
     <Compile Include="Patches\MatchEndPlayerDisposePatch.cs" />
     <Compile Include="Patches\PatchStandbyTeleport.cs" />
     <Compile Include="Patches\CoverPointMasterNullRef.cs" />
