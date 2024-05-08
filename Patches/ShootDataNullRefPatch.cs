@@ -4,7 +4,7 @@ using EFT;
 using HarmonyLib;
 using UnityEngine;
 
-namespace dvize.Donuts.Patches
+namespace Donuts.Patches
 {
     internal class ShootDataNullRefPatch : ModulePatch
     {

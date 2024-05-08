@@ -413,11 +413,11 @@ namespace Donuts
         public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
 #if DEBUG
-            Logger.LogDebug("Dumping BotInfos contents:");
+            /*Logger.LogDebug("Dumping BotInfos contents:");
             foreach (var info in BotInfos)
             {
                 Logger.LogDebug($"Type: {info.SpawnType}, Difficulty: {info.Difficulty}, Profiles Count: {info.Bots?.Profiles.Count ?? 0}");
-            }
+            }*/
 #endif
 
             // Find the bot info that matches the spawn type and difficulty

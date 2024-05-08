@@ -4,7 +4,7 @@ using Aki.Reflection.Patching;
 using EFT;
 using HarmonyLib;
 
-namespace Donuts
+namespace Donuts.Patches
 {
     internal class PatchStandbyTeleport : ModulePatch
     {

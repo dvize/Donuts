@@ -2,7 +2,7 @@
 using Aki.Reflection.Patching;
 using EFT;
 
-namespace Donuts
+namespace Donuts.Patches
 {
     // Don't add invalid enemies
     internal class BotGroupAddEnemyPatch : ModulePatch

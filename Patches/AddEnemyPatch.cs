@@ -6,7 +6,7 @@ using EFT;
 
 // Stolen from DanW's Questing Bots, thanks Dan!
 
-namespace Donuts
+namespace Donuts.Patches
 {
     public class AddEnemyPatch : ModulePatch
     {

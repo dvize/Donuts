@@ -2,7 +2,7 @@
 using Aki.Reflection.Patching;
 using EFT;
 
-namespace Donuts
+namespace Donuts.Patches
 {
     internal class BotMemoryAddEnemyPatch : ModulePatch
     {
