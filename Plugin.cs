@@ -8,7 +8,6 @@ using BepInEx;
 using BepInEx.Configuration;
 using Donuts.Models;
 using Donuts.Patches;
-using dvize.Donuts.Patches;
 using EFT;
 using Newtonsoft.Json;
 using UnityEngine;
