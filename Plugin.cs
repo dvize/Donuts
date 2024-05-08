@@ -40,6 +40,7 @@ namespace Donuts
         public static ConfigEntry<string> forceAllBotType;
         public static ConfigEntry<float> despawnInterval;
         public static ConfigEntry<int> pmcFactionRatio;
+        public static ConfigEntry<float> replenishInterval;
 
         // Global Min Distance From Player
         public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -285,7 +286,7 @@ namespace Donuts
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 14 }));
 
             forceAllBotType = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -293,7 +294,7 @@ namespace Donuts
                 "Disabled",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(forceAllBotTypeList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 13 }));
 
             hardStopOptionPMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -301,7 +302,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
 
             hardStopTimePMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -309,7 +310,7 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
 
             hardStopOptionSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -317,7 +318,7 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
 
             hardStopTimeSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -325,31 +326,31 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             hotspotBoostPMC = Config.Bind(
                 "2. Additional Spawn Settings",
                 "PMC Hot Spot Spawn Boost",
                 false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs. (CAN BE TOGGLED MID-RAID)",
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
 
             hotspotBoostSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
                 "SCAV Hot Spot Spawn Boost",
                 false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs. (CAN BE TOGGLED MID-RAID)",
+                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             hotspotIgnoreHardCapPMC = Config.Bind(
                 "2. Additional Spawn Settings",
                 "PMC Hot Spot Ignore Hard Cap",
                 false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. Strongly recommended to use this option + Despawn + Hardcap.",
+                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 4 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
 
             hotspotIgnoreHardCapSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -357,7 +358,23 @@ namespace Donuts
                 false,
                 new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 3 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
+
+            pmcFactionRatio = Config.Bind(
+                "2. Additional Spawn Settings",
+                "PMC Faction Ratio",
+                50,
+                new ConfigDescription("USEC/Bear Default Ratio. Default is 50%. Lower value = lower USEC chance, so: 20 would be 20% USEC, 80% Bear, etc.",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
+
+            battleStateCoolDown = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Battlestate Spawn CoolDown",
+                20f,
+                new ConfigDescription("It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
+                null,
+                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 3 }));
 
             globalMinSpawnDistanceFromPlayerBool = Config.Bind(
                 "3. Global Minimum Spawn Distance From Player",
@@ -536,26 +553,18 @@ namespace Donuts
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
 
             // advanced settings
-            battleStateCoolDown = Config.Bind(
+            replenishInterval = Config.Bind(
                 "5. Advanced Spawn Settings",
-                "Battlestate CoolDown",
-                20f,
-                new ConfigDescription("It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
-
-            pmcFactionRatio = Config.Bind(
-                "5. Advanced Spawn Settings",
-                "PMC Faction Ratio",
-                50,
-                new ConfigDescription("USEC/Bear Default Ratio. Default is 50%. Lower value = lower USEC chance, so: 20 would be 20% USEC, 80% Bear, etc.",
+                "Bot Cache Replenish Interval",
+                30.0f,
+                new ConfigDescription("The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 6 }));
 
             maxSpawnTriesPerBot = Config.Bind(
                 "5. Advanced Spawn Settings",
                 "Max Spawn Tries Per Bot",
-                10,
+                5,
                 new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
                 null,
                 new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));

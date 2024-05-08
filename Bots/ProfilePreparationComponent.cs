@@ -35,7 +35,6 @@ namespace Donuts
 
         public static List<PrepBotInfo> BotInfos { get; set; }
 
-        private float replenishInterval = 30.0f;
         internal static float timeSinceLastReplenish = 0f;
 
         private bool isReplenishing = false;
@@ -147,7 +146,7 @@ namespace Donuts
                     timeSinceLastReplenish = 0f;
                 }
             }
-           
+
         }
 
         private void Mainplayer_BeingHitAction(DamageInfo arg1, EBodyPart arg2, float arg3)
@@ -220,7 +219,7 @@ namespace Donuts
                 }
 
                 // Create group bots of sizes 2, 3, and 4
-                foreach (int groupSize in new int[] { 2, 2, 3, 3, 4 })
+                foreach (int groupSize in new int[] { 2, 2, 2, 3, 3, 4, 4, 5 })
                 {
                     var botInfoUsecGroup = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, true, groupSize);
                     await CreateBot(botInfoUsecGroup, botInfoUsecGroup.IsGroup, botInfoUsecGroup.GroupSize);
@@ -263,7 +262,7 @@ namespace Donuts
             foreach (var difficulty in difficultiesForSetting)
             {
                 // Create three single bots
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
                     await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
@@ -271,7 +270,7 @@ namespace Donuts
                 }
 
                 // Create group bots of sizes 2, 3, and 4
-                foreach (int groupSize in new int[] { 2, 2, 3, 3, 4 })
+                foreach (int groupSize in new int[] { 2, 3, 4 })
                 {
                     var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, true, groupSize);
                     await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
@@ -283,7 +282,7 @@ namespace Donuts
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
-            if (timeSinceLastReplenish >= replenishInterval && !isReplenishing)
+            if (timeSinceLastReplenish >= DonutsPlugin.replenishInterval.Value && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
                 StartCoroutine(ReplenishAllBots());
