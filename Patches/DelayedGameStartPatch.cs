@@ -28,7 +28,7 @@ namespace Donuts.Patches
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
-                yield return new WaitForSeconds(0.5f); // Check every 100ms
+                yield return new WaitForSeconds(0.1f); // Check every 100ms
                 Logger.LogInfo("Donuts is processing still.");
             }
 
