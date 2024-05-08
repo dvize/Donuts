@@ -5,7 +5,7 @@ using Aki.Reflection.Patching;
 using Donuts;
 using UnityEngine;
 
-namespace dvize.Donuts.Patches
+namespace Donuts.Patches
 {
     public class DelayedGameStartPatch : ModulePatch
     {
