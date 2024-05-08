@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Donuts
+namespace Donuts.Models
 {
     internal class HotspotTimer
     {

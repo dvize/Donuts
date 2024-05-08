@@ -8,6 +8,7 @@ using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
+using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using Systems.Effects;

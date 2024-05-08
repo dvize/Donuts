@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aki.PrePatch;
 using Comfort.Common;
-using dvize.Donuts;
+using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using UnityEngine;

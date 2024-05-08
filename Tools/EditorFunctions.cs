@@ -7,6 +7,7 @@ using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
+using Donuts.Models;
 using static Donuts.DonutsPlugin;
 
 #pragma warning disable IDE0007, IDE0044
@@ -216,7 +217,7 @@ namespace Donuts
             else
             {
                 //combine the fightLocations and sessionLocations objects into one variable
-                FightLocations combinedLocations = new Donuts.FightLocations
+                FightLocations combinedLocations = new Donuts.Models.FightLocations
                 {
                     Locations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList()
                 };

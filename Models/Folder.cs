@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Donuts
+namespace Donuts.Models
 {
     internal class Folder
     {

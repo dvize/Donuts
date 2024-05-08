@@ -2,7 +2,7 @@
 using EFT;
 using BotCacheClass = GClass591;
 
-namespace dvize.Donuts
+namespace Donuts.Models
 {
     public class PrepBotInfo
     {

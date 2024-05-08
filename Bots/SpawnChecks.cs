@@ -4,6 +4,7 @@ using Comfort.Common;
 using EFT;
 using UnityEngine;
 using UnityEngine.AI;
+using Donuts.Models;
 using static Donuts.DonutComponent;
 
 #pragma warning disable IDE0007, IDE0044

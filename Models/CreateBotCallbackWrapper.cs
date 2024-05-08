@@ -3,7 +3,7 @@ using EFT;
 using static Donuts.DonutComponent;
 using BotCacheClass = GClass591;
 
-namespace Donuts
+namespace Donuts.Models
 {
     // Wrapper around method_10 called after bot creation, so we can pass it the BotCacheClass data
 

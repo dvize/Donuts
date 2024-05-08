@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
-using dvize.Donuts;
+using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using UnityEngine;

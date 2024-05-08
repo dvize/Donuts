@@ -8,6 +8,7 @@ using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
+using Donuts.Models;
 using static Donuts.DonutComponent;
 using static Donuts.Gizmos;
 

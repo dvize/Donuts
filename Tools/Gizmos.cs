@@ -6,6 +6,7 @@ using System.Text;
 using EFT;
 using EFT.Communications;
 using UnityEngine;
+using Donuts.Models;
 using static Donuts.DonutComponent;
 
 #pragma warning disable IDE0007, IDE0044

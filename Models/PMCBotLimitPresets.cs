@@ -1,4 +1,4 @@
-﻿namespace Donuts
+﻿namespace Donuts.Models
 {
     internal class PMCBotLimitPresets
     {

@@ -2,7 +2,7 @@
 
 using static Donuts.DonutComponent;
 
-namespace Donuts
+namespace Donuts.Models
 {
     // Custom GetGroupAndSetEnemies wrapper that handles grouping bots into multiple groups within the same botzone
     internal class GetGroupWrapper
