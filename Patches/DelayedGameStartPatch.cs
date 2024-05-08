@@ -25,10 +25,11 @@ namespace Donuts.Patches
         private static IEnumerator addIterationsToWaitForBotGenerators(IEnumerator originalTask)
         {
             // Now also wait for all bots to be fully initialized
+            Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
-                yield return new WaitForSeconds(0.1f); // Check every 100ms
-                Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
+                yield return new WaitForSeconds(0.5f); // Check every 500ms
+                Logger.LogInfo("Donuts is processing still.");
             }
 
             // Continue with the original task
