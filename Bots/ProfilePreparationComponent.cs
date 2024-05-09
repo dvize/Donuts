@@ -298,13 +298,13 @@ namespace Donuts
                         case "none":
                             return Array.Empty<int>();
                         case "low":
-                            return new int[] { 1, 1, 2, 2 };
+                            return new int[] { 1, 1, 2 };
                         case "max":
                             return new int[] { 5, 5 };
                         case "high":
                             return new int[] { 3, 4, 5 };
                         default:
-                            return new int[] { 1, 2, 3, 4, 5 };
+                            return new int[] { 1, 2, 3 };
                     }
                 case "scav":
                     switch (groupChance.ToLower())
@@ -314,13 +314,11 @@ namespace Donuts
                         case "low":
                             return new int[] { 1, 2 };
                         case "max":
-                            return new int[] { 5, 5 };
+                            return new int[] { 3, 4 };
                         case "high":
                             return new int[] { 2, 3 };
-                        case "max":
-                            return new int[] { 3, 4 };
                         default:
-                            return new int[] { 1, 1, 2, 3 };
+                            return new int[] { 1, 1, 2 };
                     }
                 default:
                     throw new ArgumentException("Invalid bot type provided.");
