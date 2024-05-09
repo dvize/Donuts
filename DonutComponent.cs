@@ -359,7 +359,7 @@ namespace Donuts
         private bool ShouldConsiderDespawning(IEnumerable<Player> bots, string bottype)
         {
             int botLimit = bottype == "pmc" ? PMCBotLimit : SCAVBotLimit;
-            int activeBotCount = bots.Count(bot => bot.AIData.BotOwner != null && bot.AIData.BotOwner.BotState == EBotState.Active);
+            int activeBotCount = gameWorld.AllAlivePlayersList.Count - 1;  //minus 1 for you the player
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots exceeds the limit
         }
