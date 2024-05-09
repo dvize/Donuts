@@ -9,7 +9,7 @@ namespace Donuts
     {
         public static int HandleHardCap(string spawnType, int requestedCount)
         {
-            int currentBotsAlive = GetRegisteredPlayers(spawnType);
+            int currentBotsAlive = GetAlivePlayers(spawnType);
             int botLimit = GetBotLimit(spawnType);
             if (currentBotsAlive + requestedCount > botLimit)
             {
@@ -57,10 +57,10 @@ namespace Donuts
             return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
         }
 
-        private static int GetRegisteredPlayers(string spawnType)
+        public static int GetAlivePlayers(string spawnType)
         {
             int count = 0;
-            foreach (Player bot in gameWorld.RegisteredPlayers)
+            foreach (Player bot in gameWorld.AllAlivePlayersList)
             {
                 if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
                                           (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
