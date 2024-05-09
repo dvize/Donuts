@@ -105,6 +105,7 @@ namespace Donuts
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
             BotInfos = new List<PrepBotInfo>();
             timeSinceLastReplenish = 0;
+            IsBotPreparationComplete = false;
 
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -458,6 +459,7 @@ namespace Donuts
             OriginalBotSpawnTypes = null;
             BotInfos = null;
             timeSinceLastReplenish = 0;
+            IsBotPreparationComplete = false;
 #if DEBUG
             Logger.LogWarning("DonutsBotPrep component cleaned up and disabled.");
 #endif
