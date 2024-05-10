@@ -1,15 +1,18 @@
 using System;
 using Aki.PrePatch;
+using Cysharp.Threading.Tasks;
 using EFT;
 using static Donuts.DonutComponent;
+
+#pragma warning disable IDE0007, IDE0044
 
 namespace Donuts
 {
     public static class BotCountManager
     {
-        public static int HandleHardCap(string spawnType, int requestedCount)
+        public static async UniTask<int> HandleHardCap(string spawnType, int requestedCount)
         {
-            int currentBotsAlive = GetRegisteredPlayers(spawnType);
+            int currentBotsAlive = await GetAlivePlayers(spawnType);
             int botLimit = GetBotLimit(spawnType);
             if (currentBotsAlive + requestedCount > botLimit)
             {
@@ -54,21 +57,42 @@ namespace Donuts
 
         private static int GetBotLimit(string spawnType)
         {
-            return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
+            return spawnType.Contains("pmc") ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
         }
 
-        private static int GetRegisteredPlayers(string spawnType)
+        public static UniTask<int> GetAlivePlayers(string spawnType)
         {
-            int count = 0;
-            foreach (Player bot in gameWorld.RegisteredPlayers)
+            return UniTask.Create(async () =>
             {
-                if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
-                                          (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
+                int count = 0;
+                foreach (Player bot in gameWorld.AllAlivePlayersList)
                 {
-                    count++;
+                    if (!bot.IsYourPlayer)
+                    {
+                        switch (spawnType)
+                        {
+                            case "scav":
+                                if (IsSCAV(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            case "pmc":
+                                if (IsPMC(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            default:
+                                throw new ArgumentException("Invalid spawnType", nameof(spawnType));
+                        }
+                    }
                 }
-            }
-            return count;
+
+                return count;
+            });
         }
 
         private static bool IsPMC(WildSpawnType role)
