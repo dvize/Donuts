@@ -331,7 +331,7 @@ namespace Donuts
             }
 
             var bots = gameWorld.AllAlivePlayersList;
-            if (!ShouldConsiderDespawning(bots, bottype))
+            if (!ShouldConsiderDespawning(bottype))
             {
                 return;
             }
@@ -356,13 +356,14 @@ namespace Donuts
                 DespawnBot(furthestBot, bottype);
             }
         }
-        private bool ShouldConsiderDespawning(IEnumerable<Player> bots, string bottype)
+        private bool ShouldConsiderDespawning(string botType)
         {
-            int botLimit = bottype == "pmc" ? PMCBotLimit : SCAVBotLimit;
-            int activeBotCount = gameWorld.AllAlivePlayersList.Count - 1;  //minus 1 for you the player
+            int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
+            int activeBotCount = BotCountManager.GetAlivePlayers(botType);
 
-            return activeBotCount > botLimit; // Only consider despawning if the number of active bots exceeds the limit
+            return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
+
         private void DespawnBot(Player furthestBot, string bottype)
         {
             BotOwner botOwner = furthestBot.AIData.BotOwner;

@@ -181,18 +181,28 @@ namespace Donuts
                 wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
             }
 
-            if (wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || wildSpawnType == (WildSpawnType)AkiBotsPrePatcher.sptBearValue)
+            if (wildSpawnType == GetWildSpawnType("pmc"))
             {
-                if (DonutsPlugin.pmcFaction.Value == "USEC")
-                {
-                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                }
-                else if (DonutsPlugin.pmcFaction.Value == "BEAR")
-                {
-                    wildSpawnType = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-                }
+                wildSpawnType = DeterminePMCFactionBasedOnRatio();
             }
+
             return wildSpawnType;
+        }
+
+        private static WildSpawnType DeterminePMCFactionBasedOnRatio()
+        {
+            int factionRatio = DonutsPlugin.pmcFactionRatio.Value;
+            Random rand = new Random();
+            int chance = rand.Next(100);
+
+            if (chance < factionRatio)
+            {
+                return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            }
+            else
+            {
+                return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            }
         }
 
         private static int GetBotLimit(string spawnType)
@@ -204,8 +214,6 @@ namespace Donuts
                 return SCAVBotLimit;
             return 0;
         }
-
-
         #region botHelperMethods
 
         #region botDifficulty
