@@ -79,12 +79,12 @@ namespace Donuts
             int hardStopTime = GetHardStopTime(hotspotSpawnType);
             int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
             int raidTimeLeftPercent = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100;
-            if (DonutsPlugin.useTimeBasedHardStop.Value) // Percentage based hard stop
+            if (DonutsPlugin.useTimeBasedHardStop.Value) // Time based hard stop
             {
-                return raidTimeLeftPercent >= hardStopTime;
+                return raidTimeLeftTime >= hardStopTime;
             }
-            // Time based hard stop
-            return raidTimeLeftTime >= hardStopTime;
+            // Percentage based hard stop
+            return raidTimeLeftPercent >= hardStopTime;
         }
 
         private static int GetHardStopTime(string hotspotSpawnType)
