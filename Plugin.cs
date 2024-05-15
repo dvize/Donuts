@@ -34,8 +34,11 @@ namespace Donuts
         public static ConfigEntry<bool> hotspotBoostSCAV;
         public static ConfigEntry<bool> hotspotIgnoreHardCapPMC;
         public static ConfigEntry<bool> hotspotIgnoreHardCapSCAV;
+        public static ConfigEntry<bool> useTimeBasedHardStop;
         public static ConfigEntry<int> hardStopTimePMC;
         public static ConfigEntry<int> hardStopTimeSCAV;
+        public static ConfigEntry<int> hardStopPercentPMC;
+        public static ConfigEntry<int> hardStopPercentSCAV;
         public static ConfigEntry<string> forceAllBotType;
         public static ConfigEntry<float> despawnInterval;
 
@@ -283,7 +286,7 @@ namespace Donuts
                 "Default",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(pmcFactionList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
 
             forceAllBotType = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -291,15 +294,23 @@ namespace Donuts
                 "Disabled",
                 new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 new AcceptableValueList<string>(forceAllBotTypeList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 14 }));
+            
+            useTimeBasedHardStop = Config.Bind(
+                "2. Additional Spawn Settings",
+                "Use Time Based Hard Stop",
+                true,
+                new ConfigDescription("If enabled, the hard stop settings will be the time (in seconds) left in raid (configurable below). If disabled, the hard stop settings will be the percentage of time left in raid (configurable below).",
+                    null,
+                    new ConfigurationManagerAttributes { IsAdvanced = false, Order = 13 }));
 
             hardStopOptionPMC = Config.Bind(
                 "2. Additional Spawn Settings",
                 "PMC Spawn Hard Stop",
                 false,
-                new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
+                new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time or percentage time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
 
             hardStopTimePMC = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -307,15 +318,23 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
+            
+            hardStopPercentPMC = Config.Bind(
+                "2. Additional Spawn Settings",
+                "PMC Spawn Hard Stop: Percent Left of Raid",
+                50,
+                new ConfigDescription("The percentage of time left in your raid that will stop any further PMC spawns (if option is enabled). Default is 50 percent of the full raid time.",
+                new AcceptableValueRange<int>(0, 100),
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
 
             hardStopOptionSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
                 "SCAV Spawn Hard Stop",
                 false,
-                new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
+                new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time or percentage time left in your raid. This is configurable in seconds (see below).",
                 null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
 
             hardStopTimeSCAV = Config.Bind(
                 "2. Additional Spawn Settings",
@@ -323,6 +342,14 @@ namespace Donuts
                 300,
                 new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 null,
+                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
+            
+            hardStopPercentSCAV = Config.Bind(
+                "2. Additional Spawn Settings",
+                "SCAV Spawn Hard Stop: Percent Left of Raid",
+                10,
+                new ConfigDescription("The percentage of time left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 10 percent of the full raid time.",
+                new AcceptableValueRange<int>(0, 100),
                 new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
 
             hotspotBoostPMC = Config.Bind(

@@ -77,8 +77,14 @@ namespace Donuts
         private static bool IsRaidTimeRemaining(string hotspotSpawnType)
         {
             int hardStopTime = GetHardStopTime(hotspotSpawnType);
-            int raidTimeLeft = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
-            return raidTimeLeft >= hardStopTime;
+            int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+            int raidTimeLeftPercent = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100;
+            if (DonutsPlugin.useTimeBasedHardStop.Value) // Percentage based hard stop
+            {
+                return raidTimeLeftPercent >= hardStopTime;
+            }
+            // Time based hard stop
+            return raidTimeLeftTime >= hardStopTime;
         }
 
         private static int GetHardStopTime(string hotspotSpawnType)
@@ -86,7 +92,12 @@ namespace Donuts
             if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
                 (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
             {
-                return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopTimeSCAV.Value : DonutsPlugin.hardStopTimePMC.Value;
+                if (DonutsPlugin.useTimeBasedHardStop.Value) // Time based hard stop
+                {
+                    return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopTimeSCAV.Value : DonutsPlugin.hardStopTimePMC.Value;
+                }
+                // Percentage based hard stop
+                return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopPercentSCAV.Value : DonutsPlugin.hardStopPercentPMC.Value;
             }
             return int.MaxValue;
         }
