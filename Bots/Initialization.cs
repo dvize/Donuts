@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
 using static Donuts.DonutComponent;
+using static Donuts.DefaultPluginVars;
 using static Donuts.Gizmos;
 
 #pragma warning disable IDE0007, IDE0044
@@ -136,7 +137,7 @@ namespace Donuts
 
                 //in SelectedPatternFolderPath, grab the folder name from DonutsPlugin.scenarioSelection.Value
 
-                var selectionName = runWeightedScenarioSelection();
+                var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
 
                 SetupBotLimit(selectionName);
 
@@ -237,89 +238,6 @@ namespace Donuts
             }
         }
 
-        internal static string runWeightedScenarioSelection()
-        {
-            try
-            {
-                var scenarioSelection = DonutsPlugin.scenarioSelection.Value;
-
-                // check if this is a SCAV raid; this only works during raid load
-                if (Aki.SinglePlayer.Utils.InRaid.RaidChangesUtil.IsScavRaid)
-                {
-#if DEBUG
-                    DonutComponent.Logger.LogDebug($"This is a SCAV raid, using SCAV raid preset selector");
-#endif
-                    scenarioSelection = DonutsPlugin.scavScenarioSelection.Value;
-                }
-
-                foreach (Folder folder in DonutsPlugin.scenarios)
-                {
-                    if (folder.Name == scenarioSelection)
-                    {
-#if DEBUG
-                        DonutComponent.Logger.LogDebug("Selected Preset: " + scenarioSelection);
-#endif
-                        return folder.Name; // Return the chosen preset from the UI
-                    }
-                }
-
-                // Check if a RandomScenarioConfig was selected from the UI
-                foreach (Folder folder in DonutsPlugin.randomScenarios)
-                {
-                    if (folder.RandomScenarioConfig == scenarioSelection)
-                    {
-                        // Calculate the total weight of all presets for the selected RandomScenarioConfig
-                        int totalWeight = folder.presets.Sum(preset => preset.Weight);
-
-                        int randomWeight = UnityEngine.Random.Range(0, totalWeight);
-
-                        // Select the preset based on the random weight
-                        string selectedPreset = null;
-                        int accumulatedWeight = 0;
-
-                        foreach (var preset in folder.presets)
-                        {
-                            accumulatedWeight += preset.Weight;
-                            if (randomWeight <= accumulatedWeight)
-                            {
-                                selectedPreset = preset.Name;
-                                break;
-                            }
-                        }
-
-                        if (selectedPreset != null)
-                        {
-                            Console.WriteLine("Donuts: Random Selected Preset: " + selectedPreset);
-
-                            if (DonutsPlugin.ShowRandomFolderChoice.Value)
-                            {
-                                MethodInfo displayMessageNotificationMethod;
-                                if (DonutComponent.methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
-                                {
-                                    var txt = $"Donuts Random Selected Preset: {selectedPreset}";
-                                    EFT.UI.ConsoleScreen.Log(txt);
-                                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-                                }
-                            }
-
-                            return selectedPreset;
-                        }
-                    }
-                }
-
-                return null;
-
-
-
-            }
-            catch (Exception e)
-            {
-                DonutComponent.Logger.LogError("Error in runWeightedScenarioSelection: " + e.Message);
-                DonutComponent.Logger.LogError("Stack Trace: " + e.StackTrace);
-                DonutComponent.Logger.LogError("Target Site: " + e.TargetSite);
-                return null;
-            }
-
-        }
+        
     }
 }

@@ -8,7 +8,7 @@ using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
-using static Donuts.DonutsPlugin;
+using static Donuts.DefaultPluginVars;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -41,7 +41,7 @@ namespace Donuts
             }
 
             //need to be able to see it to delete it
-            if (DonutsPlugin.DebugGizmos.Value)
+            if (DebugGizmos.Value)
             {
                 //temporarily combine fightLocations and sessionLocations so i can find the closest entry
                 var combinedLocations = Donuts.DonutComponent.fightLocations.Locations.Concat(Donuts.DonutComponent.sessionLocations.Locations).ToList();

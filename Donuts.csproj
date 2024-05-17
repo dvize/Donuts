@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -119,9 +121,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -146,6 +156,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bots\BotSpawn.cs" />
+    <Compile Include="Models\Setting.cs" />
+    <Compile Include="PluginGUI\DrawAdvancedSettings.cs" />
+    <Compile Include="PluginGUI\DrawDebugging.cs" />
+    <Compile Include="PluginGUI\DrawMainSettings.cs" />
+    <Compile Include="PluginGUI\DrawSpawnPointMaker.cs" />
+    <Compile Include="PluginGUI\DrawSpawnSettings.cs" />
+    <Compile Include="PluginGUI\IMGUIToolkit.cs" />
+    <Compile Include="PluginGUI\PluginGUIHelper.cs" />
     <Compile Include="Models\CreateBotCallbackWrapper.cs" />
     <Compile Include="Models\GetGroupWrapper.cs" />
     <Compile Include="Models\PrepBotInfo.cs" />
@@ -158,6 +176,7 @@
     <Compile Include="Patches\PatchStandbyTeleport.cs" />
     <Compile Include="Patches\CoverPointMasterNullRef.cs" />
     <Compile Include="Patches\ShootDataNullRefPatch.cs" />
+    <Compile Include="DefaultPluginVars.cs" />
     <Compile Include="Tools\DependencyChecker.cs" />
     <Compile Include="Tools\Gizmos.cs" />
     <Compile Include="Bots\Initialization.cs" />
@@ -187,17 +206,16 @@
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).dll"
 
-if "$(ConfigurationName)" == "Debug" (
- if exist "$(TargetDir)$(TargetName).pdb" (
-    copy "$(TargetDir)$(TargetName).pdb" "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
+if "$(ConfigurationName)"=="Debug" (
+    if exist "$(TargetDir)$(TargetName).pdb" (
+        copy "$(TargetDir)$(TargetName).pdb" "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
+    ) else (
+        echo Debug symbols not found!
+    )
 ) else (
-    ECHO Debug symbols not found!
-)
-} else (
- if exist "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb" (
- del "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
-)
-)
-</PostBuildEvent>
+    if exist "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb" (
+        del "F:\SPT-AKI-DEV\BepInEx\plugins\dvize.Donuts\$(TargetName).pdb"
+    )
+)</PostBuildEvent>
   </PropertyGroup>
 </Project>

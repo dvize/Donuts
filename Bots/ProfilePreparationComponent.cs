@@ -177,8 +177,8 @@ namespace Donuts
 
         private async Task InitializeBotInfos()
         {
-            string difficultySetting = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
-            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;  // Added the group chance retrieval
+            string difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
+            string pmcGroupChance = DefaultPluginVars.pmcGroupChance.Value;  // Added the group chance retrieval
 
             // Define difficulties that might be configured for each setting
             List<BotDifficulty> difficultiesForSetting;
@@ -238,8 +238,8 @@ namespace Donuts
 
         private async Task InitializeScavBotInfos()
         {
-            string difficultySetting = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
-            string scavGroupChance = DonutsPlugin.scavGroupChance.Value;  // Retrieve the group chance value for SCAV
+            string difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
+            string scavGroupChance = DefaultPluginVars.scavGroupChance.Value;  // Retrieve the group chance value for SCAV
 
             List<BotDifficulty> difficultiesForSetting;
 
@@ -328,7 +328,7 @@ namespace Donuts
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
-            if (timeSinceLastReplenish >= DonutsPlugin.replenishInterval.Value && !isReplenishing)
+            if (timeSinceLastReplenish >= DefaultPluginVars.replenishInterval.Value && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
                 StartCoroutine(ReplenishAllBots());

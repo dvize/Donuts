@@ -51,7 +51,7 @@ namespace Donuts
                     marker.GetComponent<Collider>().enabled = false;
                     marker.transform.position = newCoordinate;
 
-                    if (DonutsPlugin.gizmoRealSize.Value)
+                    if (DefaultPluginVars.gizmoRealSize.Value)
                     {
                         marker.transform.localScale = new Vector3(hotspot.MaxDistance, 3f, hotspot.MaxDistance);
                     }
@@ -89,7 +89,7 @@ namespace Donuts
             ClearGizmoMarkers(); // Clear existing markers
 
             // Check the values of DebugGizmos and gizmoRealSize and redraw the markers accordingly
-            if (DonutsPlugin.DebugGizmos.Value)
+            if (DefaultPluginVars.DebugGizmos.Value)
             {
                 if (fightLocations != null && fightLocations.Locations != null && fightLocations.Locations.Count > 0)
                 {

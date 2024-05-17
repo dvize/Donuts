@@ -10,6 +10,8 @@ using EFT;
 using HarmonyLib;
 using UnityEngine;
 using static Donuts.DonutComponent;
+using static Donuts.DefaultPluginVars;
+
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
 using Random = System.Random;
@@ -37,8 +39,8 @@ namespace Donuts
             WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
 
             // Check Spawn Hard Stop
-            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
-                (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
+            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && hardStopOptionPMC.Value) ||
+                (hotspotSpawnType == ScavSpawnType && hardStopOptionSCAV.Value))
             {
                 if (!IsRaidTimeRemaining(hotspotSpawnType))
                 {
@@ -60,7 +62,7 @@ namespace Donuts
             }
 
             // Check Hard Cap
-            if (DonutsPlugin.HardCapEnabled.Value)
+            if (HardCapEnabled.Value)
             {
                 maxCount = BotCountManager.HandleHardCap(hotspotSpawnType, maxCount);
                 if (maxCount == 0)
@@ -83,17 +85,17 @@ namespace Donuts
 
         private static int GetHardStopTime(string hotspotSpawnType)
         {
-            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
-                (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
+            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && hardStopOptionPMC.Value) ||
+                (hotspotSpawnType == ScavSpawnType && hardStopOptionSCAV.Value))
             {
-                return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopTimeSCAV.Value : DonutsPlugin.hardStopTimePMC.Value;
+                return hotspotSpawnType == ScavSpawnType ? hardStopTimeSCAV.Value : hardStopTimePMC.Value;
             }
             return int.MaxValue;
         }
 
         private static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
         {
-            string groupChance = spawnType == "assault" ? DonutsPlugin.scavGroupChance.Value : DonutsPlugin.pmcGroupChance.Value;
+            string groupChance = spawnType == "assault" ? scavGroupChance.Value : pmcGroupChance.Value;
             return getActualBotCount(groupChance, defaultMaxCount);
         }
 
@@ -136,7 +138,7 @@ namespace Donuts
                 DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
             }
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
@@ -155,7 +157,7 @@ namespace Donuts
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
@@ -168,11 +170,11 @@ namespace Donuts
         private static WildSpawnType DetermineWildSpawnType(HotspotTimer hotspotTimer, string hotspotSpawnType)
         {
             WildSpawnType wildSpawnType;
-            if (DonutsPlugin.forceAllBotType.Value == "PMC")
+            if (forceAllBotType.Value == "PMC")
             {
                 wildSpawnType = GetWildSpawnType("pmc");
             }
-            else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
+            else if (forceAllBotType.Value == "SCAV")
             {
                 wildSpawnType = GetWildSpawnType("assault");
             }
@@ -191,7 +193,7 @@ namespace Donuts
 
         private static WildSpawnType DeterminePMCFactionBasedOnRatio()
         {
-            int factionRatio = DonutsPlugin.pmcFactionRatio.Value;
+            int factionRatio = pmcFactionRatio.Value;
             Random rand = new Random();
             int chance = rand.Next(100);
 
@@ -234,7 +236,7 @@ namespace Donuts
         }
         internal static BotDifficulty grabPMCDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
+            switch (botDifficultiesPMC.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
@@ -259,7 +261,7 @@ namespace Donuts
         }
         internal static BotDifficulty grabSCAVDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            switch (botDifficultiesSCAV.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
@@ -284,7 +286,7 @@ namespace Donuts
         }
         internal static BotDifficulty grabOtherDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
+            switch (botDifficultiesOther.Value.ToLower())
             {
                 case "asonline":
                     //return random difficulty from array of easy, normal, hard
@@ -606,7 +608,7 @@ namespace Donuts
 
         internal static double[] GetProbabilityArray(string pmcGroupChance)
         {
-            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
                 double totalWeight = relativeWeights.Sum(); // Sum of all weights
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();
@@ -617,7 +619,7 @@ namespace Donuts
 
         internal static double[] GetDefaultProbabilityArray(string pmcGroupChance)
         {
-            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
                 double totalWeight = relativeWeights.Sum(); // Sum of all weights
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();

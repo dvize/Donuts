@@ -14,6 +14,8 @@ using HarmonyLib;
 using Systems.Effects;
 using UnityEngine;
 
+using static Donuts.DefaultPluginVars;
+
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
 {
@@ -52,10 +54,10 @@ namespace Donuts
         internal static List<Player> playerList = new List<Player>();
 
         internal float PMCdespawnCooldown = 0f;
-        internal float PMCdespawnCooldownDuration = DonutsPlugin.despawnInterval.Value;
+        internal float PMCdespawnCooldownDuration = despawnInterval.Value;
 
         internal float SCAVdespawnCooldown = 0f;
-        internal float SCAVdespawnCooldownDuration = DonutsPlugin.despawnInterval.Value;
+        internal float SCAVdespawnCooldownDuration = despawnInterval.Value;
 
         internal static List<HotspotTimer> hotspotTimers;
         internal static Dictionary<string, MethodInfo> methodCache;
@@ -173,7 +175,7 @@ namespace Donuts
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + maplocation);
             Initialization.LoadFightLocations();
-            if (DonutsPlugin.PluginEnabled.Value && fileLoaded)
+            if (DefaultPluginVars.PluginEnabled.Value && fileLoaded)
             {
                 Initialization.InitializeHotspotTimers();
             }
@@ -211,15 +213,15 @@ namespace Donuts
         {
             isInBattle = true;
 #if DEBUG
-            Logger.LogWarning("Starting/Restarting BattleState Cooldowns for actual spawns since the player was hit. Delay(s):" + DonutsPlugin.battleStateCoolDown.Value);
+            Logger.LogWarning("Starting/Restarting BattleState Cooldowns for actual spawns since the player was hit. Delay(s):" + DefaultPluginVars.battleStateCoolDown);
 #endif
-            yield return new WaitForSeconds(DonutsPlugin.battleStateCoolDown.Value); // Wait for 15 seconds if no more hits
+            yield return new WaitForSeconds(battleStateCoolDown.Value); // Wait for 15 seconds if no more hits
             isInBattle = false;
         }
 
         private void Update()
         {
-            if (!DonutsPlugin.PluginEnabled.Value || !fileLoaded)
+            if (!PluginEnabled.Value || !fileLoaded)
                 return;
 
             foreach (var hotspotTimer in hotspotTimers)
@@ -238,12 +240,12 @@ namespace Donuts
         {
             Gizmos.DisplayMarkerInformation();
 
-            if (DonutsPlugin.DespawnEnabledPMC.Value)
+            if (DefaultPluginVars.DespawnEnabledPMC.Value)
             {
                 DespawnFurthestBot("pmc");
             }
 
-            if (DonutsPlugin.DespawnEnabledSCAV.Value)
+            if (DefaultPluginVars.DespawnEnabledSCAV.Value)
             {
                 DespawnFurthestBot("scav");
             }
@@ -285,8 +287,8 @@ namespace Donuts
             // Check if the timer trigger is greater than the threshold and conditions are met
             if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspotTimer.Hotspot.MapName)
             {
-                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DonutsPlugin.hotspotBoostPMC.Value) ||
-                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && DonutsPlugin.hotspotBoostSCAV.Value))
+                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DefaultPluginVars.hotspotBoostPMC.Value) ||
+                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && DefaultPluginVars.hotspotBoostSCAV.Value))
                 {
                     hotspotTimer.Hotspot.SpawnChance = 100;  // Boosting spawn chance
                 }
@@ -418,7 +420,7 @@ namespace Donuts
 
         private void OnGUI()
         {
-            gizmos.ToggleGizmoDisplay(DonutsPlugin.DebugGizmos.Value);
+            gizmos.ToggleGizmoDisplay(DefaultPluginVars.DebugGizmos.Value);
         }
 
         private void OnDestroy()

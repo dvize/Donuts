@@ -26,7 +26,7 @@ namespace Donuts.Models
             if (inCooldown)
             {
                 cooldownTimer += Time.deltaTime;
-                if (cooldownTimer >= DonutsPlugin.coolDownTimer.Value)
+                if (cooldownTimer >= DefaultPluginVars.coolDownTimer.Value)
                 {
                     inCooldown = false;
                     cooldownTimer = 0f;
