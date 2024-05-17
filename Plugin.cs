@@ -68,6 +68,7 @@ namespace Donuts
             new DelayedGameStartPatch().Enable();
 
             SetupScenariosUI();
+            ImportConfig();
         }
 
         private void SetupScenariosUI()
@@ -113,13 +114,31 @@ namespace Donuts
                 EditorFunctions.DeleteSpawnMarker();
             }
         }
+        public static void ImportConfig()
+        {
+            // Get the path of the currently executing assembly
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var configDirectory = Path.Combine(Path.GetDirectoryName(dllPath), "Config");
+            var configFilePath = Path.Combine(configDirectory, "DefaultPluginVars.json");
+
+            if (!File.Exists(configFilePath))
+            {
+                Logger.LogError($"Config file not found: {configFilePath}, creating a new one");
+                PluginGUIHelper.ExportConfig();
+                return;
+
+            }
+
+            string json = File.ReadAllText(configFilePath);
+            DefaultPluginVars.ImportFromJson(json);
+        }
 
         private void AddScenarioNamesToValuesList(IEnumerable<Folder> folders, List<string> valuesList, Func<Folder, string> getNameFunc)
         {
             foreach (var folder in folders)
             {
                 var name = getNameFunc(folder);
-                //Logger.LogWarning($"Adding scenario: {name}");
+                Logger.LogWarning($"Adding scenario: {name}");
                 valuesList.Add(name);
             }
         }
@@ -144,7 +163,7 @@ namespace Donuts
                 Debug.Break();
             }
 
-            Logger.LogDebug($"Loaded {folders.Count} Donuts Scenario Folders");
+            Logger.LogWarning($"Loaded {folders.Count} Donuts Scenario Folders");
             return folders;
         }
 

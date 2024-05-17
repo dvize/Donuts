@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using BepInEx.Configuration;
 using Donuts.Models;
+using Newtonsoft.Json;
 using UnityEngine;
 using static GClass1738;
 
@@ -573,7 +576,56 @@ namespace Donuts
                 KeyCode.KeypadMinus,
                 KeyCode.KeypadMinus);
         }
+
+        public static string ExportToJson()
+        {
+            var settingsDictionary = new Dictionary<string, object>();
+
+            // Get all fields in DefaultPluginVars
+            var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+            foreach (var field in fields)
+            {
+                if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
+                {
+                    var settingValue = field.GetValue(null);
+                    var valueProperty = settingValue.GetType().GetProperty("Value");
+                    var value = valueProperty.GetValue(settingValue);
+                    settingsDictionary[field.Name] = value;
+                }
+            }
+
+            return JsonConvert.SerializeObject(settingsDictionary, Formatting.Indented);
+        }
+        public static void ImportFromJson(string json)
+        {
+            var settingsDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+            foreach (var field in fields)
+            {
+                if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
+                {
+                    if (settingsDictionary.TryGetValue(field.Name, out var value))
+                    {
+                        var settingValue = field.GetValue(null);
+                        var valueProperty = settingValue.GetType().GetProperty("Value");
+                        var fieldType = field.FieldType.GetGenericArguments()[0];
+
+                        if (fieldType == typeof(KeyCode))
+                        {
+                            valueProperty.SetValue(settingValue, Enum.Parse(typeof(KeyCode), value.ToString()));
+                        }
+                        else
+                        {
+                            var convertedValue = Convert.ChangeType(value, fieldType);
+                            valueProperty.SetValue(settingValue, convertedValue);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-
        

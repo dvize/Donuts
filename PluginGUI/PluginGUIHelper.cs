@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 #pragma warning disable IDE0007
 
@@ -128,7 +130,8 @@ namespace Donuts
 
             if (GUILayout.Button("Save All Changes", greenButtonStyle, GUILayout.Width(150), GUILayout.Height(30)))
             {
-                Debug.Log("All changes saved.");
+                ExportConfig();
+                DonutsPlugin.Logger.LogWarning("All changes saved.");
             }
             GUILayout.EndHorizontal();
         }
@@ -230,5 +233,23 @@ namespace Donuts
             GUI.skin.label = cachedLabelStyle;
             GUI.skin.button = cachedButtonStyle;
         }
+
+        public static void ExportConfig()
+        {
+            // Get the path of the currently executing assembly
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var configDirectory = Path.Combine(Path.GetDirectoryName(dllPath), "Config");
+            var configFilePath = Path.Combine(configDirectory, "DefaultPluginVars.json");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(configDirectory))
+            {
+                Directory.CreateDirectory(configDirectory);
+            }
+
+            string json = DefaultPluginVars.ExportToJson();
+            File.WriteAllText(configFilePath, json);
+        }
+
     }
 }
