@@ -9,6 +9,9 @@ namespace Donuts
     {
         private static int selectedMainSettingsIndex = 0;
         private static string[] mainSettingsSubTabs = { "General", "Spawn Frequency", "Bot Attributes" };
+        internal static int botDifficultiesPMCIndex = 0;
+        internal static int botDifficultiesSCAVIndex = 0;
+        internal static int botDifficultiesOtherIndex = 0;
         internal static void Enable()
         {
             // Apply the cached styles to ensure consistency
@@ -124,13 +127,21 @@ namespace Donuts
             GUILayout.Label("Main Settings: Bot Attributes", cachedSubTabLabelStyle);
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.botDifficultiesPMC.Value = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesPMC, "Normal");
-            DefaultPluginVars.botDifficultiesSCAV.Value = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesSCAV, );
-            DefaultPluginVars.botDifficultiesOther.Value = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesOther, );
+
+            // Draw the dropdowns with proper handling of selected indices
+            botDifficultiesPMCIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesPMC, botDifficultiesPMCIndex);
+            DefaultPluginVars.botDifficultiesPMC.Value = DefaultPluginVars.botDifficultiesPMC.Options[botDifficultiesPMCIndex];
+
+            botDifficultiesSCAVIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesSCAV, botDifficultiesSCAVIndex);
+            DefaultPluginVars.botDifficultiesSCAV.Value = DefaultPluginVars.botDifficultiesSCAV.Options[botDifficultiesSCAVIndex];
+
+            botDifficultiesOtherIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesOther, botDifficultiesOtherIndex);
+            DefaultPluginVars.botDifficultiesOther.Value = DefaultPluginVars.botDifficultiesOther.Options[botDifficultiesOtherIndex];
 
             DefaultPluginVars.pmcFaction.Value = ImGUIToolkit.TextField(DefaultPluginVars.pmcFaction.Name, DefaultPluginVars.pmcFaction.Value);
             DefaultPluginVars.forceAllBotType.Value = ImGUIToolkit.TextField(DefaultPluginVars.forceAllBotType.Name, DefaultPluginVars.forceAllBotType.Value);
             DefaultPluginVars.pmcFactionRatio.Value = ImGUIToolkit.Slider(DefaultPluginVars.pmcFactionRatio.Name, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);
+            
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }

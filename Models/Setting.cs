@@ -29,13 +29,13 @@ namespace Donuts.Models
         {
             get; set;
         }
-        public List<T> Options
+        public T[] Options
         {
             get; set;
         }
 
         // Constructor to handle regular settings
-        public Setting(string name, string tooltipText, T value, T defaultValue, T minValue = default(T), T maxValue = default(T), List<T> options = null)
+        public Setting(string name, string tooltipText, T value, T defaultValue, T minValue = default(T), T maxValue = default(T), T[] options = null)
         {
             Name = name;
             TooltipText = tooltipText;
@@ -43,32 +43,7 @@ namespace Donuts.Models
             DefaultValue = defaultValue;
             MinValue = minValue;
             MaxValue = maxValue;
-            Options = options ?? new List<T>();
-        }
-
-        // Constructor to handle list/array settings with a single default value
-        public Setting(string name, string tooltipText, T value, string defaultValue, T minValue = default(T), T maxValue = default(T), List<T> options = null)
-        {
-            Name = name;
-            TooltipText = tooltipText;
-            Value = value;
-
-            if (typeof(T).IsArray)
-            {
-                DefaultValue = (T)(object)new string[] { defaultValue };
-            }
-            else if (typeof(IList<string>).IsAssignableFrom(typeof(T)))
-            {
-                DefaultValue = (T)(object)new List<string> { defaultValue };
-            }
-            else
-            {
-                DefaultValue = (T)(object)defaultValue;
-            }
-
-            MinValue = minValue;
-            MaxValue = maxValue;
-            Options = options ?? new List<T>();
+            Options = options ?? new T[0];
         }
     }
 }

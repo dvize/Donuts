@@ -115,7 +115,7 @@ namespace Donuts
         internal static int selectedSubTabIndex = 0;
         internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
         internal static bool showGUI = false;
-        internal static List<string> botDiffList = new List<string>{ "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
+        internal static string[] botDiffList = { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //Scenario Selection
         internal static List<Folder> scenarios = new List<Folder>();

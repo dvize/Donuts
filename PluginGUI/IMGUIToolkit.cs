@@ -82,7 +82,7 @@ namespace Donuts
 
             if (dropdownStates[dropdownId])
             {
-                for (int i = 0; i < setting.Options.Count; i++)
+                for (int i = 0; i < setting.Options.Length; i++)
                 {
                     if (GUILayout.Button(setting.Options[i]?.ToString(), dropdownButtonStyle, GUILayout.Width(200)))
                     {
