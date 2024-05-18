@@ -12,6 +12,30 @@ namespace Donuts
         internal static int botDifficultiesPMCIndex = 0;
         internal static int botDifficultiesSCAVIndex = 0;
         internal static int botDifficultiesOtherIndex = 0;
+
+        //need this for dropdowns to show loaded values
+        static DrawMainSettings()
+        {
+            InitializeDropdownIndices();
+        }
+        private static void InitializeDropdownIndices()
+        {
+            botDifficultiesPMCIndex = FindIndex(DefaultPluginVars.botDifficultiesPMC);
+            botDifficultiesSCAVIndex = FindIndex(DefaultPluginVars.botDifficultiesSCAV);
+            botDifficultiesOtherIndex = FindIndex(DefaultPluginVars.botDifficultiesOther);
+        }
+        private static int FindIndex<T>(Setting<T> setting)
+        {
+            for (int i = 0; i < setting.Options.Length; i++)
+            {
+                if (EqualityComparer<T>.Default.Equals(setting.Options[i], setting.Value))
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
         internal static void Enable()
         {
             // Apply the cached styles to ensure consistency
