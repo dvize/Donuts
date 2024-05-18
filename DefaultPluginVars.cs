@@ -115,6 +115,7 @@ namespace Donuts
         internal static int selectedSubTabIndex = 0;
         internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
         internal static bool showGUI = false;
+        internal static List<string> botDiffList = new List<string>{ "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //Scenario Selection
         internal static List<Folder> scenarios = new List<Folder>();
@@ -175,19 +176,30 @@ namespace Donuts
                 "Donuts PMC Spawn Difficulty",
                 "Difficulty Setting for All PMC Donuts Related Spawns",
                 "Normal",
-                "Normal");
+                "Normal",
+                null,
+                null,
+                botDiffList);
 
             botDifficultiesSCAV = new Setting<string>(
                 "Donuts SCAV Spawn Difficulty",
                 "Difficulty Setting for All SCAV Donuts Related Spawns",
                 "Normal",
-                "Normal");
+                "Normal",
+                null,
+                null,
+                botDiffList
+                );
 
             botDifficultiesOther = new Setting<string>(
                 "Other Bot Type Spawn Difficulty",
                 "Difficulty Setting for all other bot types spawned with Donuts, such as bosses, Rogues, Raiders, etc.",
                 "Normal",
-                "Normal");
+                "Normal",
+                null,
+                null,
+                botDiffList
+                );
 
             ShowRandomFolderChoice = new Setting<bool>(
                 "Show Random Spawn Preset Selection",

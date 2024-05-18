@@ -162,7 +162,7 @@
     <Compile Include="PluginGUI\DrawMainSettings.cs" />
     <Compile Include="PluginGUI\DrawSpawnPointMaker.cs" />
     <Compile Include="PluginGUI\DrawSpawnSettings.cs" />
-    <Compile Include="PluginGUI\IMGUIToolkit.cs" />
+    <Compile Include="PluginGUI\ImGUIToolkit.cs" />
     <Compile Include="PluginGUI\PluginGUIHelper.cs" />
     <Compile Include="Models\CreateBotCallbackWrapper.cs" />
     <Compile Include="Models\GetGroupWrapper.cs" />

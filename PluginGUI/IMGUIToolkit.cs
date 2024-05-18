@@ -4,7 +4,7 @@ using Donuts.Models;
 
 namespace Donuts
 {
-    public class ImGuiToolkit
+    public class ImGUIToolkit
     {
         private static Dictionary<int, bool> dropdownStates = new Dictionary<int, bool>();
         private static GUIStyle dropdownStyle;
@@ -61,13 +61,6 @@ namespace Donuts
             toggleStyle.onActive.background = MakeTex(1, 1, Color.red);
         }
 
-        /// <summary>
-        /// Creates a dropdown menu.
-        /// </summary>
-        /// <param name="label">Label for the dropdown.</param>
-        /// <param name="options">List of options.</param>
-        /// <param name="selectedIndex">Index of the currently selected option.</param>
-        /// <returns>Index of the selected option.</returns>
         internal static int Dropdown<T>(Setting<T> setting, int selectedIndex)
         {
             int dropdownId = GUIUtility.GetControlID(FocusType.Passive);
@@ -78,7 +71,7 @@ namespace Donuts
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(setting.Name, GUILayout.Width(100));
+            GUILayout.Label(setting.Name, GUILayout.Width(150)); // Increased width
 
             if (GUILayout.Button(setting.Options[selectedIndex]?.ToString(), dropdownStyle, GUILayout.Width(200)))
             {
@@ -103,70 +96,62 @@ namespace Donuts
             return selectedIndex;
         }
 
-        /// <summary>
-        /// Creates a slider.
-        /// </summary>
-        /// <param name="label">Label for the slider.</param>
-        /// <param name="value">Current value of the slider.</param>
-        /// <param name="min">Minimum value.</param>
-        /// <param name="max">Maximum value.</param>
-        /// <returns>New value of the slider.</returns>
         public static float Slider(string label, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(100));
+            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Space(10); // Add space
             value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200));
-            GUILayout.Label(value.ToString("F2"), GUILayout.Width(50));
+
+            string valueStr = value.ToString("F2");
+            valueStr = GUILayout.TextField(valueStr, GUILayout.Width(50));
+
+            if (float.TryParse(valueStr, out float parsedValue))
+            {
+                value = Mathf.Clamp(parsedValue, min, max);
+            }
+
             GUILayout.EndHorizontal();
 
             return value;
         }
 
-        /// <summary>
-        /// Creates a slider for integer values.
-        /// </summary>
-        /// <param name="label">Label for the slider.</param>
-        /// <param name="value">Current value of the slider.</param>
-        /// <param name="min">Minimum value.</param>
-        /// <param name="max">Maximum value.</param>
-        /// <returns>New value of the slider.</returns>
         public static int Slider(string label, int value, int min, int max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(100));
+            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Space(10); // Add space
             value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200)));
-            GUILayout.Label(value.ToString(), GUILayout.Width(50));
+
+            string valueStr = value.ToString();
+            valueStr = GUILayout.TextField(valueStr, GUILayout.Width(50));
+
+            if (int.TryParse(valueStr, out int parsedValue))
+            {
+                value = Mathf.Clamp(parsedValue, min, max);
+            }
+
             GUILayout.EndHorizontal();
 
             return value;
         }
 
-        /// <summary>
-        /// Creates a text entry field.
-        /// </summary>
-        /// <param name="label">Label for the text entry field.</param>
-        /// <param name="text">Current text.</param>
-        /// <returns>New text.</returns>
         public static string TextField(string label, string text)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(100));
+            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Space(10); // Add space
             text = GUILayout.TextField(text, GUILayout.Width(250));
             GUILayout.EndHorizontal();
 
             return text;
         }
 
-        /// <summary>
-        /// Creates a custom toggle.
-        /// </summary>
-        /// <param name="label">Label for the toggle.</param>
-        /// <param name="value">Current value of the toggle.</param>
-        /// <returns>New value of the toggle.</returns>
         public static bool Toggle(string label, bool value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(100));
+            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Space(10); // Add space
 
             bool newValue = GUILayout.Toggle(value, value ? "YES" : "NO", toggleStyle, GUILayout.Width(100), GUILayout.Height(25));
 
@@ -175,19 +160,13 @@ namespace Donuts
             return newValue;
         }
 
-        /// <summary>
-        /// Creates a button.
-        /// </summary>
-        /// <param name="label">Label for the button.</param>
-        /// <param name="style">Optional style for the button.</param>
-        /// <returns>True if the button is clicked, false otherwise.</returns>
         public static bool Button(string label, GUIStyle style = null)
         {
             if (style == null)
             {
                 style = GUI.skin.button;
             }
-            return GUILayout.Button(label, style, GUILayout.Width(100));
+            return GUILayout.Button(label, style, GUILayout.Width(150)); // Increased width
         }
     }
 }
