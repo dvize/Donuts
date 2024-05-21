@@ -220,5 +220,18 @@ namespace Donuts
                 GUI.Box(tooltipRect, GUI.tooltip, tooltipStyle);
             }
         }
+
+        //used for finding the correct selection on dropdowns
+        internal static int FindIndex<T>(Setting<T> setting)
+        {
+            for (int i = 0; i < setting.Options.Length; i++)
+            {
+                if (EqualityComparer<T>.Default.Equals(setting.Options[i], setting.Value))
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
     }
 }

@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using Donuts.Models;
+﻿using UnityEngine;
+using static Donuts.ImGUIToolkit;
 using static Donuts.PluginGUIHelper;
 
 namespace Donuts
@@ -19,7 +18,7 @@ namespace Donuts
         internal static int pmcFactionIndex = 0;
         internal static int forceAllBotTypeIndex = 0;
 
-        //need this for dropdowns to show loaded values
+        //need this for dropdowns to show loaded values and also reset to default
         static DrawMainSettings()
         {
             InitializeDropdownIndices();
@@ -36,17 +35,7 @@ namespace Donuts
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
         }
-        private static int FindIndex<T>(Setting<T> setting)
-        {
-            for (int i = 0; i < setting.Options.Length; i++)
-            {
-                if (EqualityComparer<T>.Default.Equals(setting.Options[i], setting.Value))
-                {
-                    return i;
-                }
-            }
-            return 0;
-        }
+
 
         internal static void Enable()
         {
@@ -54,7 +43,7 @@ namespace Donuts
             PluginGUIHelper.ApplyCachedStyles();
 
             // Initialize the custom styles for the dropdown
-            ImGUIToolkit.InitializeStyles();
+            InitializeStyles();
             GUILayout.Space(30);
             GUILayout.BeginHorizontal();
 
@@ -116,16 +105,21 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.PluginEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.PluginEnabled.Name, 
+            DefaultPluginVars.PluginEnabled.Value = Toggle(DefaultPluginVars.PluginEnabled.Name,
                 DefaultPluginVars.PluginEnabled.ToolTipText, DefaultPluginVars.PluginEnabled.Value);
-            DefaultPluginVars.DespawnEnabledPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledPMC.Name, 
+
+            DefaultPluginVars.DespawnEnabledPMC.Value = Toggle(DefaultPluginVars.DespawnEnabledPMC.Name,
                 DefaultPluginVars.DespawnEnabledPMC.ToolTipText, DefaultPluginVars.DespawnEnabledPMC.Value);
-            DefaultPluginVars.DespawnEnabledSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name, 
+
+            DefaultPluginVars.DespawnEnabledSCAV.Value = Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name,
                 DefaultPluginVars.DespawnEnabledSCAV.ToolTipText, DefaultPluginVars.DespawnEnabledSCAV.Value);
-            DefaultPluginVars.ShowRandomFolderChoice.Value = ImGUIToolkit.Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name, 
+
+            DefaultPluginVars.ShowRandomFolderChoice.Value = Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name,
                 DefaultPluginVars.ShowRandomFolderChoice.ToolTipText, DefaultPluginVars.ShowRandomFolderChoice.Value);
-            DefaultPluginVars.battleStateCoolDown.Value = ImGUIToolkit.Slider(DefaultPluginVars.battleStateCoolDown.Name, 
+
+            DefaultPluginVars.battleStateCoolDown.Value = Slider(DefaultPluginVars.battleStateCoolDown.Name,
                 DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
@@ -137,39 +131,50 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.HardCapEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.HardCapEnabled.Name, 
+
+            DefaultPluginVars.HardCapEnabled.Value = Toggle(DefaultPluginVars.HardCapEnabled.Name,
                 DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
-            DefaultPluginVars.hardStopOptionPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionPMC.Name, 
+
+            DefaultPluginVars.hardStopOptionPMC.Value = Toggle(DefaultPluginVars.hardStopOptionPMC.Name,
                 DefaultPluginVars.hardStopOptionPMC.ToolTipText, DefaultPluginVars.hardStopOptionPMC.Value);
-            DefaultPluginVars.hardStopTimePMC.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimePMC.Name, 
+
+            DefaultPluginVars.hardStopTimePMC.Value = Slider(DefaultPluginVars.hardStopTimePMC.Name,
                 DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
-            DefaultPluginVars.hardStopOptionSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionSCAV.Name, 
+
+            DefaultPluginVars.hardStopOptionSCAV.Value = Toggle(DefaultPluginVars.hardStopOptionSCAV.Name,
                 DefaultPluginVars.hardStopOptionSCAV.ToolTipText, DefaultPluginVars.hardStopOptionSCAV.Value);
-            DefaultPluginVars.hardStopTimeSCAV.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimeSCAV.Name, 
+
+            DefaultPluginVars.hardStopTimeSCAV.Value = Slider(DefaultPluginVars.hardStopTimeSCAV.Name,
                 DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
-            DefaultPluginVars.coolDownTimer.Value = ImGUIToolkit.Slider(DefaultPluginVars.coolDownTimer.Name, 
+            DefaultPluginVars.coolDownTimer.Value = Slider(DefaultPluginVars.coolDownTimer.Name,
                 DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
-            DefaultPluginVars.hotspotBoostPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostPMC.Name, 
+
+            DefaultPluginVars.hotspotBoostPMC.Value = Toggle(DefaultPluginVars.hotspotBoostPMC.Name,
                 DefaultPluginVars.hotspotBoostPMC.ToolTipText, DefaultPluginVars.hotspotBoostPMC.Value);
-            DefaultPluginVars.hotspotBoostSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostSCAV.Name, 
+
+            DefaultPluginVars.hotspotBoostSCAV.Value = Toggle(DefaultPluginVars.hotspotBoostSCAV.Name,
                 DefaultPluginVars.hotspotBoostSCAV.ToolTipText, DefaultPluginVars.hotspotBoostSCAV.Value);
-            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name, 
+
+            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name,
                 DefaultPluginVars.hotspotIgnoreHardCapPMC.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapPMC.Value);
-            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name, 
+
+            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name,
                 DefaultPluginVars.hotspotIgnoreHardCapSCAV.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value);
-        
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            pmcGroupChanceIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.pmcGroupChance, pmcGroupChanceIndex);
+
+            pmcGroupChanceIndex = Dropdown(DefaultPluginVars.pmcGroupChance, pmcGroupChanceIndex);
             DefaultPluginVars.pmcGroupChance.Value = DefaultPluginVars.pmcGroupChance.Options[pmcGroupChanceIndex];
 
-            scavGroupChanceIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.scavGroupChance, scavGroupChanceIndex);
+            scavGroupChanceIndex = Dropdown(DefaultPluginVars.scavGroupChance, scavGroupChanceIndex);
             DefaultPluginVars.scavGroupChance.Value = DefaultPluginVars.scavGroupChance.Options[scavGroupChanceIndex];
 
             GUILayout.EndVertical();
@@ -184,30 +189,30 @@ namespace Donuts
             GUILayout.BeginVertical();
 
             // Draw the dropdowns with proper handling of selected indices
-            botDifficultiesPMCIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesPMC, botDifficultiesPMCIndex);
+            botDifficultiesPMCIndex = Dropdown(DefaultPluginVars.botDifficultiesPMC, botDifficultiesPMCIndex);
             DefaultPluginVars.botDifficultiesPMC.Value = DefaultPluginVars.botDifficultiesPMC.Options[botDifficultiesPMCIndex];
 
-            botDifficultiesSCAVIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesSCAV, botDifficultiesSCAVIndex);
+            botDifficultiesSCAVIndex = Dropdown(DefaultPluginVars.botDifficultiesSCAV, botDifficultiesSCAVIndex);
             DefaultPluginVars.botDifficultiesSCAV.Value = DefaultPluginVars.botDifficultiesSCAV.Options[botDifficultiesSCAVIndex];
 
-            botDifficultiesOtherIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesOther, botDifficultiesOtherIndex);
+            botDifficultiesOtherIndex = Dropdown(DefaultPluginVars.botDifficultiesOther, botDifficultiesOtherIndex);
             DefaultPluginVars.botDifficultiesOther.Value = DefaultPluginVars.botDifficultiesOther.Options[botDifficultiesOtherIndex];
 
-            pmcFactionIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.pmcFaction, pmcFactionIndex);
+            pmcFactionIndex = Dropdown(DefaultPluginVars.pmcFaction, pmcFactionIndex);
             DefaultPluginVars.pmcFaction.Value = DefaultPluginVars.pmcFaction.Options[pmcFactionIndex];
 
-            forceAllBotTypeIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.forceAllBotType, forceAllBotTypeIndex);
+            forceAllBotTypeIndex = Dropdown(DefaultPluginVars.forceAllBotType, forceAllBotTypeIndex);
             DefaultPluginVars.forceAllBotType.Value = DefaultPluginVars.forceAllBotType.Options[forceAllBotTypeIndex];
 
-            DefaultPluginVars.pmcFactionRatio.Value = ImGUIToolkit.Slider(DefaultPluginVars.pmcFactionRatio.Name, 
+            DefaultPluginVars.pmcFactionRatio.Value = Slider(DefaultPluginVars.pmcFactionRatio.Name,
                 DefaultPluginVars.pmcFactionRatio.ToolTipText, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);
-            
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
     }
 
-      
-        
-    
+
+
+
 }
