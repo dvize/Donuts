@@ -125,10 +125,16 @@ namespace Donuts
         //Scenario Selection
         internal static List<Folder> scenarios = new List<Folder>();
         internal static List<Folder> randomScenarios = new List<Folder>();
+        internal static List<Folder> scavScenarios = new List<Folder>();
+        internal static List<Folder> randomScavScenarios = new List<Folder>();
+
+
+        //fk too tired.  do i generate new settings on fly or .. its not being read from gui correctly
+        //i don't want to lose the players choice once they make a selection and app restarts
         internal static Setting<string> pmcScenarioSelection;
         internal static Setting<string> scavScenarioSelection;
-        internal static string[] scenarioValues = {"Random" };
-        internal static string[] scavScenarioValues = {"Random" };
+        internal static string[] scenarioValues;
+        internal static string[] scavScenarioValues;
 
         //Default Constructor
         static DefaultPluginVars()
@@ -437,8 +443,8 @@ namespace Donuts
             pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                "Random",
-                "Random",
+                "live-like",
+                "live-like",
                 null,
                 null,
                 scenarioValues
@@ -447,8 +453,8 @@ namespace Donuts
             scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                "Random",
-                "Random",
+                "live-like",
+                "live-like",
                 null,
                 null,
                 scavScenarioValues

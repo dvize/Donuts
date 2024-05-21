@@ -9,7 +9,7 @@ namespace Donuts
         private static int selectedMainSettingsIndex = 0;
         private static string[] mainSettingsSubTabs = { "General", "Spawn Frequency", "Bot Attributes" };
 
-        //for dropdowns
+        // For dropdowns
         internal static int botDifficultiesPMCIndex = 0;
         internal static int botDifficultiesSCAVIndex = 0;
         internal static int botDifficultiesOtherIndex = 0;
@@ -20,11 +20,15 @@ namespace Donuts
         internal static int pmcScenarioSelectionIndex = 0;
         internal static int scavScenarioSelectionIndex = 0;
 
-        //need this for dropdowns to show loaded values and also reset to default
+        // Flag to check if scenarios are loaded
+        internal static bool scenariosLoaded = false;
+
+        // Need this for dropdowns to show loaded values and also reset to default
         static DrawMainSettings()
         {
             InitializeDropdownIndices();
         }
+
         internal static void InitializeDropdownIndices()
         {
             botDifficultiesPMCIndex = FindIndex(DefaultPluginVars.botDifficultiesPMC);
@@ -37,10 +41,19 @@ namespace Donuts
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
 
-            pmcScenarioSelectionIndex = FindIndex(DefaultPluginVars.pmcScenarioSelection);
-            scavScenarioSelectionIndex = FindIndex(DefaultPluginVars.scavScenarioSelection);
-        }
+            if (DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
+            {
+                pmcScenarioSelectionIndex = FindIndex(DefaultPluginVars.pmcScenarioSelection);
+            }
 
+            if (DefaultPluginVars.scavScenarioSelection.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0)
+            {
+                scavScenarioSelectionIndex = FindIndex(DefaultPluginVars.scavScenarioSelection);
+            }
+
+            scenariosLoaded = DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0 &&
+                              DefaultPluginVars.scavScenarioSelection.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0;
+        }
 
         internal static void Enable()
         {
@@ -59,7 +72,7 @@ namespace Donuts
             DrawSubTabs();
             GUILayout.EndVertical();
 
-            //space between menu and subtab pages
+            // Space between menu and subtab pages
             GUILayout.Space(40);
 
             // Right-hand content area for selected sub-tab
@@ -79,7 +92,6 @@ namespace Donuts
             }
 
             GUILayout.EndVertical();
-
             GUILayout.EndHorizontal();
         }
 
@@ -125,24 +137,26 @@ namespace Donuts
             DefaultPluginVars.battleStateCoolDown.Value = Slider(DefaultPluginVars.battleStateCoolDown.Name,
                 DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
 
-            // Dropdown for PMC scenario selection
-            pmcScenarioSelectionIndex = Dropdown(
-                DefaultPluginVars.pmcScenarioSelection,
-                pmcScenarioSelectionIndex
-            );
-            DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.pmcScenarioSelection.Options[pmcScenarioSelectionIndex];
+            if (scenariosLoaded)
+            {
+                // Dropdown for PMC scenario selection
+                pmcScenarioSelectionIndex = Dropdown(DefaultPluginVars.pmcScenarioSelection, pmcScenarioSelectionIndex);
+                DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.pmcScenarioSelection.Options[pmcScenarioSelectionIndex];
 
-            // Dropdown for SCAV scenario selection
-            scavScenarioSelectionIndex = Dropdown(
-                DefaultPluginVars.scavScenarioSelection,
-                scavScenarioSelectionIndex
-            );
-            DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioSelection.Options[scavScenarioSelectionIndex];
+                // Dropdown for SCAV scenario selection
+                scavScenarioSelectionIndex = Dropdown(DefaultPluginVars.scavScenarioSelection, scavScenarioSelectionIndex);
+                DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioSelection.Options[scavScenarioSelectionIndex];
+            }
+            else
+            {
+                GUILayout.Label("Loading PMC scenarios...");
+                GUILayout.Label("Loading SCAV scenarios...");
+            }
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
-        
+
         internal static void DrawMainSettingsSpawnFrequency()
         {
             // Draw advanced spawn settings
@@ -201,7 +215,7 @@ namespace Donuts
 
         internal static void DrawMainSettingsBotAttributes()
         {
-            // Draw other spawn settings
+            // Draw other spawn settings 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 

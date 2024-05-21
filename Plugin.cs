@@ -73,13 +73,30 @@ namespace Donuts
         {
             LoadDonutsFolders();
 
-            var scenarioValuesList = new List<string>(DefaultPluginVars.scenarioValues);
+            var scenarioValuesList = DefaultPluginVars.scenarioValues?.ToList() ?? new List<string>();
+            var scavScenarioValuesList = DefaultPluginVars.scavScenarioValues?.ToList() ?? new List<string>();
 
-            AddScenarioNamesToValuesList(DefaultPluginVars.scenarios, scenarioValuesList, folder => folder.Name);
-            AddScenarioNamesToValuesList(DefaultPluginVars.randomScenarios, scenarioValuesList, folder => folder.RandomScenarioConfig);
+            AddScenarioNamesToValuesList(DefaultPluginVars.scenarios, ref scenarioValuesList, folder => folder.Name);
+            AddScenarioNamesToValuesList(DefaultPluginVars.randomScenarios, ref scenarioValuesList, folder => folder.RandomScenarioConfig);
+
+            AddScenarioNamesToValuesList(DefaultPluginVars.scavScenarios, ref scavScenarioValuesList, folder => folder.Name);
+            AddScenarioNamesToValuesList(DefaultPluginVars.randomScavScenarios, ref scavScenarioValuesList, folder => folder.RandomScenarioConfig);
 
             DefaultPluginVars.scenarioValues = scenarioValuesList.ToArray();
-            DefaultPluginVars.scavScenarioValues = scenarioValuesList.ToArray();
+            DefaultPluginVars.scavScenarioValues = scavScenarioValuesList.ToArray();
+
+            Logger.LogWarning($"Loaded PMC Scenarios: {DefaultPluginVars.scenarioValues.ToString()} ");
+            Logger.LogWarning($"Loaded Scav Scenarios: {DefaultPluginVars.scavScenarioValues.ToString()} ");
+
+            //if there is no default value selected from our loaded DefaultPluginVars, set the value to the first index
+            if (DefaultPluginVars.pmcScenarioSelection.Value == null || DefaultPluginVars.pmcScenarioSelection.Value == "")
+            {
+                DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.scenarioValues[0];
+            }
+            if (DefaultPluginVars.scavScenarioSelection.Value == null || DefaultPluginVars.scavScenarioSelection.Value == "")
+            {
+                DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioValues[0];
+            }
         }
 
         private void Update()
@@ -132,15 +149,7 @@ namespace Donuts
             DefaultPluginVars.ImportFromJson(json);
         }
 
-        private void AddScenarioNamesToValuesList(IEnumerable<Folder> folders, List<string> valuesList, Func<Folder, string> getNameFunc)
-        {
-            foreach (var folder in folders)
-            {
-                var name = getNameFunc(folder);
-                Logger.LogWarning($"Adding scenario: {name}");
-                valuesList.Add(name);
-            }
-        }
+        #region Donuts Non-Raid Related Methods
         internal void LoadDonutsFolders()
         {
             var dllPath = Assembly.GetExecutingAssembly().Location;
@@ -148,23 +157,74 @@ namespace Donuts
 
             DefaultPluginVars.scenarios = LoadFolders(Path.Combine(directoryPath, "ScenarioConfig.json"));
             DefaultPluginVars.randomScenarios = LoadFolders(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
+            DefaultPluginVars.scavScenarios = LoadFolders(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
+            DefaultPluginVars.randomScavScenarios = LoadFolders(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
+
+            PopulateScenarioValues();
+            DrawMainSettings.InitializeDropdownIndices();  // Re-initialize dropdown indices after loading scenarios
+            DrawMainSettings.scenariosLoaded = DefaultPluginVars.pmcScenarioSelection.Options.Length > 0 &&
+                                               DefaultPluginVars.scavScenarioSelection.Options.Length > 0;
+        }
+
+        private void PopulateScenarioValues()
+        {
+            DefaultPluginVars.scenarioValues = GenerateScenarioValues(DefaultPluginVars.scenarios, DefaultPluginVars.randomScenarios);
+            DefaultPluginVars.scavScenarioValues = GenerateScenarioValues(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
+        }
+
+        private static string[] GenerateScenarioValues(List<Folder> scenarios, List<Folder> randomScenarios)
+        {
+            var valuesList = new List<string>();
+
+            AddScenarioNamesToValuesList(scenarios, ref valuesList, folder => folder.Name);
+            AddScenarioNamesToValuesList(randomScenarios, ref valuesList, folder => folder.RandomScenarioConfig);
+
+            // Log the contents of the final valuesList
+           /* Logger.LogInfo("Final scenario values list:");
+            foreach (var value in valuesList)
+            {
+                Logger.LogInfo(value);
+            }*/
+
+            return valuesList.ToArray();
+        }
+        private static void AddScenarioNamesToValuesList(IEnumerable<Folder> folders, ref List<string> valuesList, Func<Folder, string> getNameFunc)
+        {
+            if (folders != null)
+            {
+                foreach (var folder in folders)
+                {
+                    var name = getNameFunc(folder);
+                    Logger.LogWarning($"Adding scenario: {name}");
+                    valuesList.Add(name);
+                }
+            }
         }
         private static List<Folder> LoadFolders(string filePath)
         {
-            //Logger.LogWarning($"Found file at: {filePath}");
+            if (!File.Exists(filePath))
+            {
+                Logger.LogWarning($"File not found: {filePath}");
+                return new List<Folder>();
+            }
 
             var fileContent = File.ReadAllText(filePath);
             var folders = JsonConvert.DeserializeObject<List<Folder>>(fileContent);
 
-            if (folders.Count == 0)
+            if (folders == null || folders.Count == 0)
             {
                 Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
                 Debug.Break();
+                return new List<Folder>();
             }
 
             Logger.LogWarning($"Loaded {folders.Count} Donuts Scenario Folders");
             return folders;
         }
+
+        #endregion
+
+        #region Donuts Raid Related Scenario Selection Methods
 
         internal static Folder GrabDonutsFolder(string folderName)
         {
@@ -226,6 +286,9 @@ namespace Donuts
                 displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
+
+        #endregion
+
         internal static bool IsKeyPressed(KeyboardShortcut key)
         {
             if (!UnityInput.Current.GetKeyDown(key.MainKey)) return false;

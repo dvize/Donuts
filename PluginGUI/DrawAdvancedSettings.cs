@@ -46,6 +46,8 @@ namespace Donuts
                 despawnInterval.MaxValue
             );
 
+            GUILayout.Space(150);
+
             // Reset to Default Values button
             GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button);
             redButtonStyle.normal.textColor = Color.white;
