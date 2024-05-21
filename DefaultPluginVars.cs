@@ -135,7 +135,7 @@ namespace Donuts
         {
             // Main Settings
             PluginEnabled = new Setting<bool>(
-                "Donuts On/Off",
+                "Donuts On",
                 "Enable/Disable Spawning from Donuts Points",
                 true,
                 true);
