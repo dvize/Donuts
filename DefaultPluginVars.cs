@@ -105,10 +105,10 @@ namespace Donuts
         static string lowWeightsString = ConvertIntArrayToString(groupChanceWeights["Low"]);
         static string highWeightsString = ConvertIntArrayToString(groupChanceWeights["High"]);
 
-        internal static string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
-        internal static string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
-        internal static string[] pmcFactionList = new string[] { "Default", "USEC", "BEAR" };
-        internal static string[] forceAllBotTypeList = new string[] { "Disabled", "SCAV", "PMC" };
+        internal static string[] pmcGroupChanceList = { "None", "Default", "Low", "High", "Max", "Random" };
+        internal static string[] scavGroupChanceList = { "None", "Default", "Low", "High", "Max", "Random" };
+        internal static string[] pmcFactionList = { "Default", "USEC", "BEAR" };
+        internal static string[] forceAllBotTypeList = { "Disabled", "SCAV", "PMC" };
 
         internal static string ConvertIntArrayToString(int[] array)
         {
@@ -169,13 +169,19 @@ namespace Donuts
                 "Donuts PMC Group Chance",
                 "Setting to determine the odds of PMC groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details.",
                 "Default",
-                "Default");
+                "Default",
+                null,
+                null,
+                pmcGroupChanceList);
 
             scavGroupChance = new Setting<string>(
                 "Donuts SCAV Group Chance",
                 "Setting to determine the odds of SCAV groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details. See mod page for more details.",
                 "Default",
-                "Default");
+                "Default",
+                null,
+                null,
+                scavGroupChanceList);
 
             botDifficultiesPMC = new Setting<string>(
                 "Donuts PMC Spawn Difficulty",
@@ -423,14 +429,20 @@ namespace Donuts
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
                 "Live Like (Random)",
-                "Live Like (Random)"
+                "Live Like (Random)",
+                null,
+                null,
+                scenarioValues
             );
 
             scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
                 "scav-raids",
-                "scav-raids"
+                "scav-raids",
+                null,
+                null,
+                scenarioValues
             );
 
             // Advanced Settings

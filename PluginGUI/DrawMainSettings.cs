@@ -14,6 +14,10 @@ namespace Donuts
         internal static int botDifficultiesPMCIndex = 0;
         internal static int botDifficultiesSCAVIndex = 0;
         internal static int botDifficultiesOtherIndex = 0;
+        internal static int pmcGroupChanceIndex = 0;
+        internal static int scavGroupChanceIndex = 0;
+        internal static int pmcFactionIndex = 0;
+        internal static int forceAllBotTypeIndex = 0;
 
         //need this for dropdowns to show loaded values
         static DrawMainSettings()
@@ -25,6 +29,12 @@ namespace Donuts
             botDifficultiesPMCIndex = FindIndex(DefaultPluginVars.botDifficultiesPMC);
             botDifficultiesSCAVIndex = FindIndex(DefaultPluginVars.botDifficultiesSCAV);
             botDifficultiesOtherIndex = FindIndex(DefaultPluginVars.botDifficultiesOther);
+
+            pmcGroupChanceIndex = FindIndex(DefaultPluginVars.pmcGroupChance);
+            scavGroupChanceIndex = FindIndex(DefaultPluginVars.scavGroupChance);
+
+            pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
+            forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
         }
         private static int FindIndex<T>(Setting<T> setting)
         {
@@ -141,8 +151,12 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.pmcGroupChance.Value = ImGUIToolkit.TextField(DefaultPluginVars.pmcGroupChance.Name, DefaultPluginVars.pmcGroupChance.Value);
-            DefaultPluginVars.scavGroupChance.Value = ImGUIToolkit.TextField(DefaultPluginVars.scavGroupChance.Name, DefaultPluginVars.scavGroupChance.Value);
+            pmcGroupChanceIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.pmcGroupChance, pmcGroupChanceIndex);
+            DefaultPluginVars.pmcGroupChance.Value = DefaultPluginVars.pmcGroupChance.Options[pmcGroupChanceIndex];
+
+            scavGroupChanceIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.scavGroupChance, scavGroupChanceIndex);
+            DefaultPluginVars.scavGroupChance.Value = DefaultPluginVars.scavGroupChance.Options[scavGroupChanceIndex];
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
@@ -164,8 +178,12 @@ namespace Donuts
             botDifficultiesOtherIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.botDifficultiesOther, botDifficultiesOtherIndex);
             DefaultPluginVars.botDifficultiesOther.Value = DefaultPluginVars.botDifficultiesOther.Options[botDifficultiesOtherIndex];
 
-            DefaultPluginVars.pmcFaction.Value = ImGUIToolkit.TextField(DefaultPluginVars.pmcFaction.Name, DefaultPluginVars.pmcFaction.Value);
-            DefaultPluginVars.forceAllBotType.Value = ImGUIToolkit.TextField(DefaultPluginVars.forceAllBotType.Name, DefaultPluginVars.forceAllBotType.Value);
+            pmcFactionIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.pmcFaction, pmcFactionIndex);
+            DefaultPluginVars.pmcFaction.Value = DefaultPluginVars.pmcFaction.Options[pmcFactionIndex];
+
+            forceAllBotTypeIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.forceAllBotType, forceAllBotTypeIndex);
+            DefaultPluginVars.forceAllBotType.Value = DefaultPluginVars.forceAllBotType.Options[forceAllBotTypeIndex];
+
             DefaultPluginVars.pmcFactionRatio.Value = ImGUIToolkit.Slider(DefaultPluginVars.pmcFactionRatio.Name, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);
             
             GUILayout.EndVertical();
