@@ -292,13 +292,13 @@ namespace Donuts
                 int activePMCs = BotCountManager.GetAlivePlayers("pmc");
                 int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
 
-                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && activePMCs >= PMCBotLimit)
+                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && activePMCs >= PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
                 {
                     Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
                     return;
                 }
 
-                if (hotspotTimer.Hotspot.WildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit)
+                if (hotspotTimer.Hotspot.WildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
                 {
                     Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
                     return;

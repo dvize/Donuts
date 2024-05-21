@@ -9,6 +9,8 @@ namespace Donuts
     {
         private static int selectedMainSettingsIndex = 0;
         private static string[] mainSettingsSubTabs = { "General", "Spawn Frequency", "Bot Attributes" };
+
+        //for dropdowns
         internal static int botDifficultiesPMCIndex = 0;
         internal static int botDifficultiesSCAVIndex = 0;
         internal static int botDifficultiesOtherIndex = 0;
