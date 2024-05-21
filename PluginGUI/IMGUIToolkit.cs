@@ -66,7 +66,13 @@ namespace Donuts
             // Check if the Options list is properly initialized and log error if needed
             if (setting.LogErrorOnceIfOptionsInvalid())
             {
-                return selectedIndex;
+                return selectedIndex; // Return the current index without drawing the button
+            }
+
+            // Ensure selectedIndex is within bounds
+            if (selectedIndex >= setting.Options.Length)
+            {
+                selectedIndex = 0;
             }
 
             int dropdownId = GUIUtility.GetControlID(FocusType.Passive);
@@ -77,9 +83,14 @@ namespace Donuts
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(setting.Name, GUILayout.Width(150)); 
 
-            if (GUILayout.Button(setting.Options[selectedIndex]?.ToString(), dropdownStyle, GUILayout.Width(200)))
+            // Draw label with tooltip
+            GUIContent labelContent = new GUIContent(setting.Name, setting.ToolTipText);
+            GUILayout.Label(labelContent, GUILayout.Width(150)); // Increased width
+
+            // Draw button with tooltip
+            GUIContent buttonContent = new GUIContent(setting.Options[selectedIndex]?.ToString(), setting.ToolTipText);
+            if (GUILayout.Button(buttonContent, dropdownStyle, GUILayout.Width(200)))
             {
                 dropdownStates[dropdownId] = !dropdownStates[dropdownId];
             }
@@ -90,7 +101,8 @@ namespace Donuts
             {
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
-                    if (GUILayout.Button(setting.Options[i]?.ToString(), dropdownButtonStyle, GUILayout.Width(200)))
+                    GUIContent optionContent = new GUIContent(setting.Options[i]?.ToString(), setting.ToolTipText);
+                    if (GUILayout.Button(optionContent, dropdownButtonStyle, GUILayout.Width(200)))
                     {
                         selectedIndex = i;
                         setting.Value = setting.Options[i];
@@ -99,15 +111,17 @@ namespace Donuts
                 }
             }
 
-            return selectedIndex;
-        }
-        
+            // Use the centralized ShowTooltip method
+            ShowTooltip();
 
-        public static float Slider(string label, float value, float min, float max)
+            return selectedIndex;
+        } 
+        public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150));
-            GUILayout.Space(10); // Add space
+            GUIContent labelContent = new GUIContent(label, toolTip);
+            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Space(10);
             value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200));
 
             string valueStr = value.ToString("F2");
@@ -120,14 +134,17 @@ namespace Donuts
 
             GUILayout.EndHorizontal();
 
+            ShowTooltip();
+
             return value;
         }
 
-        public static int Slider(string label, int value, int min, int max)
+        public static int Slider(string label, string toolTip, int value, int min, int max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); 
-            GUILayout.Space(10); // Add space
+            GUIContent labelContent = new GUIContent(label, toolTip);
+            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Space(10);
             value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200)));
 
             string valueStr = value.ToString();
@@ -140,40 +157,68 @@ namespace Donuts
 
             GUILayout.EndHorizontal();
 
+            ShowTooltip();
+
             return value;
         }
 
-        public static string TextField(string label, string text)
+        public static string TextField(string label, string toolTip, string text)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150));
-            GUILayout.Space(10); // Add space
+            GUIContent labelContent = new GUIContent(label, toolTip);
+            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Space(10); 
             text = GUILayout.TextField(text, GUILayout.Width(250));
             GUILayout.EndHorizontal();
+
+            ShowTooltip();
 
             return text;
         }
 
-        public static bool Toggle(string label, bool value)
+        public static bool Toggle(string label, string toolTip, bool value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); 
-            GUILayout.Space(10); // Add space
+            GUIContent labelContent = new GUIContent(label, toolTip);
+            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Space(10);
 
-            bool newValue = GUILayout.Toggle(value, value ? "YES" : "NO", toggleStyle, GUILayout.Width(100), GUILayout.Height(25));
+            // Apply the custom toggle style
+            GUIContent toggleContent = new GUIContent(value ? "YES" : "NO", toolTip);
+            bool newValue = GUILayout.Toggle(value, toggleContent, toggleStyle, GUILayout.Width(100), GUILayout.Height(25));
 
             GUILayout.EndHorizontal();
+
+            ShowTooltip();
 
             return newValue;
         }
 
-        public static bool Button(string label, GUIStyle style = null)
+        public static bool Button(string label, string toolTip, GUIStyle style = null)
         {
             if (style == null)
             {
                 style = GUI.skin.button;
             }
-            return GUILayout.Button(label, style, GUILayout.Width(150)); 
+
+            GUIContent buttonContent = new GUIContent(label, toolTip);
+            bool result = GUILayout.Button(buttonContent, style, GUILayout.Width(150));
+
+            ShowTooltip();
+
+            return result;
+        }
+
+        private static void ShowTooltip()
+        {
+            if (!string.IsNullOrEmpty(GUI.tooltip))
+            {
+                Vector2 mousePosition = Event.current.mousePosition;
+                GUIStyle tooltipStyle = new GUIStyle(GUI.skin.box);
+                Vector2 size = tooltipStyle.CalcSize(new GUIContent(GUI.tooltip));
+                Rect tooltipRect = new Rect(mousePosition.x, mousePosition.y - size.y, size.x, size.y);
+                GUI.Box(tooltipRect, GUI.tooltip, tooltipStyle);
+            }
         }
     }
 }

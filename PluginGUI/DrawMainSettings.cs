@@ -24,7 +24,7 @@ namespace Donuts
         {
             InitializeDropdownIndices();
         }
-        private static void InitializeDropdownIndices()
+        internal static void InitializeDropdownIndices()
         {
             botDifficultiesPMCIndex = FindIndex(DefaultPluginVars.botDifficultiesPMC);
             botDifficultiesSCAVIndex = FindIndex(DefaultPluginVars.botDifficultiesSCAV);
@@ -116,11 +116,16 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.PluginEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.PluginEnabled.Name, DefaultPluginVars.PluginEnabled.Value);
-            DefaultPluginVars.DespawnEnabledPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledPMC.Name, DefaultPluginVars.DespawnEnabledPMC.Value);
-            DefaultPluginVars.DespawnEnabledSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name, DefaultPluginVars.DespawnEnabledSCAV.Value);
-            DefaultPluginVars.ShowRandomFolderChoice.Value = ImGUIToolkit.Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name, DefaultPluginVars.ShowRandomFolderChoice.Value);
-            DefaultPluginVars.battleStateCoolDown.Value = ImGUIToolkit.Slider(DefaultPluginVars.battleStateCoolDown.Name, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
+            DefaultPluginVars.PluginEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.PluginEnabled.Name, 
+                DefaultPluginVars.PluginEnabled.ToolTipText, DefaultPluginVars.PluginEnabled.Value);
+            DefaultPluginVars.DespawnEnabledPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledPMC.Name, 
+                DefaultPluginVars.DespawnEnabledPMC.ToolTipText, DefaultPluginVars.DespawnEnabledPMC.Value);
+            DefaultPluginVars.DespawnEnabledSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name, 
+                DefaultPluginVars.DespawnEnabledSCAV.ToolTipText, DefaultPluginVars.DespawnEnabledSCAV.Value);
+            DefaultPluginVars.ShowRandomFolderChoice.Value = ImGUIToolkit.Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name, 
+                DefaultPluginVars.ShowRandomFolderChoice.ToolTipText, DefaultPluginVars.ShowRandomFolderChoice.Value);
+            DefaultPluginVars.battleStateCoolDown.Value = ImGUIToolkit.Slider(DefaultPluginVars.battleStateCoolDown.Name, 
+                DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
@@ -132,19 +137,29 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
-            DefaultPluginVars.HardCapEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.HardCapEnabled.Name, DefaultPluginVars.HardCapEnabled.Value);
-            DefaultPluginVars.hardStopOptionPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionPMC.Name, DefaultPluginVars.hardStopOptionPMC.Value);
-            DefaultPluginVars.hardStopTimePMC.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimePMC.Name, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
-            DefaultPluginVars.hardStopOptionSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionSCAV.Name, DefaultPluginVars.hardStopOptionSCAV.Value);
-            DefaultPluginVars.hardStopTimeSCAV.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimeSCAV.Name, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+            DefaultPluginVars.HardCapEnabled.Value = ImGUIToolkit.Toggle(DefaultPluginVars.HardCapEnabled.Name, 
+                DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
+            DefaultPluginVars.hardStopOptionPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionPMC.Name, 
+                DefaultPluginVars.hardStopOptionPMC.ToolTipText, DefaultPluginVars.hardStopOptionPMC.Value);
+            DefaultPluginVars.hardStopTimePMC.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimePMC.Name, 
+                DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
+            DefaultPluginVars.hardStopOptionSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hardStopOptionSCAV.Name, 
+                DefaultPluginVars.hardStopOptionSCAV.ToolTipText, DefaultPluginVars.hardStopOptionSCAV.Value);
+            DefaultPluginVars.hardStopTimeSCAV.Value = ImGUIToolkit.Slider(DefaultPluginVars.hardStopTimeSCAV.Name, 
+                DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
-            DefaultPluginVars.coolDownTimer.Value = ImGUIToolkit.Slider(DefaultPluginVars.coolDownTimer.Name, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
-            DefaultPluginVars.hotspotBoostPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostPMC.Name, DefaultPluginVars.hotspotBoostPMC.Value);
-            DefaultPluginVars.hotspotBoostSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostSCAV.Name, DefaultPluginVars.hotspotBoostSCAV.Value);
-            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name, DefaultPluginVars.hotspotIgnoreHardCapPMC.Value);
-            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name, DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value);
+            DefaultPluginVars.coolDownTimer.Value = ImGUIToolkit.Slider(DefaultPluginVars.coolDownTimer.Name, 
+                DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
+            DefaultPluginVars.hotspotBoostPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostPMC.Name, 
+                DefaultPluginVars.hotspotBoostPMC.ToolTipText, DefaultPluginVars.hotspotBoostPMC.Value);
+            DefaultPluginVars.hotspotBoostSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotBoostSCAV.Name, 
+                DefaultPluginVars.hotspotBoostSCAV.ToolTipText, DefaultPluginVars.hotspotBoostSCAV.Value);
+            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name, 
+                DefaultPluginVars.hotspotIgnoreHardCapPMC.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapPMC.Value);
+            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = ImGUIToolkit.Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name, 
+                DefaultPluginVars.hotspotIgnoreHardCapSCAV.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value);
         
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
@@ -184,7 +199,8 @@ namespace Donuts
             forceAllBotTypeIndex = ImGUIToolkit.Dropdown(DefaultPluginVars.forceAllBotType, forceAllBotTypeIndex);
             DefaultPluginVars.forceAllBotType.Value = DefaultPluginVars.forceAllBotType.Options[forceAllBotTypeIndex];
 
-            DefaultPluginVars.pmcFactionRatio.Value = ImGUIToolkit.Slider(DefaultPluginVars.pmcFactionRatio.Name, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);
+            DefaultPluginVars.pmcFactionRatio.Value = ImGUIToolkit.Slider(DefaultPluginVars.pmcFactionRatio.Name, 
+                DefaultPluginVars.pmcFactionRatio.ToolTipText, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);
             
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();

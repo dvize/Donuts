@@ -664,6 +664,24 @@ namespace Donuts
                 }
             }
         }
+        public static void ResetToDefaults()
+        {
+            foreach (var field in typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
+            {
+                if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
+                {
+                    var settingValue = field.GetValue(null);
+                    var valueProperty = settingValue.GetType().GetProperty("Value");
+                    var defaultValueProperty = settingValue.GetType().GetProperty("DefaultValue");
+
+                    var defaultValue = defaultValueProperty.GetValue(settingValue);
+                    valueProperty.SetValue(settingValue, defaultValue);
+                }
+            }
+
+            // Reset dropdown indices
+            DrawMainSettings.InitializeDropdownIndices();
+        }
     }
 }
        

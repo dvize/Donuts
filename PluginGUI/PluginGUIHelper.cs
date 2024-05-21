@@ -1,7 +1,6 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
+using UnityEngine;
 
 #pragma warning disable IDE0007
 
@@ -123,7 +122,22 @@ namespace Donuts
         {
             GUILayout.FlexibleSpace(); // Pushes content to the top
             GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace(); // Pushes content to the left
+
+            // Reset to Default Values button on the left
+            GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button);
+            redButtonStyle.normal.textColor = Color.white;
+            redButtonStyle.normal.background = MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f));
+
+            if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(200), GUILayout.Height(30)))
+            {
+                DefaultPluginVars.ResetToDefaults();
+                DonutsPlugin.Logger.LogWarning("All settings have been reset to default values.");
+                RestartPluginGUIHelper();
+            }
+
+            GUILayout.FlexibleSpace(); // Pushes content to the left and right
+
+            // Save All Changes button on the right
             GUIStyle greenButtonStyle = new GUIStyle(GUI.skin.button);
             greenButtonStyle.normal.textColor = Color.white;
             greenButtonStyle.normal.background = MakeTex(1, 1, new Color(0.0f, 0.5f, 0.0f));
@@ -133,6 +147,7 @@ namespace Donuts
                 ExportConfig();
                 DonutsPlugin.Logger.LogWarning("All changes saved.");
             }
+
             GUILayout.EndHorizontal();
         }
 
@@ -152,12 +167,12 @@ namespace Donuts
 
         private void CacheGUIStyles()
         {
-            var windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f)); 
-            var buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));     
-            var buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));      
-            var buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));     
-            var subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));  
-            var subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));      
+            var windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f));
+            var buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));
+            var buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));
+            var buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));
+            var subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));
+            var subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));
             var subTabActiveTex = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f));
 
             cachedWindowStyle = new GUIStyle(GUI.skin.window)
@@ -251,5 +266,14 @@ namespace Donuts
             File.WriteAllText(configFilePath, json);
         }
 
+        private void RestartPluginGUIHelper()
+        {
+            if (DonutsPlugin.pluginGUIHelper != null)
+            {
+                DonutsPlugin.pluginGUIHelper.enabled = false;
+                DonutsPlugin.pluginGUIHelper.enabled = true;
+            }
+
+        }
     }
 }

@@ -9,7 +9,7 @@ namespace Donuts.Models
         {
             get; set;
         }
-        public string TooltipText
+        public string ToolTipText
         {
             get; set;
         }
@@ -40,7 +40,7 @@ namespace Donuts.Models
         public Setting(string name, string tooltipText, T value, T defaultValue, T minValue = default(T), T maxValue = default(T), T[] options = null)
         {
             Name = name;
-            TooltipText = tooltipText;
+            ToolTipText = tooltipText;
             Value = value;
             DefaultValue = defaultValue;
             MinValue = minValue;
