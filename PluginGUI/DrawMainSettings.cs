@@ -17,6 +17,8 @@ namespace Donuts
         internal static int scavGroupChanceIndex = 0;
         internal static int pmcFactionIndex = 0;
         internal static int forceAllBotTypeIndex = 0;
+        internal static int pmcScenarioSelectionIndex = 0;
+        internal static int scavScenarioSelectionIndex = 0;
 
         //need this for dropdowns to show loaded values and also reset to default
         static DrawMainSettings()
@@ -34,6 +36,9 @@ namespace Donuts
 
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
+
+            pmcScenarioSelectionIndex = FindIndex(DefaultPluginVars.pmcScenarioSelection);
+            scavScenarioSelectionIndex = FindIndex(DefaultPluginVars.scavScenarioSelection);
         }
 
 
@@ -101,10 +106,10 @@ namespace Donuts
         internal static void DrawMainSettingsGeneral()
         {
             // Draw general spawn settings
-            GUILayout.Label("Main Settings: General", cachedSubTabLabelStyle);
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
+
             DefaultPluginVars.PluginEnabled.Value = Toggle(DefaultPluginVars.PluginEnabled.Name,
                 DefaultPluginVars.PluginEnabled.ToolTipText, DefaultPluginVars.PluginEnabled.Value);
 
@@ -120,14 +125,27 @@ namespace Donuts
             DefaultPluginVars.battleStateCoolDown.Value = Slider(DefaultPluginVars.battleStateCoolDown.Name,
                 DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
 
+            // Dropdown for PMC scenario selection
+            pmcScenarioSelectionIndex = Dropdown(
+                DefaultPluginVars.pmcScenarioSelection,
+                pmcScenarioSelectionIndex
+            );
+            DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.pmcScenarioSelection.Options[pmcScenarioSelectionIndex];
+
+            // Dropdown for SCAV scenario selection
+            scavScenarioSelectionIndex = Dropdown(
+                DefaultPluginVars.scavScenarioSelection,
+                scavScenarioSelectionIndex
+            );
+            DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioSelection.Options[scavScenarioSelectionIndex];
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }
-
+        
         internal static void DrawMainSettingsSpawnFrequency()
         {
             // Draw advanced spawn settings
-            GUILayout.Label("Main Settings: Spawn Frequency Settings", cachedSubTabLabelStyle);
 
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
@@ -184,7 +202,6 @@ namespace Donuts
         internal static void DrawMainSettingsBotAttributes()
         {
             // Draw other spawn settings
-            GUILayout.Label("Main Settings: Bot Attributes", cachedSubTabLabelStyle);
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 

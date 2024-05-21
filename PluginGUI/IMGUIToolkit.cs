@@ -7,9 +7,11 @@ namespace Donuts
     public class ImGUIToolkit
     {
         private static Dictionary<int, bool> dropdownStates = new Dictionary<int, bool>();
+        private static Dictionary<int, bool> accordionStates = new Dictionary<int, bool>();
         private static GUIStyle dropdownStyle;
         private static GUIStyle dropdownButtonStyle;
         private static GUIStyle toggleStyle;
+        private static GUIStyle accordionButtonStyle;
 
         public static void InitializeStyles()
         {
@@ -31,6 +33,14 @@ namespace Donuts
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
+            };
+
+            accordionButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fixedHeight = 30,
+                fontSize = 16,
+                fontStyle = FontStyle.Bold
             };
 
             // Create textures for the toggle button states
@@ -208,6 +218,32 @@ namespace Donuts
 
             return result;
         }
+
+        public static void Accordion(string label, string toolTip, System.Action drawContents)
+        {
+            int accordionId = GUIUtility.GetControlID(FocusType.Passive);
+
+            if (!accordionStates.ContainsKey(accordionId))
+            {
+                accordionStates[accordionId] = false;
+            }
+
+            GUIContent buttonContent = new GUIContent(label, toolTip);
+            if (GUILayout.Button(buttonContent, accordionButtonStyle))
+            {
+                accordionStates[accordionId] = !accordionStates[accordionId];
+            }
+
+            if (accordionStates[accordionId])
+            {
+                GUILayout.BeginVertical(GUI.skin.box);
+                drawContents();
+                GUILayout.EndVertical();
+            }
+
+            ShowTooltip();
+        }
+
 
         private static void ShowTooltip()
         {

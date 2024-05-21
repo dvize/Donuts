@@ -123,18 +123,6 @@ namespace Donuts
             GUILayout.FlexibleSpace(); // Pushes content to the top
             GUILayout.BeginHorizontal();
 
-            // Reset to Default Values button on the left
-            GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button);
-            redButtonStyle.normal.textColor = Color.white;
-            redButtonStyle.normal.background = MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f));
-
-            if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(200), GUILayout.Height(30)))
-            {
-                DefaultPluginVars.ResetToDefaults();
-                DonutsPlugin.Logger.LogWarning("All settings have been reset to default values.");
-                RestartPluginGUIHelper();
-            }
-
             GUILayout.FlexibleSpace(); // Pushes content to the left and right
 
             // Save All Changes button on the right
@@ -152,7 +140,7 @@ namespace Donuts
         }
 
 
-        private Texture2D MakeTex(int width, int height, Color col)
+        internal Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];
             for (int i = 0; i < pix.Length; i++)
@@ -266,14 +254,6 @@ namespace Donuts
             File.WriteAllText(configFilePath, json);
         }
 
-        private void RestartPluginGUIHelper()
-        {
-            if (DonutsPlugin.pluginGUIHelper != null)
-            {
-                DonutsPlugin.pluginGUIHelper.enabled = false;
-                DonutsPlugin.pluginGUIHelper.enabled = true;
-            }
-
-        }
+        
     }
 }

@@ -127,8 +127,8 @@ namespace Donuts
         internal static List<Folder> randomScenarios = new List<Folder>();
         internal static Setting<string> pmcScenarioSelection;
         internal static Setting<string> scavScenarioSelection;
-        internal static string[] scenarioValues = { };
-        internal static string[] scavScenarioValues = { };
+        internal static string[] scenarioValues = {"Random" };
+        internal static string[] scavScenarioValues = {"Random" };
 
         //Default Constructor
         static DefaultPluginVars()
@@ -437,8 +437,8 @@ namespace Donuts
             pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                "Live Like (Random)",
-                "Live Like (Random)",
+                "Random",
+                "Random",
                 null,
                 null,
                 scenarioValues
@@ -447,8 +447,8 @@ namespace Donuts
             scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                "scav-raids",
-                "scav-raids",
+                "Random",
+                "Random",
                 null,
                 null,
                 scavScenarioValues
@@ -458,20 +458,26 @@ namespace Donuts
             replenishInterval = new Setting<float>(
                 "Bot Cache Replenish Interval",
                 "The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
-                30f,
-                30f);
+                10f,
+                10f, 
+                0f,
+                300f);
 
             maxSpawnTriesPerBot = new Setting<int>(
                 "Max Spawn Tries Per Bot",
-                "It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
+                "It will stop trying to spawn one of the bots after this many attempts to find a good spawn point. Lower is better",
                 5,
-                5);
+                5,
+                0,
+                10);
 
             despawnInterval = new Setting<float>(
                 "Despawn Bot Interval",
                 "This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
                 30f,
-                30f);
+                30f,
+                5f,
+                600f);
 
             groupWeightDistroLow = new Setting<string>(
                 "Low",
@@ -664,24 +670,7 @@ namespace Donuts
                 }
             }
         }
-        public static void ResetToDefaults()
-        {
-            foreach (var field in typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
-            {
-                if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
-                {
-                    var settingValue = field.GetValue(null);
-                    var valueProperty = settingValue.GetType().GetProperty("Value");
-                    var defaultValueProperty = settingValue.GetType().GetProperty("DefaultValue");
-
-                    var defaultValue = defaultValueProperty.GetValue(settingValue);
-                    valueProperty.SetValue(settingValue, defaultValue);
-                }
-            }
-
-            // Reset dropdown indices
-            DrawMainSettings.InitializeDropdownIndices();
-        }
+        
     }
 }
        
