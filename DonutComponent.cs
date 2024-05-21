@@ -282,6 +282,11 @@ namespace Donuts
 
         private async UniTask TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
+            if (forceAllBotType.Value != "Disabled")
+            {
+                hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
+            }
+
             if (HardCapEnabled.Value)
             {
                 int activePMCs = BotCountManager.GetAlivePlayers("pmc");
@@ -300,15 +305,20 @@ namespace Donuts
                 }
             }
 
-            if (forceAllBotType.Value != "Disabled")
+
+            if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc"))
             {
-                hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
+#if DEBUG
+                Logger.LogDebug("PMC spawn not allowed due to raid time conditions - skipping this spawn");
+#endif
+                return;
             }
 
-            if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc")) ||
-                (hotspotTimer.Hotspot.WildSpawnType == "scav" && hardStopOptionSCAV.Value && !IsRaidTimeRemaining("scav")))
+            if (hotspotTimer.Hotspot.WildSpawnType == "scav" && hardStopOptionSCAV.Value && !IsRaidTimeRemaining("scav"))
             {
-                Logger.LogDebug("Spawn not allowed due to raid time conditions - skipping this spawn");
+#if DEBUG
+                Logger.LogDebug("SCAV spawn not allowed due to raid time conditions - skipping this spawn");
+#endif
                 return;
             }
 
