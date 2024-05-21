@@ -237,29 +237,42 @@ namespace Donuts
                         continue;
                     }
 
+                    bool spawnTriggered = false;
                     var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
-                    var hotspotTimer = groupHotspotTimers[randomIndex];
 
-                    if (hotspotTimer.ShouldSpawn())
+                    for (int i = 0; i < groupHotspotTimers.Count; i++)
                     {
-                        Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
+                        var index = (randomIndex + i) % groupHotspotTimers.Count;
+                        var hotspotTimer = groupHotspotTimers[index];
 
-                        if (isInBattle)
+                        if (hotspotTimer.ShouldSpawn())
                         {
-                            if (timeSinceLastHit < battleStateCoolDown.Value)
+                            Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
+
+                            if (isInBattle)
                             {
-                                continue;
+                                if (timeSinceLastHit < battleStateCoolDown.Value)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    isInBattle = false;
+                                }
                             }
-                            else
+
+                            if (CanSpawn(hotspotTimer, coordinate))
                             {
-                                isInBattle = false;
+                                await TriggerSpawn(hotspotTimer, coordinate);
+                                spawnTriggered = true;
+                                break;
                             }
                         }
+                    }
 
-                        if (CanSpawn(hotspotTimer, coordinate))
-                        {
-                            await TriggerSpawn(hotspotTimer, coordinate);
-                        }
+                    if (spawnTriggered)
+                    {
+                        ResetGroupTimers(groupHotspotTimers[0].Hotspot.GroupNum);
                     }
                 }
             }
