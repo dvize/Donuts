@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -386,17 +387,16 @@ namespace Donuts
                     timer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
         }
-
         private void DespawnFurthestBot(string bottype)
         {
             if (bottype != "pmc" && bottype != "scav")
-                return;
+                return;  // Return immediately if bot type is not recognized
 
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
             float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
             if (Time.time - despawnCooldown < despawnCooldownDuration)
             {
-                return;
+                return; // Cooldown not completed
             }
 
             if (!ShouldConsiderDespawning(bottype))
@@ -404,41 +404,12 @@ namespace Donuts
                 return;
             }
 
-            NativeList<Vector3> botPositions = new NativeList<Vector3>(Allocator.TempJob);
-            NativeList<Vector3> playerPositions = new NativeList<Vector3>(Allocator.TempJob);
+            UpdateDistancesAndFindFurthestBot(out Player furthestBot);
 
-            foreach (var bot in gameWorld.AllAlivePlayersList)
+            if (furthestBot != null)
             {
-                botPositions.Add(bot.Position);
+                DespawnBot(furthestBot, bottype);
             }
-
-            foreach (var player in playerList)
-            {
-                playerPositions.Add(player.Position);
-            }
-
-            NativeArray<float> distances = new NativeArray<float>(botPositions.Length, Allocator.TempJob);
-            NativeArray<int> furthestBotIndex = new NativeArray<int>(1, Allocator.TempJob);
-
-            var job = new CalculateFurthestDistanceJob
-            {
-                BotPositions = botPositions,
-                PlayerPositions = playerPositions,
-                Distances = distances,
-                FurthestBotIndex = furthestBotIndex
-            };
-
-            JobHandle handle = job.Schedule(botPositions.Length, 64);
-            handle.Complete();
-
-            int index = furthestBotIndex[0];
-            Player furthestBot = gameWorld.AllAlivePlayersList[index];
-            DespawnBot(furthestBot, bottype);
-
-            botPositions.Dispose();
-            playerPositions.Dispose();
-            distances.Dispose();
-            furthestBotIndex.Dispose();
         }
 
         private bool ShouldConsiderDespawning(string botType)
@@ -446,7 +417,7 @@ namespace Donuts
             int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
             int activeBotCount = BotCountManager.GetAlivePlayers(botType);
 
-            return activeBotCount > botLimit;
+            return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
 
         private void DespawnBot(Player furthestBot, string bottype)
@@ -455,7 +426,9 @@ namespace Donuts
             if (botOwner == null)
                 return;
 
+#if DEBUG
             Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
+#endif
 
             gameWorld.RegisteredPlayers.Remove(botOwner);
             gameWorld.AllAlivePlayersList.Remove(botOwner.GetPlayer);
@@ -469,6 +442,7 @@ namespace Donuts
             DestroyImmediate(botOwner.gameObject);
             Destroy(botOwner);
 
+            // Update the cooldown
             if (bottype == "pmc")
             {
                 PMCdespawnCooldown = Time.time;
@@ -479,29 +453,21 @@ namespace Donuts
             }
         }
 
-        [BurstCompile]
-        internal struct CalculateFurthestDistanceJob : IJobParallelFor
+        private void UpdateDistancesAndFindFurthestBot(out Player furthestBot)
         {
-            [ReadOnly] public NativeList<Vector3> BotPositions;
-            [ReadOnly] public NativeList<Vector3> PlayerPositions;
-            public NativeArray<float> Distances;
-            public NativeArray<int> FurthestBotIndex;
+            float maxDistance = float.MinValue;
+            furthestBot = null;
 
-            public void Execute(int index)
+            foreach (var bot in gameWorld.AllAlivePlayersList)
             {
-                float maxDistance = float.MinValue;
-                for (int i = 0; i < PlayerPositions.Length; i++)
+                // Get distance of bot to player using squared distance
+                float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
+
+                // Check if this is the furthest distance
+                if (distance > maxDistance)
                 {
-                    float distance = math.distance(BotPositions[index], PlayerPositions[i]);
-                    if (distance > maxDistance)
-                    {
-                        maxDistance = distance;
-                    }
-                }
-                Distances[index] = maxDistance;
-                if (maxDistance > Distances[FurthestBotIndex[0]])
-                {
-                    FurthestBotIndex[0] = index;
+                    maxDistance = distance;
+                    furthestBot = bot;
                 }
             }
         }
