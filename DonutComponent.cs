@@ -211,12 +211,12 @@ namespace Donuts
                 spawnCheckTimer.Restart();
                 StartSpawnProcess().Forget();
             }
+
+            Gizmos.DisplayMarkerInformation();
         }
 
         private async UniTask StartSpawnProcess()
         {
-            Gizmos.DisplayMarkerInformation();
-
             if (DefaultPluginVars.DespawnEnabledPMC.Value)
             {
                 DespawnFurthestBot("pmc");
@@ -274,6 +274,29 @@ namespace Donuts
 
         private async UniTask TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
+            if (DefaultPluginVars.HardCapEnabled.Value)
+            {
+                // Check the bot limits
+                int activePMCs = BotCountManager.GetAlivePlayers("pmc");
+                int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
+
+                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && activePMCs >= PMCBotLimit)
+                {
+#if DEBUG
+                    Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
+#endif
+                    return;
+                }
+
+                if (hotspotTimer.Hotspot.WildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit)
+                {
+#if DEBUG
+                    Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
+#endif
+                    return;
+                }
+            }
+
             await BotSpawn.SpawnBots(hotspotTimer, coordinate);
             hotspotTimer.timesSpawned++;
 
