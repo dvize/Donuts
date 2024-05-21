@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Donuts.Models;
 using static Donuts.DonutComponent;
+using System.Linq;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -25,7 +26,7 @@ namespace Donuts
                 {
                     spawnPosition = navHit.position;
 
-                    if (SpawnChecks.IsValidSpawnPosition(spawnPosition, hotspot))
+                    if (await IsValidSpawnPosition(spawnPosition, hotspot))
                     {
 #if DEBUG
                         DonutComponent.Logger.LogDebug("Found spawn position at: " + spawnPosition);
@@ -48,84 +49,63 @@ namespace Donuts
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
-        internal static bool IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
+        internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
         {
-            if (spawnPosition != null && hotspot != null)
+            if (spawnPosition == null || hotspot == null)
             {
-                if (IsSpawnPositionInsideWall(spawnPosition))
-                {
-                    DonutComponent.Logger.LogDebug("Spawn position is inside a wall.");
-                    return false;
-                }
-
-                if (IsSpawnPositionInPlayerLineOfSight(spawnPosition))
-                {
-                    DonutComponent.Logger.LogDebug("Spawn position is in player line of sight.");
-                    return false;
-                }
-
-                if (IsSpawnInAir(spawnPosition))
-                {
-                    DonutComponent.Logger.LogDebug("Spawn position is in air.");
-                    return false;
-                }
-
-                if (IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot))
-                {
-                    DonutComponent.Logger.LogDebug("Spawn position is too close to a player.");
-                    return false;
-                }
-
-                if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
-                {
-                    if (IsPositionTooCloseToOtherBots(spawnPosition, hotspot))
-                    {
-                        DonutComponent.Logger.LogDebug("Spawn position is too close to other bots.");
-                        return false;
-                    }
-                }
-
-                return true;
+                DonutComponent.Logger.LogDebug("Spawn position or hotspot is null.");
+                return false;
             }
 
-            DonutComponent.Logger.LogDebug("Spawn position or hotspot is null.");
+            var tasks = new List<Task<bool>>
+            {
+                IsSpawnPositionInsideWall(spawnPosition),
+                IsSpawnPositionInPlayerLineOfSight(spawnPosition),
+                IsSpawnInAir(spawnPosition)
+            };
+
+            if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
+            {
+                tasks.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot));
+            }
+
+            if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
+            {
+                tasks.Add(IsPositionTooCloseToOtherBots(spawnPosition, hotspot));
+            }
+
+            bool[] results = await Task.WhenAll(tasks);
+
+            if (results.Any(result => result))
+            {
+                DonutComponent.Logger.LogDebug("Spawn position failed one or more checks.");
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static async Task<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
+        {
+            foreach (var player in playerList)
+            {
+                if (player == null || player.HealthController == null || !player.HealthController.IsAlive)
+                {
+                    continue;
+                }
+                Vector3 playerPosition = player.MainParts[BodyPartType.head].Position;
+                Vector3 direction = (playerPosition - spawnPosition).normalized;
+                float distance = Vector3.Distance(spawnPosition, playerPosition);
+                if (!Physics.Raycast(spawnPosition, direction, distance, LayerMaskClass.HighPolyWithTerrainMask))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
-        internal static bool IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
+        internal static async Task<bool> IsSpawnPositionInsideWall(Vector3 position)
         {
-            //add try catch for when player is null at end of raid
-            try
-            {
-                foreach (var player in playerList)
-                {
-                    if (player == null || player.HealthController == null)
-                    {
-                        continue;
-                    }
-                    if (!player.HealthController.IsAlive)
-                    {
-                        continue;
-                    }
-                    Vector3 playerPosition = player.MainParts[BodyPartType.head].Position;
-                    Vector3 direction = (playerPosition - spawnPosition).normalized;
-                    float distance = Vector3.Distance(spawnPosition, playerPosition);
-                    RaycastHit hit;
-                    if (!Physics.Raycast(spawnPosition, direction, out hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
-                    {
-                        // No objects found between spawn point and player
-                        return true;
-                    }
-                }
-            }
-            catch { }
-
-            return false;
-        }
-
-        internal static bool IsSpawnPositionInsideWall(Vector3 position)
-        {
-            // Check if any game object parent has the name "WALLS" in it
             Vector3 boxSize = new Vector3(1f, 1f, 1f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
 
@@ -145,31 +125,12 @@ namespace Donuts
             return false;
         }
 
-        /*private bool IsSpawnPositionObstructed(Vector3 position)
+        internal static async Task<bool> IsSpawnInAir(Vector3 position)
         {
-            Ray ray = new Ray(position, Vector3.up);
-            float distance = 5f;
-
-            if (Physics.Raycast(ray, out RaycastHit hit, distance, LayerMaskClass.TerrainMask))
-            {
-                // If the raycast hits a collider, it means the position is obstructed
-                return true;
-            }
-
-            return false;
-        }*/
-        internal static bool IsSpawnInAir(Vector3 position)
-        {
-            // Raycast down and determine if the position is in the air or not
             Ray ray = new Ray(position, Vector3.down);
             float distance = 10f;
 
-            if (Physics.Raycast(ray, out RaycastHit hit, distance, LayerMaskClass.HighPolyWithTerrainMask))
-            {
-                // If the raycast hits a collider, it means the position is not in the air
-                return false;
-            }
-            return true;
+            return !Physics.Raycast(ray, distance, LayerMaskClass.HighPolyWithTerrainMask);
         }
 
         private static float GetMinDistanceFromPlayer(Entry hotspot)
@@ -217,45 +178,45 @@ namespace Donuts
             }
         }
 
-        internal static bool IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
+        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
         {
             float minDistanceFromPlayer = GetMinDistanceFromPlayer(hotspot);
-            foreach (var player in playerList)
-            {
-                if (player == null || player.HealthController == null)
-                {
-                    continue;
-                }
 
-                if (!player.HealthController.IsAlive)
+            var tasks = playerList
+                .Where(player => player != null && player.HealthController != null && player.HealthController.IsAlive)
+                .Select(player => Task.Run(() =>
                 {
-                    continue;
-                }
+                    if ((player.Position - position).sqrMagnitude < (minDistanceFromPlayer * minDistanceFromPlayer))
+                    {
+                        return true;
+                    }
+                    return false;
+                }))
+                .ToList();
 
-                if ((player.Position - position).sqrMagnitude < (minDistanceFromPlayer * minDistanceFromPlayer))
-                {
-                    return true;
-                }
-            }
-            return false;
+            bool[] results = await Task.WhenAll(tasks);
+            return results.Any(result => result);
         }
 
-        internal static bool IsPositionTooCloseToOtherBots(Vector3 position, Entry hotspot)
+        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position, Entry hotspot)
         {
             float minDistanceFromOtherBots = GetMinDistanceFromOtherBots(hotspot);
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
 
-            foreach (var player in players)
-            {
-                if (player == null || !player.HealthController.IsAlive || player.IsYourPlayer)
-                    continue;
-
-                if ((player.Position - position).sqrMagnitude < minDistanceFromOtherBots * minDistanceFromOtherBots)
+            var tasks = players
+                .Where(player => player != null && player.HealthController.IsAlive && !player.IsYourPlayer)
+                .Select(player => Task.Run(() =>
                 {
-                    return true;
-                }
-            }
-            return false;
+                    if ((player.Position - position).sqrMagnitude < (minDistanceFromOtherBots * minDistanceFromOtherBots))
+                    {
+                        return true;
+                    }
+                    return false;
+                }))
+                .ToList();
+
+            bool[] results = await Task.WhenAll(tasks);
+            return results.Any(result => result);
         }
 
 

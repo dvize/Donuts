@@ -1,20 +1,23 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
+using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using Systems.Effects;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
-using System.Threading.Tasks;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -300,38 +303,19 @@ namespace Donuts
                 hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
             }
 
+            var tasks = new List<Task<bool>>();
+
             if (HardCapEnabled.Value)
             {
-                int activePMCs = BotCountManager.GetAlivePlayers("pmc");
-                int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
-
-                if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && activePMCs >= PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
-                {
-                    Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
-                    return;
-                }
-
-                if (hotspotTimer.Hotspot.WildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
-                {
-                    Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
-                    return;
-                }
+                tasks.Add(CheckHardCap(hotspotTimer.Hotspot.WildSpawnType));
             }
 
+            tasks.Add(CheckRaidTime(hotspotTimer.Hotspot.WildSpawnType));
 
-            if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc"))
-            {
-#if DEBUG
-                Logger.LogDebug("PMC spawn not allowed due to raid time conditions - skipping this spawn");
-#endif
-                return;
-            }
+            bool[] results = await Task.WhenAll(tasks);
 
-            if (hotspotTimer.Hotspot.WildSpawnType == "scav" && hardStopOptionSCAV.Value && !IsRaidTimeRemaining("scav"))
+            if (results.Any(result => !result))
             {
-#if DEBUG
-                Logger.LogDebug("SCAV spawn not allowed due to raid time conditions - skipping this spawn");
-#endif
                 return;
             }
 
@@ -346,6 +330,46 @@ namespace Donuts
             ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
         }
 
+        private async Task<bool> CheckHardCap(string wildSpawnType)
+        {
+            int activePMCs = BotCountManager.GetAlivePlayers("pmc");
+            int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
+
+            if (wildSpawnType == "pmc" && activePMCs >= PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
+            {
+                Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
+                return false;
+            }
+
+            if (wildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
+            {
+                Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<bool> CheckRaidTime(string wildSpawnType)
+        {
+            if (wildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc"))
+            {
+#if DEBUG
+                Logger.LogDebug("PMC spawn not allowed due to raid time conditions - skipping this spawn");
+#endif
+                return false;
+            }
+
+            if (wildSpawnType == "scav" && hardStopOptionSCAV.Value && !IsRaidTimeRemaining("scav"))
+            {
+#if DEBUG
+                Logger.LogDebug("SCAV spawn not allowed due to raid time conditions - skipping this spawn");
+#endif
+                return false;
+            }
+
+            return true;
+        }
         private bool IsRaidTimeRemaining(string spawnType)
         {
             int hardStopTime = spawnType == "pmc" ? hardStopTimePMC.Value : hardStopTimeSCAV.Value;
@@ -380,25 +404,41 @@ namespace Donuts
                 return;
             }
 
-            Dictionary<Player, float> botFurthestDistanceToAnyPlayerDict = new Dictionary<Player, float>();
-            UpdateFurthestDistances(botFurthestDistanceToAnyPlayerDict);
+            NativeList<Vector3> botPositions = new NativeList<Vector3>(Allocator.TempJob);
+            NativeList<Vector3> playerPositions = new NativeList<Vector3>(Allocator.TempJob);
 
-            Player furthestBot = null;
-            float maxDistance = float.MinValue;
-
-            foreach (var botKvp in botFurthestDistanceToAnyPlayerDict)
+            foreach (var bot in gameWorld.AllAlivePlayersList)
             {
-                if (botKvp.Value > maxDistance)
-                {
-                    maxDistance = botKvp.Value;
-                    furthestBot = botKvp.Key;
-                }
+                botPositions.Add(bot.Position);
             }
 
-            if (furthestBot != null)
+            foreach (var player in playerList)
             {
-                DespawnBot(furthestBot, bottype);
+                playerPositions.Add(player.Position);
             }
+
+            NativeArray<float> distances = new NativeArray<float>(botPositions.Length, Allocator.TempJob);
+            NativeArray<int> furthestBotIndex = new NativeArray<int>(1, Allocator.TempJob);
+
+            var job = new CalculateFurthestDistanceJob
+            {
+                BotPositions = botPositions,
+                PlayerPositions = playerPositions,
+                Distances = distances,
+                FurthestBotIndex = furthestBotIndex
+            };
+
+            JobHandle handle = job.Schedule(botPositions.Length, 64);
+            handle.Complete();
+
+            int index = furthestBotIndex[0];
+            Player furthestBot = gameWorld.AllAlivePlayersList[index];
+            DespawnBot(furthestBot, bottype);
+
+            botPositions.Dispose();
+            playerPositions.Dispose();
+            distances.Dispose();
+            furthestBotIndex.Dispose();
         }
 
         private bool ShouldConsiderDespawning(string botType)
@@ -439,23 +479,30 @@ namespace Donuts
             }
         }
 
-        private void UpdateFurthestDistances(Dictionary<Player, float> botFurthestFromPlayer)
+        [BurstCompile]
+        internal struct CalculateFurthestDistanceJob : IJobParallelFor
         {
-            foreach (var bot in gameWorld.AllAlivePlayersList)
-            {
-                float furthestDistance = float.MinValue;
-                foreach (var player in playerList)
-                {
-                    if (player == null || player.HealthController == null || !player.HealthController.IsAlive)
-                        continue;
+            [ReadOnly] public NativeList<Vector3> BotPositions;
+            [ReadOnly] public NativeList<Vector3> PlayerPositions;
+            public NativeArray<float> Distances;
+            public NativeArray<int> FurthestBotIndex;
 
-                    float currentDistance = (bot.Position - player.Position).sqrMagnitude;
-                    if (currentDistance > furthestDistance)
+            public void Execute(int index)
+            {
+                float maxDistance = float.MinValue;
+                for (int i = 0; i < PlayerPositions.Length; i++)
+                {
+                    float distance = math.distance(BotPositions[index], PlayerPositions[i]);
+                    if (distance > maxDistance)
                     {
-                        furthestDistance = currentDistance;
+                        maxDistance = distance;
                     }
                 }
-                botFurthestFromPlayer[bot] = furthestDistance;
+                Distances[index] = maxDistance;
+                if (maxDistance > Distances[FurthestBotIndex[0]])
+                {
+                    FurthestBotIndex[0] = index;
+                }
             }
         }
 

@@ -74,8 +74,14 @@
     <Reference Include="UniTask.TextMeshPro">
       <HintPath>F:\SPT-AKI-DEV\BepInEx\plugins\UnityToolkit\UniTask.TextMeshPro.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\Unity.Burst.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Collections">
       <HintPath>F:\SPT-AKI-DEV\BepInEx\plugins\UnityToolkit\Unity.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\Unity.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>F:\SPT-AKI-DEV\EscapeFromTarkov_Data\Managed\UnityEngine.dll</HintPath>
