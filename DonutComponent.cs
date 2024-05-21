@@ -13,8 +13,8 @@ using EFT;
 using HarmonyLib;
 using Systems.Effects;
 using UnityEngine;
-
 using static Donuts.DefaultPluginVars;
+using System.Threading.Tasks;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
@@ -66,6 +66,7 @@ namespace Donuts
         internal static WildSpawnType sptBear;
 
         internal static bool isInBattle;
+        internal static float timeSinceLastHit = 0;
         internal static Player mainplayer;
         internal static ManualLogSource Logger
         {
@@ -163,7 +164,7 @@ namespace Donuts
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + maplocation);
             Initialization.LoadFightLocations();
-            if (DefaultPluginVars.PluginEnabled.Value && fileLoaded)
+            if (PluginEnabled.Value && fileLoaded)
             {
                 Initialization.InitializeHotspotTimers();
             }
@@ -186,10 +187,8 @@ namespace Donuts
                 case EDamageType.Explosion:
                 case EDamageType.GrenadeFragment:
                 case EDamageType.Sniper:
-                    if (isInBattle)
-                    {
-                        isInBattle = false;
-                    }
+                    isInBattle = true;
+                    timeSinceLastHit = 0;
                     break;
                 default:
                     break;
@@ -200,6 +199,8 @@ namespace Donuts
         {
             if (!PluginEnabled.Value || !fileLoaded)
                 return;
+
+            timeSinceLastHit += Time.deltaTime;
 
             foreach (var hotspotTimer in hotspotTimers)
             {
@@ -217,12 +218,12 @@ namespace Donuts
 
         private async UniTask StartSpawnProcess()
         {
-            if (DefaultPluginVars.DespawnEnabledPMC.Value)
+            if (DespawnEnabledPMC.Value)
             {
                 DespawnFurthestBot("pmc");
             }
 
-            if (DefaultPluginVars.DespawnEnabledSCAV.Value)
+            if (DespawnEnabledSCAV.Value)
             {
                 DespawnFurthestBot("scav");
             }
@@ -243,9 +244,16 @@ namespace Donuts
                     {
                         Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
 
-                        while (isInBattle)
+                        if (isInBattle)
                         {
-                            await UniTask.Delay(1000); // Check every second if still in battle
+                            if (timeSinceLastHit < battleStateCoolDown.Value)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                isInBattle = false;
+                            }
                         }
 
                         if (CanSpawn(hotspotTimer, coordinate))
@@ -261,10 +269,10 @@ namespace Donuts
         {
             if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspotTimer.Hotspot.MapName)
             {
-                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DefaultPluginVars.hotspotBoostPMC.Value) ||
-                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && DefaultPluginVars.hotspotBoostSCAV.Value))
+                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && hotspotBoostSCAV.Value))
                 {
-                    hotspotTimer.Hotspot.SpawnChance = 100;  // Boosting spawn chance
+                    hotspotTimer.Hotspot.SpawnChance = 100;
                 }
 
                 return UnityEngine.Random.Range(0, 100) < hotspotTimer.Hotspot.SpawnChance;
@@ -274,27 +282,34 @@ namespace Donuts
 
         private async UniTask TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            if (DefaultPluginVars.HardCapEnabled.Value)
+            if (HardCapEnabled.Value)
             {
-                // Check the bot limits
                 int activePMCs = BotCountManager.GetAlivePlayers("pmc");
                 int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
 
                 if (hotspotTimer.Hotspot.WildSpawnType == "pmc" && activePMCs >= PMCBotLimit)
                 {
-#if DEBUG
                     Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
-#endif
                     return;
                 }
 
                 if (hotspotTimer.Hotspot.WildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit)
                 {
-#if DEBUG
                     Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
-#endif
                     return;
                 }
+            }
+
+            if (forceAllBotType.Value != "Disabled")
+            {
+                hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
+            }
+
+            if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc")) ||
+                (hotspotTimer.Hotspot.WildSpawnType == "scav" && hardStopOptionSCAV.Value && !IsRaidTimeRemaining("scav")))
+            {
+                Logger.LogDebug("Spawn not allowed due to raid time conditions - skipping this spawn");
+                return;
             }
 
             await BotSpawn.SpawnBots(hotspotTimer, coordinate);
@@ -306,6 +321,13 @@ namespace Donuts
             }
 
             ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
+        }
+
+        private bool IsRaidTimeRemaining(string spawnType)
+        {
+            int hardStopTime = spawnType == "pmc" ? hardStopTimePMC.Value : hardStopTimeSCAV.Value;
+            int raidTimeLeft = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
+            return raidTimeLeft >= hardStopTime;
         }
 
         private void ResetGroupTimers(int groupNum)
@@ -321,13 +343,13 @@ namespace Donuts
         private void DespawnFurthestBot(string bottype)
         {
             if (bottype != "pmc" && bottype != "scav")
-                return;  // Return immediately if bot type is not recognized
+                return;
 
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
             float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
             if (Time.time - despawnCooldown < despawnCooldownDuration)
             {
-                return; // Cooldown not completed
+                return;
             }
 
             if (!ShouldConsiderDespawning(bottype))
@@ -355,12 +377,13 @@ namespace Donuts
                 DespawnBot(furthestBot, bottype);
             }
         }
+
         private bool ShouldConsiderDespawning(string botType)
         {
             int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
             int activeBotCount = BotCountManager.GetAlivePlayers(botType);
 
-            return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
+            return activeBotCount > botLimit;
         }
 
         private void DespawnBot(Player furthestBot, string bottype)
@@ -369,9 +392,7 @@ namespace Donuts
             if (botOwner == null)
                 return;
 
-#if DEBUG
             Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
-#endif
 
             gameWorld.RegisteredPlayers.Remove(botOwner);
             gameWorld.AllAlivePlayersList.Remove(botOwner.GetPlayer);
@@ -385,7 +406,6 @@ namespace Donuts
             DestroyImmediate(botOwner.gameObject);
             Destroy(botOwner);
 
-            // Update the cooldown
             if (bottype == "pmc")
             {
                 PMCdespawnCooldown = Time.time;
@@ -395,6 +415,7 @@ namespace Donuts
                 SCAVdespawnCooldown = Time.time;
             }
         }
+
         private void UpdateFurthestDistances(Dictionary<Player, float> botFurthestFromPlayer)
         {
             foreach (var bot in gameWorld.AllAlivePlayersList)
@@ -417,12 +438,11 @@ namespace Donuts
 
         private void OnGUI()
         {
-            gizmos.ToggleGizmoDisplay(DefaultPluginVars.DebugGizmos.Value);
+            gizmos.ToggleGizmoDisplay(DebugGizmos.Value);
         }
 
         private void OnDestroy()
         {
-            // Unregister on-bot-removed event
             botSpawnerClass.OnBotRemoved -= removedBot =>
             {
                 foreach (var player in playerList)
@@ -448,20 +468,15 @@ namespace Donuts
 
             mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
 
-            // Stop and clear all coroutines
             StopAllCoroutines();
 
-            // Reset static and instance variables
-            isInBattle = false;  // Resetting static variable
+            isInBattle = false;
             groupedFightLocations = null;
             groupedHotspotTimers = null;
             hotspotTimers = null;
             methodCache = null;
 
-            // Log cleanup action if debugging
-#if DEBUG
             Logger.LogWarning("Donuts Component cleaned up and disabled.");
-#endif
         }
     }
 }
