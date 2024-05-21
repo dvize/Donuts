@@ -105,6 +105,11 @@ namespace Donuts
         static string lowWeightsString = ConvertIntArrayToString(groupChanceWeights["Low"]);
         static string highWeightsString = ConvertIntArrayToString(groupChanceWeights["High"]);
 
+        internal static string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
+        internal static string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
+        internal static string[] pmcFactionList = new string[] { "Default", "USEC", "BEAR" };
+        internal static string[] forceAllBotTypeList = new string[] { "Disabled", "SCAV", "PMC" };
+
         internal static string ConvertIntArrayToString(int[] array)
         {
             return string.Join(",", array);
