@@ -23,18 +23,16 @@ namespace Donuts
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.5")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("com.Arys.UnityToolkit")]
     public class DonutsPlugin : BaseUnityPlugin
     {
         internal static PluginGUIHelper pluginGUIHelper;
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
-        internal static ManualLogSource Logger;
+        internal static new ManualLogSource Logger;
         DonutsPlugin()
         {
-            if (Logger == null)
-            {
-                Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
-            }
+            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
         }
         private void Awake()
         {

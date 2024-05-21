@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Cysharp.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -21,7 +21,6 @@ namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
-
         internal static FightLocations fightLocations;
         internal static FightLocations sessionLocations;
 
@@ -66,7 +65,6 @@ namespace Donuts
         internal static WildSpawnType sptUsec;
         internal static WildSpawnType sptBear;
 
-        internal Coroutine battleCooldownCoroutine = null;
         internal static bool isInBattle;
         internal static Player mainplayer;
         internal static ManualLogSource Logger
@@ -80,9 +78,9 @@ namespace Donuts
             {
                 Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
             }
-
         }
-        public static void Enable()
+
+        internal static void Enable()
         {
             if (Singleton<IBotGame>.Instantiated)
             {
@@ -90,18 +88,16 @@ namespace Donuts
                 gameWorld.GetOrAddComponent<DonutComponent>();
 
                 Logger.LogDebug("Donuts Enabled");
-
             }
         }
 
-        public void Awake()
+        private void Awake()
         {
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(botSpawnerClass.GetType(), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             methodCache = new Dictionary<string, MethodInfo>();
             gizmos = new Gizmos(this);
 
-            // Retrieve displayMessageNotification MethodInfo
             var displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
             if (displayMessageNotification != null)
             {
@@ -125,7 +121,6 @@ namespace Donuts
             {
                 foreach (var player in gameWorld.AllPlayersEverExisted)
                 {
-                    // Only add humans
                     if (!player.IsAI)
                     {
                         playerList.Add(player);
@@ -133,18 +128,13 @@ namespace Donuts
                 }
             }
 
-            // Remove despawned bots from bot EnemyInfos list.
             botSpawnerClass.OnBotRemoved += removedBot =>
             {
-                // Clear the enemy list, and memory about the main player
                 foreach (var player in playerList)
                 {
-                    // Remove each player from enemy
                     removedBot.Memory.DeleteInfoAboutEnemy(player);
                 }
                 removedBot.EnemiesController.EnemyInfos.Clear();
-
-                // Loop through the rest of the bots on the map, andd clear this bot from its memory/group info
 
                 foreach (var player in gameWorld.AllAlivePlayersList)
                 {
@@ -153,7 +143,6 @@ namespace Donuts
                         continue;
                     }
 
-                    // Clear the bot from all other bots enemy info
                     var botOwner = player.AIData.BotOwner;
                     botOwner.Memory.DeleteInfoAboutEnemy(removedBot);
                     botOwner.BotsGroup.RemoveInfo(removedBot);
@@ -168,7 +157,6 @@ namespace Donuts
 
         private void Start()
         {
-            // setup the rest of donuts for the selected folder
             Initialization.InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             mainplayer = gameWorld.MainPlayer;
@@ -198,25 +186,14 @@ namespace Donuts
                 case EDamageType.Explosion:
                 case EDamageType.GrenadeFragment:
                 case EDamageType.Sniper:
-                    if (battleCooldownCoroutine != null)
+                    if (isInBattle)
                     {
-                        StopCoroutine(battleCooldownCoroutine); // Stop the existing coroutine if it's running
+                        isInBattle = false;
                     }
-                    battleCooldownCoroutine = StartCoroutine(BattleStateCooldown());
                     break;
                 default:
                     break;
             }
-        }
-
-        private IEnumerator BattleStateCooldown()
-        {
-            isInBattle = true;
-#if DEBUG
-            Logger.LogWarning("Starting/Restarting BattleState Cooldowns for actual spawns since the player was hit. Delay(s):" + DefaultPluginVars.battleStateCoolDown);
-#endif
-            yield return new WaitForSeconds(battleStateCoolDown.Value); // Wait for 15 seconds if no more hits
-            isInBattle = false;
         }
 
         private void Update()
@@ -232,11 +209,11 @@ namespace Donuts
             if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
             {
                 spawnCheckTimer.Restart();
-                StartCoroutine(StartSpawnProcess());
+                StartSpawnProcess().Forget();
             }
         }
 
-        private IEnumerator StartSpawnProcess()
+        private async UniTask StartSpawnProcess()
         {
             Gizmos.DisplayMarkerInformation();
 
@@ -254,7 +231,7 @@ namespace Donuts
             {
                 foreach (var groupHotspotTimers in groupedHotspotTimers.Values)
                 {
-                    if (!(groupHotspotTimers.Count > 0))
+                    if (groupHotspotTimers.Count == 0)
                     {
                         continue;
                     }
@@ -266,16 +243,14 @@ namespace Donuts
                     {
                         Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
 
-                        // Wait here if in battle
                         while (isInBattle)
                         {
-                            yield return new WaitForSeconds(1); // Check every second if still in battle
+                            await UniTask.Delay(1000); // Check every second if still in battle
                         }
 
                         if (CanSpawn(hotspotTimer, coordinate))
                         {
-                            TriggerSpawn(hotspotTimer, coordinate);
-                            yield return null;
+                            await TriggerSpawn(hotspotTimer, coordinate);
                         }
                     }
                 }
@@ -284,7 +259,6 @@ namespace Donuts
 
         private bool CanSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            // Check if the timer trigger is greater than the threshold and conditions are met
             if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspotTimer.Hotspot.MapName)
             {
                 if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && DefaultPluginVars.hotspotBoostPMC.Value) ||
@@ -298,9 +272,9 @@ namespace Donuts
             return false;
         }
 
-        private void TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async UniTask TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            BotSpawn.SpawnBots(hotspotTimer, coordinate);
+            await BotSpawn.SpawnBots(hotspotTimer, coordinate);
             hotspotTimer.timesSpawned++;
 
             if (hotspotTimer.timesSpawned >= hotspotTimer.Hotspot.MaxSpawnsBeforeCoolDown)
@@ -320,6 +294,7 @@ namespace Donuts
                     timer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
         }
+
         private void DespawnFurthestBot(string bottype)
         {
             if (bottype != "pmc" && bottype != "scav")
@@ -332,7 +307,6 @@ namespace Donuts
                 return; // Cooldown not completed
             }
 
-            var bots = gameWorld.AllAlivePlayersList;
             if (!ShouldConsiderDespawning(bottype))
             {
                 return;
@@ -400,7 +374,7 @@ namespace Donuts
         }
         private void UpdateFurthestDistances(Dictionary<Player, float> botFurthestFromPlayer)
         {
-            foreach (var bot in gameWorld.AllAlivePlayersList) 
+            foreach (var bot in gameWorld.AllAlivePlayersList)
             {
                 float furthestDistance = float.MinValue;
                 foreach (var player in playerList)
@@ -453,18 +427,6 @@ namespace Donuts
 
             // Stop and clear all coroutines
             StopAllCoroutines();
-            if (battleCooldownCoroutine != null)
-            {
-                StopCoroutine(battleCooldownCoroutine);
-                battleCooldownCoroutine = null;
-            }
-
-            if (spawnCheckTimer != null)
-            {
-                spawnCheckTimer.Stop();
-                spawnCheckTimer.Reset();
-                spawnCheckTimer = null;
-            }
 
             // Reset static and instance variables
             isInBattle = false;  // Resetting static variable
@@ -480,4 +442,3 @@ namespace Donuts
         }
     }
 }
-

@@ -1,13 +1,14 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using Cysharp.Threading.Tasks;
 using EFT;
 using EFT.Communications;
 using UnityEngine;
 using Donuts.Models;
 using static Donuts.DonutComponent;
+using System.Threading;
+using System;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -16,27 +17,28 @@ namespace Donuts
     internal class Gizmos
     {
         internal bool isGizmoEnabled = false;
-        internal static HashSet<Vector3> drawnCoordinates;
-        internal static List<GameObject> gizmoSpheres;
-        internal static Coroutine gizmoUpdateCoroutine;
+        internal static HashSet<Vector3> drawnCoordinates = new HashSet<Vector3>();
+        internal static List<GameObject> gizmoSpheres = new List<GameObject>();
         internal static MonoBehaviour monoBehaviourRef;
-        internal static StringBuilder DisplayedMarkerInfo = new StringBuilder();
-        internal static StringBuilder PreviousMarkerInfo = new StringBuilder();
-        internal static Coroutine resetMarkerInfoCoroutine;
+        internal static string displayedMarkerInfo = string.Empty;
+        internal static string previousMarkerInfo = string.Empty;
+        internal static CancellationTokenSource resetMarkerInfoCts;
 
         internal Gizmos(MonoBehaviour monoBehaviour)
         {
             monoBehaviourRef = monoBehaviour;
         }
-        private IEnumerator UpdateGizmoSpheresCoroutine()
+
+        private async UniTask UpdateGizmoSpheres()
         {
             while (isGizmoEnabled)
             {
                 RefreshGizmoDisplay(); // Refresh the gizmo display periodically
 
-                yield return new WaitForSeconds(3f);
+                await UniTask.Delay(3000);
             }
         }
+
         internal static void DrawMarkers(List<Entry> locations, Color color, PrimitiveType primitiveType)
         {
             foreach (var hotspot in locations)
@@ -70,16 +72,13 @@ namespace Donuts
         {
             isGizmoEnabled = enableGizmos;
 
-            if (isGizmoEnabled && gizmoUpdateCoroutine == null)
+            if (isGizmoEnabled)
             {
                 RefreshGizmoDisplay(); // Refresh the gizmo display initially
-                gizmoUpdateCoroutine = monoBehaviourRef.StartCoroutine(UpdateGizmoSpheresCoroutine());
+                UpdateGizmoSpheres().Forget(); // Use UniTask and Forget to avoid unobserved exceptions
             }
-            else if (!isGizmoEnabled && gizmoUpdateCoroutine != null)
+            else
             {
-                monoBehaviourRef.StopCoroutine(gizmoUpdateCoroutine);
-                gizmoUpdateCoroutine = null;
-
                 ClearGizmoMarkers(); // Clear the drawn markers
             }
         }
@@ -113,7 +112,6 @@ namespace Donuts
             drawnCoordinates.Clear();
         }
 
-
         internal static void DisplayMarkerInformation()
         {
             if (gizmoSpheres.Count == 0)
@@ -144,72 +142,72 @@ namespace Donuts
 
                 if (angle < 20f)
                 {
-                    // Create a HashSet of positions for fast containment checks
-                    var locationsSet = new HashSet<Vector3>();
-                    foreach (var entry in fightLocations.Locations.Concat(sessionLocations.Locations))
-                    {
-                        locationsSet.Add(new Vector3(entry.Position.x, entry.Position.y, entry.Position.z));
-                    }
+                    var locationsSet = new HashSet<Vector3>(fightLocations.Locations.Select(e => new Vector3(e.Position.x, e.Position.y, e.Position.z))
+                        .Concat(sessionLocations.Locations.Select(e => new Vector3(e.Position.x, e.Position.y, e.Position.z))));
 
-                    // Check if the closest shape's position is contained in the HashSet
                     Vector3 closestShapePosition = closestShape.transform.position;
                     if (locationsSet.Contains(closestShapePosition))
                     {
-                        if (displayMessageNotificationMethod != null)
+                        Entry closestEntry = GetClosestEntry(closestShapePosition);
+                        if (closestEntry != null)
                         {
-                            Entry closestEntry = GetClosestEntry(closestShapePosition);
-                            if (closestEntry != null)
+                            previousMarkerInfo = displayedMarkerInfo;
+
+                            // Use a single string interpolation to construct the final string
+                            displayedMarkerInfo = string.Format(
+                                "Donuts: Marker Info\n" +
+                                "GroupNum: {0}\n" +
+                                "Name: {1}\n" +
+                                "SpawnType: {2}\n" +
+                                "Position: {3}, {4}, {5}\n" +
+                                "Bot Timer Trigger: {6}\n" +
+                                "Spawn Chance: {7}\n" +
+                                "Max Random Number of Bots: {8}\n" +
+                                "Max Spawns Before Cooldown: {9}\n" +
+                                "Ignore Timer for First Spawn: {10}\n" +
+                                "Min Spawn Distance From Player: {11}\n",
+                                closestEntry.GroupNum,
+                                closestEntry.Name,
+                                closestEntry.WildSpawnType,
+                                closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z,
+                                closestEntry.BotTimerTrigger,
+                                closestEntry.SpawnChance,
+                                closestEntry.MaxRandomNumBots,
+                                closestEntry.MaxSpawnsBeforeCoolDown,
+                                closestEntry.IgnoreTimerFirstSpawn,
+                                closestEntry.MinSpawnDistanceFromPlayer
+                            );
+
+                            if (displayedMarkerInfo != previousMarkerInfo)
                             {
-                                PreviousMarkerInfo.Clear();
-                                PreviousMarkerInfo.Append(DisplayedMarkerInfo);
+                                displayMessageNotificationMethod?.Invoke(null, new object[] { displayedMarkerInfo, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
 
-                                DisplayedMarkerInfo.Clear();
+                                resetMarkerInfoCts?.Cancel();
+                                resetMarkerInfoCts?.Dispose();
 
-                                DisplayedMarkerInfo.AppendLine("Donuts: Marker Info");
-                                DisplayedMarkerInfo.AppendLine($"GroupNum: {closestEntry.GroupNum}");
-                                DisplayedMarkerInfo.AppendLine($"Name: {closestEntry.Name}");
-                                DisplayedMarkerInfo.AppendLine($"SpawnType: {closestEntry.WildSpawnType}");
-                                DisplayedMarkerInfo.AppendLine($"Position: {closestEntry.Position.x}, {closestEntry.Position.y}, {closestEntry.Position.z}");
-                                DisplayedMarkerInfo.AppendLine($"Bot Timer Trigger: {closestEntry.BotTimerTrigger}");
-                                DisplayedMarkerInfo.AppendLine($"Spawn Chance: {closestEntry.SpawnChance}");
-                                DisplayedMarkerInfo.AppendLine($"Max Random Number of Bots: {closestEntry.MaxRandomNumBots}");
-                                DisplayedMarkerInfo.AppendLine($"Max Spawns Before Cooldown: {closestEntry.MaxSpawnsBeforeCoolDown}");
-                                DisplayedMarkerInfo.AppendLine($"Ignore Timer for First Spawn: {closestEntry.IgnoreTimerFirstSpawn}");
-                                DisplayedMarkerInfo.AppendLine($"Min Spawn Distance From Player: {closestEntry.MinSpawnDistanceFromPlayer}");
-                                string txt = DisplayedMarkerInfo.ToString();
-
-                                // Check if the marker info has changed since the last update
-                                if (txt != PreviousMarkerInfo.ToString())
-                                {
-                                    MethodInfo displayMessageNotificationMethod;
-                                    if (methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod))
-                                    {
-                                        displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
-                                    }
-
-                                    // Stop the existing coroutine if it's running
-                                    if (resetMarkerInfoCoroutine != null)
-                                    {
-                                        monoBehaviourRef.StopCoroutine(resetMarkerInfoCoroutine);
-                                    }
-
-                                    // Start a new coroutine to reset the marker info after a delay
-                                    resetMarkerInfoCoroutine = monoBehaviourRef.StartCoroutine(ResetMarkerInfoAfterDelay());
-                                }
+                                resetMarkerInfoCts = new CancellationTokenSource();
+                                ResetMarkerInfoAfterDelay(resetMarkerInfoCts.Token).Forget();
                             }
                         }
                     }
                 }
             }
         }
-        internal static IEnumerator ResetMarkerInfoAfterDelay()
-        {
-            yield return new WaitForSeconds(5f);
 
-            // Reset the marker info
-            DisplayedMarkerInfo.Clear();
-            resetMarkerInfoCoroutine = null;
+
+        internal static async UniTask ResetMarkerInfoAfterDelay(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await UniTask.Delay(5000, cancellationToken: cancellationToken);
+                displayedMarkerInfo = string.Empty;
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore cancellation
+            }
         }
+
         internal static Entry GetClosestEntry(Vector3 position)
         {
             Entry closestEntry = null;
@@ -228,6 +226,7 @@ namespace Donuts
 
             return closestEntry;
         }
+
         public static MethodInfo GetDisplayMessageNotificationMethod() => displayMessageNotificationMethod;
     }
 }
