@@ -63,6 +63,12 @@ namespace Donuts
 
         internal static int Dropdown<T>(Setting<T> setting, int selectedIndex)
         {
+            // Check if the Options list is properly initialized and log error if needed
+            if (setting.LogErrorOnceIfOptionsInvalid())
+            {
+                return selectedIndex;
+            }
+
             int dropdownId = GUIUtility.GetControlID(FocusType.Passive);
 
             if (!dropdownStates.ContainsKey(dropdownId))
@@ -71,7 +77,7 @@ namespace Donuts
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(setting.Name, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(setting.Name, GUILayout.Width(150)); 
 
             if (GUILayout.Button(setting.Options[selectedIndex]?.ToString(), dropdownStyle, GUILayout.Width(200)))
             {
@@ -95,11 +101,12 @@ namespace Donuts
 
             return selectedIndex;
         }
+        
 
         public static float Slider(string label, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(label, GUILayout.Width(150));
             GUILayout.Space(10); // Add space
             value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200));
 
@@ -119,7 +126,7 @@ namespace Donuts
         public static int Slider(string label, int value, int min, int max)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(label, GUILayout.Width(150)); 
             GUILayout.Space(10); // Add space
             value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200)));
 
@@ -139,7 +146,7 @@ namespace Donuts
         public static string TextField(string label, string text)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(label, GUILayout.Width(150));
             GUILayout.Space(10); // Add space
             text = GUILayout.TextField(text, GUILayout.Width(250));
             GUILayout.EndHorizontal();
@@ -150,7 +157,7 @@ namespace Donuts
         public static bool Toggle(string label, bool value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(label, GUILayout.Width(150)); 
             GUILayout.Space(10); // Add space
 
             bool newValue = GUILayout.Toggle(value, value ? "YES" : "NO", toggleStyle, GUILayout.Width(100), GUILayout.Height(25));
@@ -166,7 +173,7 @@ namespace Donuts
             {
                 style = GUI.skin.button;
             }
-            return GUILayout.Button(label, style, GUILayout.Width(150)); // Increased width
+            return GUILayout.Button(label, style, GUILayout.Width(150)); 
         }
     }
 }

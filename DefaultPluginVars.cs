@@ -127,7 +127,8 @@ namespace Donuts
         internal static List<Folder> randomScenarios = new List<Folder>();
         internal static Setting<string> pmcScenarioSelection;
         internal static Setting<string> scavScenarioSelection;
-        internal static string[] scenarioValues = new string[] { };
+        internal static string[] scenarioValues = { };
+        internal static string[] scavScenarioValues = { };
 
         //Default Constructor
         static DefaultPluginVars()
@@ -222,13 +223,21 @@ namespace Donuts
                 "Force PMC Faction",
                 "Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 "Default",
-                "Default");
+                "Default",
+                null,
+                null,
+                pmcFactionList
+                );
 
             forceAllBotType = new Setting<string>(
                 "Force Bot Type for All Spawns",
                 "Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
                 "Disabled",
-                "Disabled");
+                "Disabled",
+                null,
+                null,
+                forceAllBotTypeList
+                );
 
             hardStopOptionPMC = new Setting<bool>(
                 "PMC Spawn Hard Stop",
@@ -442,7 +451,7 @@ namespace Donuts
                 "scav-raids",
                 null,
                 null,
-                scenarioValues
+                scavScenarioValues
             );
 
             // Advanced Settings

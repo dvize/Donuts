@@ -34,6 +34,8 @@ namespace Donuts.Models
             get; set;
         }
 
+        private bool hasLoggedError = false;
+
         // Constructor to handle regular settings
         public Setting(string name, string tooltipText, T value, T defaultValue, T minValue = default(T), T maxValue = default(T), T[] options = null)
         {
@@ -44,6 +46,20 @@ namespace Donuts.Models
             MinValue = minValue;
             MaxValue = maxValue;
             Options = options ?? new T[0];
+        }
+
+        public bool LogErrorOnceIfOptionsInvalid()
+        {
+            if (Options == null || Options.Length == 0)
+            {
+                if (!hasLoggedError)
+                {
+                    DonutsPlugin.Logger.LogError($"Dropdown setting '{Name}' has an uninitialized or empty options list.");
+                    hasLoggedError = true;
+                }
+                return true;
+            }
+            return false;
         }
     }
 }

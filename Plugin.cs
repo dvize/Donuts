@@ -79,6 +79,7 @@ namespace Donuts
             AddScenarioNamesToValuesList(DefaultPluginVars.randomScenarios, scenarioValuesList, folder => folder.RandomScenarioConfig);
 
             DefaultPluginVars.scenarioValues = scenarioValuesList.ToArray();
+            DefaultPluginVars.scavScenarioValues = scenarioValuesList.ToArray();
         }
 
         private void Update()
