@@ -292,6 +292,7 @@ namespace Donuts
             int groupBotsCount = 0;
 
             var safeBotInfos = new List<PrepBotInfo>(BotInfos);
+            var tasks = new List<UniTask>();
 
             foreach (var botInfo in safeBotInfos)
             {
@@ -302,7 +303,7 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-                        await CreateBot(botInfo, true, botInfo.GroupSize);
+                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize));
                         groupBotsCount++;
                     }
                     else if (!botInfo.IsGroup && singleBotsCount < 3)
@@ -310,13 +311,18 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
-                        await CreateBot(botInfo, false, 1);
+                        tasks.Add(CreateBot(botInfo, false, 1));
                         singleBotsCount++;
                     }
 
                     if (singleBotsCount >= 3 && groupBotsCount >= 1)
                         break;
                 }
+            }
+
+            if (tasks.Count > 0)
+            {
+                await UniTask.WhenAll(tasks);
             }
 
             isReplenishing = false;
