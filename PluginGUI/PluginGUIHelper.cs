@@ -8,7 +8,7 @@ namespace Donuts
 {
     public class PluginGUIHelper : MonoBehaviour
     {
-        private Rect windowRect = new Rect(20, 20, 1664, 936);
+        internal static Rect windowRect = new Rect(20, 20, 1664, 936);
         private bool isDragging = false;
         private Vector2 dragOffset;
         private Vector2 scrollPosition = Vector2.zero;
@@ -27,6 +27,10 @@ namespace Donuts
         internal static GUIStyle cachedSubTabButtonHoverStyle;
         internal static GUIStyle cachedSubTabButtonActiveStyle;
         internal static GUIStyle cachedSubTabLabelStyle;
+        private void Start()
+        {
+            LoadWindowSettings();
+        }
 
         private void OnGUI()
         {
@@ -39,9 +43,20 @@ namespace Donuts
 
                 ApplyCachedStyles();
 
-                // Make the window resizable
+                // Draw a background box to capture all events
+                GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none);
+
                 windowRect = GUI.Window(1, windowRect, MainWindowFunc, "Donuts Configuration", cachedWindowStyle);
                 GUI.FocusWindow(1);
+
+                // Capture all events within the window area
+                if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
+                {
+                    if (windowRect.Contains(Event.current.mousePosition))
+                    {
+                        Event.current.Use();
+                    }
+                }
             }
         }
 
@@ -51,6 +66,12 @@ namespace Donuts
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+
+                // Block all game inputs. was clicking through imgui window
+                if (Input.anyKey)
+                {
+                    Input.ResetInputAxes();
+                }
             }
         }
 
@@ -60,10 +81,8 @@ namespace Donuts
 
             // Main content area with scroll view
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
-
             DrawMainTabs();
             DrawSelectedTabContent();
-
             GUILayout.EndScrollView();
 
             // Footer section
@@ -75,8 +94,9 @@ namespace Donuts
             HandleWindowResizing();
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width, 20));
-        }
 
+            SaveWindowSettings();
+        }
 
         private void DrawMainTabs()
         {
@@ -198,7 +218,25 @@ namespace Donuts
                 }
             }
         }
+        private void SaveWindowSettings()
+        {
+            DefaultPluginVars.windowRect = windowRect;
+            ExportConfig();
+        }
 
+        private void LoadWindowSettings()
+        {
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var configDirectory = Path.Combine(Path.GetDirectoryName(dllPath), "Config");
+            var configFilePath = Path.Combine(configDirectory, "DefaultPluginVars.json");
+
+            if (File.Exists(configFilePath))
+            {
+                var json = File.ReadAllText(configFilePath);
+                DefaultPluginVars.ImportFromJson(json);
+                windowRect = DefaultPluginVars.windowRect;
+            }
+        }
         internal Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];

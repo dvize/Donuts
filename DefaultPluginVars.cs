@@ -122,6 +122,8 @@ namespace Donuts
         internal static bool showGUI = false;
         internal static string[] botDiffList = { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
+        internal static Rect windowRect = new Rect(20, 20, 1664, 936);  // Default position and size
+
         //Scenario Selection
         internal static List<Folder> pmcScenarios = new List<Folder>();
         internal static List<Folder> pmcRandomScenarios = new List<Folder>();
@@ -616,14 +618,27 @@ namespace Donuts
                 if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
                 {
                     var settingValue = field.GetValue(null);
-                    var valueProperty = settingValue.GetType().GetProperty("Value");
-                    var value = valueProperty.GetValue(settingValue);
-                    settingsDictionary[field.Name] = value;
+                    if (settingValue != null)
+                    {
+                        var valueProperty = settingValue.GetType().GetProperty("Value");
+                        if (valueProperty != null)
+                        {
+                            var value = valueProperty.GetValue(settingValue);
+                            settingsDictionary[field.Name] = value;
+                        }
+                    }
                 }
             }
 
+            // Add windowRect position and size to the dictionary
+            settingsDictionary["windowRectX"] = windowRect.x;
+            settingsDictionary["windowRectY"] = windowRect.y;
+            settingsDictionary["windowRectWidth"] = windowRect.width;
+            settingsDictionary["windowRectHeight"] = windowRect.height;
+
             return JsonConvert.SerializeObject(settingsDictionary, Formatting.Indented);
         }
+
         public static void ImportFromJson(string json)
         {
             var settingsDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
@@ -641,30 +656,67 @@ namespace Donuts
                     if (settingsDictionary.TryGetValue(field.Name, out var value))
                     {
                         var settingValue = field.GetValue(null);
+                        if (settingValue == null)
+                        {
+                            Debug.LogError($"Setting value for field {field.Name} is null.");
+                            continue;
+                        }
+
                         var valueProperty = settingValue.GetType().GetProperty("Value");
+                        if (valueProperty == null)
+                        {
+                            Debug.LogError($"Value property for setting {field.Name} is not found.");
+                            continue;
+                        }
+
                         var fieldType = field.FieldType.GetGenericArguments()[0];
 
-                        if (fieldType == typeof(KeyCode))
+                        try
                         {
-                            valueProperty.SetValue(settingValue, Enum.Parse(typeof(KeyCode), value.ToString()));
-                        }
-                        else
-                        {
-                            var convertedValue = Convert.ChangeType(value, fieldType);
-                            valueProperty.SetValue(settingValue, convertedValue);
-                        }
+                            if (fieldType == typeof(KeyCode))
+                            {
+                                valueProperty.SetValue(settingValue, Enum.Parse(typeof(KeyCode), value.ToString()));
+                            }
+                            else
+                            {
+                                var convertedValue = Convert.ChangeType(value, fieldType);
+                                valueProperty.SetValue(settingValue, convertedValue);
+                            }
 
-                        // Store the scenario selection values
-                        if (field.Name == nameof(DefaultPluginVars.pmcScenarioSelection))
-                        {
-                            pmcScenarioSelectionValue = value.ToString();
+                            // Store the scenario selection values
+                            if (field.Name == nameof(DefaultPluginVars.pmcScenarioSelection))
+                            {
+                                pmcScenarioSelectionValue = value.ToString();
+                            }
+                            else if (field.Name == nameof(DefaultPluginVars.scavScenarioSelection))
+                            {
+                                scavScenarioSelectionValue = value.ToString();
+                            }
                         }
-                        else if (field.Name == nameof(DefaultPluginVars.scavScenarioSelection))
+                        catch (Exception ex)
                         {
-                            scavScenarioSelectionValue = value.ToString();
+                            Debug.LogError($"Error setting value for field {field.Name}: {ex}");
                         }
                     }
                 }
+            }
+
+            // Load windowRect position and size from the dictionary, with defaults if not present
+            if (settingsDictionary.TryGetValue("windowRectX", out var windowRectX) &&
+                settingsDictionary.TryGetValue("windowRectY", out var windowRectY) &&
+                settingsDictionary.TryGetValue("windowRectWidth", out var windowRectWidth) &&
+                settingsDictionary.TryGetValue("windowRectHeight", out var windowRectHeight))
+            {
+                windowRect = new Rect(
+                    Convert.ToSingle(windowRectX),
+                    Convert.ToSingle(windowRectY),
+                    Convert.ToSingle(windowRectWidth),
+                    Convert.ToSingle(windowRectHeight));
+            }
+            else
+            {
+                // Apply default values if any of the windowRect values are missing
+                windowRect = new Rect(20, 20, 1664, 936);
             }
 
             // Ensure the arrays are initialized before creating the settings

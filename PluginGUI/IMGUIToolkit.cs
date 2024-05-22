@@ -1,6 +1,6 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Donuts.Models;
+using UnityEngine;
 
 namespace Donuts
 {
@@ -62,7 +62,7 @@ namespace Donuts
             CreateToggleButtonTextures();
         }
 
-        private static Texture2D MakeTex(int width, int height, Color col)
+        internal static Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];
             for (int i = 0; i < pix.Length; i++)
@@ -141,7 +141,6 @@ namespace Donuts
 
             return selectedIndex;
         }
-
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
