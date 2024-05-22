@@ -74,10 +74,7 @@ namespace Donuts
 
         public DonutComponent()
         {
-            if (Logger == null)
-            {
-                Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
-            }
+            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
         }
 
         internal static void Enable()

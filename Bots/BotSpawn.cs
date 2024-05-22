@@ -15,6 +15,7 @@ using static Donuts.DefaultPluginVars;
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
 using Random = System.Random;
+using System.Threading.Tasks;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -277,7 +278,7 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, hotspotTimer);
+                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, hotspotTimer);
             }
             else
             {
@@ -288,7 +289,7 @@ namespace Donuts
             }
         }
 
-        private static void ActivateBotFromCache(BotCacheClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, HotspotTimer hotspotTimer)
+        private static async UniTask ActivateBotFromCache(BotCacheClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, HotspotTimer hotspotTimer)
         {
             var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
             var closestCorePoint = GetClosestCorePoint(spawnPosition);
@@ -298,7 +299,7 @@ namespace Donuts
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                                              $"of side: {botCacheElement.Side} for hotspot {hotspotTimer.Hotspot.Name} ");
 #endif
-            ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+            await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
         }
 
         internal static async UniTask SpawnBotForGroup(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
@@ -315,7 +316,7 @@ namespace Donuts
                                                  $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
 #endif
 
-                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
             }
             else
             {
@@ -338,10 +339,10 @@ namespace Donuts
                                              $"of side: {bot.Side} and difficulty: {botdifficulty}");
 #endif
 
-            ActivateBot(closestBotZone, bot, cancellationTokenSource);
+            await ActivateBot(closestBotZone, bot, cancellationTokenSource);
         }
 
-        internal static void ActivateBot(BotZone botZone, BotCacheClass botData, CancellationTokenSource cancellationTokenSource)
+        internal static async UniTask ActivateBot(BotZone botZone, BotCacheClass botData, CancellationTokenSource cancellationTokenSource)
         {
             CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
             {

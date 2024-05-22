@@ -3,6 +3,8 @@ using static Donuts.PluginGUIHelper;
 using static Donuts.ImGUIToolkit;
 using static Donuts.DefaultPluginVars;
 
+#pragma warning disable IDE0007, IDE0044
+
 namespace Donuts
 {
     internal class DrawSpawnPointMaker

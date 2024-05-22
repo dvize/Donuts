@@ -8,6 +8,8 @@ using Newtonsoft.Json;
 using UnityEngine;
 using static GClass1738;
 
+#pragma warning disable IDE0007, IDE0044
+
 namespace Donuts
 {
     internal static class DefaultPluginVars
@@ -771,8 +773,8 @@ namespace Donuts
             }
 
             // Ensure the arrays are initialized before creating the settings
-            DefaultPluginVars.pmcScenarioCombinedArray = DefaultPluginVars.pmcScenarioCombinedArray ?? new string[0];
-            DefaultPluginVars.scavScenarioCombinedArray = DefaultPluginVars.scavScenarioCombinedArray ?? new string[0];
+            DefaultPluginVars.pmcScenarioCombinedArray ??= new string[0];
+            DefaultPluginVars.scavScenarioCombinedArray ??= new string[0];
 
             // After loading all settings, initialize the scenario settings with the loaded values
             DefaultPluginVars.pmcScenarioSelection = new Setting<string>(

@@ -7,6 +7,7 @@ using UnityEngine.AI;
 using Donuts.Models;
 using static Donuts.DonutComponent;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -57,24 +58,35 @@ namespace Donuts
                 return false;
             }
 
-            var tasks = new List<Task<bool>>
+            var tasks = new List<UniTask<bool>>
             {
                 IsSpawnPositionInsideWall(spawnPosition),
                 IsSpawnPositionInPlayerLineOfSight(spawnPosition),
                 IsSpawnInAir(spawnPosition)
             };
 
+            var tasks2 = new List<Task<bool>>
+            {
+            };
+
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                tasks.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot));
+                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot));
             }
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
             {
-                tasks.Add(IsPositionTooCloseToOtherBots(spawnPosition, hotspot));
+                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition, hotspot));
             }
 
-            bool[] results = await Task.WhenAll(tasks);
+            bool[] results = await UniTask.WhenAll(tasks);
+
+            //add to results if tasks2 not empty
+            if (tasks2.Count > 0)
+            {
+                bool[] results2 = await Task.WhenAll(tasks2);
+                results = results.Concat(results2).ToArray();
+            }
 
             if (results.Any(result => result))
             {
@@ -85,7 +97,7 @@ namespace Donuts
             return true;
         }
 
-        internal static async Task<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
+        internal static async UniTask<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
         {
             foreach (var player in playerList)
             {
@@ -104,7 +116,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async Task<bool> IsSpawnPositionInsideWall(Vector3 position)
+        internal static async UniTask<bool> IsSpawnPositionInsideWall(Vector3 position)
         {
             Vector3 boxSize = new Vector3(1f, 1f, 1f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
@@ -125,7 +137,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async Task<bool> IsSpawnInAir(Vector3 position)
+        internal static async UniTask<bool> IsSpawnInAir(Vector3 position)
         {
             Ray ray = new Ray(position, Vector3.down);
             float distance = 10f;

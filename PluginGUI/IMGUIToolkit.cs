@@ -2,6 +2,8 @@
 using Donuts.Models;
 using UnityEngine;
 
+#pragma warning disable IDE0007, IDE0044
+
 namespace Donuts
 {
     public class ImGUIToolkit
@@ -251,10 +253,7 @@ namespace Donuts
 
         public static bool Button(string label, string toolTip, GUIStyle style = null)
         {
-            if (style == null)
-            {
-                style = GUI.skin.button;
-            }
+            style ??= GUI.skin.button;
 
             GUIContent buttonContent = new GUIContent(label, toolTip);
             bool result = GUILayout.Button(buttonContent, style, GUILayout.Width(200));
