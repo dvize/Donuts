@@ -119,6 +119,12 @@ namespace Donuts
 
         private void Update()
         {
+            if (ImGUIToolkit.IsSettingKeybind())
+            {
+                // If setting a keybind, do not trigger functionality
+                return;
+            }
+
             if (IsKeyPressed(toggleGUIKey.Value) || IsKeyPressed(escapeKey))
             {
                 if (IsKeyPressed(escapeKey))

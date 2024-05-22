@@ -8,6 +8,10 @@ namespace Donuts
     {
         private static Dictionary<int, bool> dropdownStates = new Dictionary<int, bool>();
         private static Dictionary<int, bool> accordionStates = new Dictionary<int, bool>();
+        private static Dictionary<int, bool> keybindStates = new Dictionary<int, bool>();
+        private static Dictionary<int, KeyCode> newKeybinds = new Dictionary<int, KeyCode>();
+        private static bool isSettingKeybind = false; // Flag to indicate if setting a keybind
+
         private static GUIStyle dropdownStyle;
         private static GUIStyle dropdownButtonStyle;
         private static GUIStyle toggleStyle;
@@ -15,7 +19,7 @@ namespace Donuts
         private static GUIStyle tooltipStyle;
         private static GUIStyle textFieldStyle;
         private static GUIStyle expandedDropdownStyle;
-
+        private static GUIStyle keybindFieldStyle;
         public static void InitializeStyles()
         {
             dropdownStyle = new GUIStyle(GUI.skin.button)
@@ -62,6 +66,14 @@ namespace Donuts
             expandedDropdownStyle = new GUIStyle(dropdownStyle)
             {
                 normal = { background = MakeTex(1, 1, Color.blue) }
+            };
+
+            keybindFieldStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fixedHeight = 25,
+                fontSize = 18,
+                normal = { textColor = Color.white }
             };
 
             // Create textures for the toggle button states
@@ -117,7 +129,7 @@ namespace Donuts
 
             // Draw label with tooltip
             GUIContent labelContent = new GUIContent(setting.Name, setting.ToolTipText);
-            GUILayout.Label(labelContent, GUILayout.Width(200)); 
+            GUILayout.Label(labelContent, GUILayout.Width(200));
 
             // Choose style based on dropdown state
             GUIStyle currentDropdownStyle = dropdownStates[dropdownId] ? expandedDropdownStyle : dropdownStyle;
@@ -276,6 +288,60 @@ namespace Donuts
 
             ShowTooltip();
         }
+
+        public static KeyCode KeybindField(string label, string toolTip, KeyCode currentKey)
+        {
+            int keybindId = GUIUtility.GetControlID(FocusType.Passive);
+
+            if (!keybindStates.ContainsKey(keybindId))
+            {
+                keybindStates[keybindId] = false;
+                newKeybinds[keybindId] = currentKey;
+            }
+
+            GUILayout.BeginHorizontal();
+            GUIContent labelContent = new GUIContent(label, toolTip);
+            GUILayout.Label(labelContent, GUILayout.Width(200));
+            GUILayout.Space(10);
+
+            if (keybindStates[keybindId])
+            {
+                GUIContent waitingContent = new GUIContent("Press any key...", toolTip);
+                GUILayout.Button(waitingContent, keybindFieldStyle, GUILayout.Width(300));
+                isSettingKeybind = true; // Indicate that we are setting a keybind
+            }
+            else
+            {
+                GUIContent keyContent = new GUIContent(currentKey.ToString(), toolTip);
+                if (GUILayout.Button(keyContent, keybindFieldStyle, GUILayout.Width(300)))
+                {
+                    keybindStates[keybindId] = true;
+                    isSettingKeybind = true; // Indicate that we are setting a keybind
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            if (keybindStates[keybindId])
+            {
+                Event e = Event.current;
+                if (e.isKey)
+                {
+                    newKeybinds[keybindId] = e.keyCode;
+                    keybindStates[keybindId] = false;
+                    isSettingKeybind = false; // Reset the flag
+                }
+            }
+
+            ShowTooltip();
+
+            return newKeybinds[keybindId];
+        }
+
+        public static bool IsSettingKeybind()
+        {
+            return isSettingKeybind;
+        }
+
 
         private static void ShowTooltip()
         {

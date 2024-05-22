@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Configuration;
+using DG.Tweening.Plugins;
 using Donuts.Models;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -89,6 +90,47 @@ namespace Donuts
         internal static Setting<float> minSpawnDistanceFromPlayer;
         internal static Setting<KeyCode> CreateSpawnMarkerKey;
         internal static Setting<KeyCode> DeleteSpawnMarkerKey;
+
+        internal static string[] wildSpawnTypes = 
+        {
+            "arenafighterevent",
+            "assault",
+            "assaultgroup",
+            "bossboar",
+            "bossboarsniper",
+            "bossbully",
+            "bossgluhar",
+            "bosskilla",
+            "bossknight",
+            "bosskojaniy",
+            "bosssanitar",
+            "bosstagilla",
+            "bosszryachiy",
+            "crazyassaultevent",
+            "cursedassault",
+            "exusec-rogues",
+            "raiders",
+            "followerbigpipe",
+            "followerbirdeye",
+            "followerboar",
+            "followerbully",
+            "followergluharassault",
+            "followergluharscout",
+            "followergluharsecurity",
+            "followergluharsnipe",
+            "followerkojaniy",
+            "followersanitar",
+            "followertagilla",
+            "followerzryachiy",
+            "gifter",
+            "marksman",
+            "pmc",
+            "sectantpriest",
+            "sectantwarrior",
+            "sptusec",
+            "sptbear",
+        };
+
 
         // Save Settings
         internal static Setting<bool> saveNewFileOnly;
@@ -506,13 +548,18 @@ namespace Donuts
                 "Group Number",
                 "Group Number used to identify the spawn marker",
                 1,
-                1);
+                1,
+                1,
+                100);
 
             wildSpawns = new Setting<string>(
                 "Wild Spawn Type",
                 "Select an option.",
                 "pmc",
-                "pmc");
+                "pmc", 
+                null,
+                null,
+                wildSpawnTypes);
 
             minSpawnDist = new Setting<float>(
                 "Min Spawn Distance",
@@ -550,7 +597,9 @@ namespace Donuts
                 "Max Random Bots",
                 "Maximum number of bots of Wild Spawn Type that can spawn on this marker",
                 2,
-                2);
+                2,
+                1,
+                5);
 
             spawnChance = new Setting<int>(
                 "Spawn Chance for Marker",
@@ -564,7 +613,9 @@ namespace Donuts
                 "Max Spawns Before Cooldown",
                 "Number of successful spawns before this marker goes in cooldown",
                 5,
-                5);
+                5,
+                1,
+                30);
 
             ignoreTimerFirstSpawn = new Setting<bool>(
                 "Ignore Timer for First Spawn",
