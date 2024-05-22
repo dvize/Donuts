@@ -296,7 +296,7 @@ namespace Donuts
                 hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
             }
 
-            var tasks = new List<Task<bool>>();
+            var tasks = new List<UniTask<bool>>();
 
             if (HardCapEnabled.Value)
             {
@@ -305,7 +305,7 @@ namespace Donuts
 
             tasks.Add(CheckRaidTime(hotspotTimer.Hotspot.WildSpawnType));
 
-            bool[] results = await Task.WhenAll(tasks);
+            bool[] results = await UniTask.WhenAll(tasks);
 
             if (results.Any(result => !result))
             {
@@ -323,7 +323,7 @@ namespace Donuts
             ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
         }
 
-        private async Task<bool> CheckHardCap(string wildSpawnType)
+        private async UniTask<bool> CheckHardCap(string wildSpawnType)
         {
             int activePMCs = BotCountManager.GetAlivePlayers("pmc");
             int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
@@ -343,7 +343,7 @@ namespace Donuts
             return true;
         }
 
-        private async Task<bool> CheckRaidTime(string wildSpawnType)
+        private async UniTask<bool> CheckRaidTime(string wildSpawnType)
         {
             if (wildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc"))
             {
@@ -379,16 +379,16 @@ namespace Donuts
                     timer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
         }
-        private void DespawnFurthestBot(string bottype)
+        private async UniTask DespawnFurthestBot(string bottype)
         {
             if (bottype != "pmc" && bottype != "scav")
-                return;  // Return immediately if bot type is not recognized
+                return;
 
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
             float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
             if (Time.time - despawnCooldown < despawnCooldownDuration)
             {
-                return; // Cooldown not completed
+                return;
             }
 
             if (!ShouldConsiderDespawning(bottype))
@@ -396,10 +396,13 @@ namespace Donuts
                 return;
             }
 
+            await UniTask.SwitchToMainThread();
+
             UpdateDistancesAndFindFurthestBot(out Player furthestBot);
 
             if (furthestBot != null)
             {
+                await UniTask.SwitchToThreadPool();
                 DespawnBot(furthestBot, bottype);
             }
         }
