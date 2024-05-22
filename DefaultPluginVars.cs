@@ -28,10 +28,15 @@ namespace Donuts
         internal static Setting<bool> ShowRandomFolderChoice;
         internal static Setting<string> pmcFaction;
         internal static Setting<string> forceAllBotType;
+
+        internal static Setting<bool> useTimeBasedHardStop;
         internal static Setting<bool> hardStopOptionPMC;
         internal static Setting<int> hardStopTimePMC;
+        internal static Setting<int> hardStopPercentPMC;
         internal static Setting<bool> hardStopOptionSCAV;
         internal static Setting<int> hardStopTimeSCAV;
+        internal static Setting<int> hardStopPercentSCAV;
+
         internal static Setting<bool> hotspotBoostPMC;
         internal static Setting<bool> hotspotBoostSCAV;
         internal static Setting<bool> hotspotIgnoreHardCapPMC;
@@ -289,11 +294,25 @@ namespace Donuts
                 forceAllBotTypeList
                 );
 
+            useTimeBasedHardStop = new Setting<bool>(
+                "Use Time-Based Hard Stop",
+                "If enabled, the hard stop settings will be the time (in seconds) left in raid (configurable below). If disabled, the hard stop settings will be the percentage of time left in raid (configurable below).",
+                true,
+                true);
+
             hardStopOptionPMC = new Setting<bool>(
                 "PMC Spawn Hard Stop",
-                "If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
+                "If enabled, all PMC spawns stop completely once there is n time or percentage time left in your raid. This is configurable in seconds (see below).",
                 false,
                 false);
+
+            hardStopPercentPMC = new Setting<int>(
+                "PMC Spawn Hard Stop: Percent Left of Raid",
+                "The percentage of time left in your raid that will stop any further PMC spawns (if option is enabled). Default is 50 percent of the full raid time.",
+                50,
+                50,
+                0,
+                100);
 
             hardStopTimePMC = new Setting<int>(
                 "PMC Spawn Hard Stop: Time Left in Raid",
@@ -312,6 +331,14 @@ namespace Donuts
                 "The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
                 300,
                 300);
+
+            hardStopPercentSCAV = new Setting<int>(
+                "SCAV Spawn Hard Stop: Percent Left of Raid",
+                "The percentage of time left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 10 percent of the full raid time.",
+                10,
+                10,
+                0,
+                100);
 
             hotspotBoostPMC = new Setting<bool>(
                 "PMC Hot Spot Spawn Boost",
@@ -350,6 +377,7 @@ namespace Donuts
                 20f);
 
             // Global Minimum Spawn Distance From Player
+            #region global mininum spawn distances
             globalMinSpawnDistanceFromPlayerBool = new Setting<bool>(
                 "Use Global Min Distance From Player",
                 "If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
@@ -482,6 +510,7 @@ namespace Donuts
                 "Distance (in meters) that bots should spawn away from other alive bots.",
                 60f,
                 60f);
+            #endregion
 
             // Advanced Settings
             replenishInterval = new Setting<float>(
@@ -540,6 +569,7 @@ namespace Donuts
                 false);
 
             // Spawn Point Maker
+            #region Spawn Point maker
             spawnName = new Setting<string>(
                 "Name",
                 "Name used to identify the spawn marker",
@@ -657,6 +687,8 @@ namespace Donuts
                 "Press this key to write the json file with all entries so far",
                 KeyCode.KeypadMinus,
                 KeyCode.KeypadMinus);
+
+            #endregion
         }
 
         public static string ExportToJson()

@@ -216,12 +216,12 @@ namespace Donuts
         {
             if (DespawnEnabledPMC.Value)
             {
-                DespawnFurthestBot("pmc");
+                await DespawnFurthestBot("pmc");
             }
 
             if (DespawnEnabledSCAV.Value)
             {
-                DespawnFurthestBot("scav");
+                await DespawnFurthestBot("scav");
             }
 
             if (groupedHotspotTimers.Count > 0)
@@ -365,11 +365,25 @@ namespace Donuts
         }
         private bool IsRaidTimeRemaining(string spawnType)
         {
-            int hardStopTime = spawnType == "pmc" ? hardStopTimePMC.Value : hardStopTimeSCAV.Value;
-            int raidTimeLeft = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
-            return raidTimeLeft >= hardStopTime;
-        }
+            int hardStopTime = 0;
+            int hardStopPercent = 0;
 
+            if (spawnType == "pmc")
+            {
+                hardStopTime = hardStopTimePMC.Value;
+                hardStopPercent = hardStopPercentPMC.Value;
+            }
+            else if (spawnType == "scav")
+            {
+                hardStopTime = hardStopTimeSCAV.Value;
+                hardStopPercent = hardStopPercentSCAV.Value;
+            }
+
+            int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds(); // Time left
+            int raidTimeLeftPercent = (int)(Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100f); // Percent left
+
+            return useTimeBasedHardStop.Value ? raidTimeLeftTime >= hardStopTime : raidTimeLeftPercent >= hardStopPercent;
+        }
         private void ResetGroupTimers(int groupNum)
         {
             foreach (var timer in groupedHotspotTimers[groupNum])
