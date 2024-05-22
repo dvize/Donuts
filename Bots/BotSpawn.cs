@@ -147,11 +147,6 @@ namespace Donuts
             return rand.Next(100) < factionRatio ? sptUsec : sptBear;
         }
 
-        private static int GetBotLimit(string spawnType)
-        {
-            return spawnType.Contains("pmc") ? PMCBotLimit : spawnType.Contains("assault") ? SCAVBotLimit : 0;
-        }
-
         #region botHelperMethods
 
         #region botDifficulty

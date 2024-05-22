@@ -325,8 +325,8 @@ namespace Donuts
 
         private async UniTask<bool> CheckHardCap(string wildSpawnType)
         {
-            int activePMCs = BotCountManager.GetAlivePlayers("pmc");
-            int activeSCAVs = BotCountManager.GetAlivePlayers("scav");
+            int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
+            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
 
             if (wildSpawnType == "pmc" && activePMCs >= PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
             {
@@ -408,7 +408,7 @@ namespace Donuts
                 return;
             }
 
-            if (!ShouldConsiderDespawning(bottype))
+            if (!await ShouldConsiderDespawning(bottype))
             {
                 return;
             }
@@ -424,10 +424,10 @@ namespace Donuts
             }
         }
 
-        private bool ShouldConsiderDespawning(string botType)
+        private async UniTask<bool> ShouldConsiderDespawning(string botType)
         {
             int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
-            int activeBotCount = BotCountManager.GetAlivePlayers(botType);
+            int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
