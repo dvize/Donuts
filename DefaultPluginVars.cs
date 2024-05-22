@@ -123,18 +123,16 @@ namespace Donuts
         internal static string[] botDiffList = { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
         //Scenario Selection
-        internal static List<Folder> scenarios = new List<Folder>();
-        internal static List<Folder> randomScenarios = new List<Folder>();
+        internal static List<Folder> pmcScenarios = new List<Folder>();
+        internal static List<Folder> pmcRandomScenarios = new List<Folder>();
         internal static List<Folder> scavScenarios = new List<Folder>();
         internal static List<Folder> randomScavScenarios = new List<Folder>();
 
 
-        //fk too tired.  do i generate new settings on fly or .. its not being read from gui correctly
-        //i don't want to lose the players choice once they make a selection and app restarts
         internal static Setting<string> pmcScenarioSelection;
         internal static Setting<string> scavScenarioSelection;
-        internal static string[] scenarioValues;
-        internal static string[] scavScenarioValues;
+        internal static string[] pmcScenarioCombinedArray;
+        internal static string[] scavScenarioCombinedArray;
 
         //Default Constructor
         static DefaultPluginVars()
@@ -439,27 +437,6 @@ namespace Donuts
                 60f,
                 60f);
 
-            // Scenario Settings
-            pmcScenarioSelection = new Setting<string>(
-                "PMC Raid Spawn Preset Selection",
-                "Select a preset to use when spawning as PMC",
-                "live-like",
-                "live-like",
-                null,
-                null,
-                scenarioValues
-            );
-
-            scavScenarioSelection = new Setting<string>(
-                "SCAV Raid Spawn Preset Selection",
-                "Select a preset to use when spawning as SCAV",
-                "live-like",
-                "live-like",
-                null,
-                null,
-                scavScenarioValues
-            );
-
             // Advanced Settings
             replenishInterval = new Setting<float>(
                 "Bot Cache Replenish Interval",
@@ -653,6 +630,10 @@ namespace Donuts
 
             var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
 
+            // Temporarily store the scenario selections to initialize them later
+            string pmcScenarioSelectionValue = null;
+            string scavScenarioSelectionValue = null;
+
             foreach (var field in fields)
             {
                 if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Setting<>))
@@ -672,11 +653,46 @@ namespace Donuts
                             var convertedValue = Convert.ChangeType(value, fieldType);
                             valueProperty.SetValue(settingValue, convertedValue);
                         }
+
+                        // Store the scenario selection values
+                        if (field.Name == nameof(DefaultPluginVars.pmcScenarioSelection))
+                        {
+                            pmcScenarioSelectionValue = value.ToString();
+                        }
+                        else if (field.Name == nameof(DefaultPluginVars.scavScenarioSelection))
+                        {
+                            scavScenarioSelectionValue = value.ToString();
+                        }
                     }
                 }
             }
+
+            // Ensure the arrays are initialized before creating the settings
+            DefaultPluginVars.pmcScenarioCombinedArray = DefaultPluginVars.pmcScenarioCombinedArray ?? new string[0];
+            DefaultPluginVars.scavScenarioCombinedArray = DefaultPluginVars.scavScenarioCombinedArray ?? new string[0];
+
+            // After loading all settings, initialize the scenario settings with the loaded values
+            DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
+                "PMC Raid Spawn Preset Selection",
+                "Select a preset to use when spawning as PMC",
+                pmcScenarioSelectionValue ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.pmcScenarioCombinedArray
+            );
+
+            DefaultPluginVars.scavScenarioSelection = new Setting<string>(
+                "SCAV Raid Spawn Preset Selection",
+                "Select a preset to use when spawning as SCAV",
+                scavScenarioSelectionValue ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.scavScenarioCombinedArray
+            );
         }
-        
+
     }
 }
        

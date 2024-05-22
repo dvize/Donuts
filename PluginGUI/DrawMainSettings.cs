@@ -41,22 +41,28 @@ namespace Donuts
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
 
-            if (DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
+            if (DefaultPluginVars.pmcScenarioSelection?.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
             {
                 pmcScenarioSelectionIndex = FindIndex(DefaultPluginVars.pmcScenarioSelection);
             }
 
-            if (DefaultPluginVars.scavScenarioSelection.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0)
+            if (DefaultPluginVars.scavScenarioSelection?.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0)
             {
                 scavScenarioSelectionIndex = FindIndex(DefaultPluginVars.scavScenarioSelection);
             }
 
-            scenariosLoaded = DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0 &&
-                              DefaultPluginVars.scavScenarioSelection.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0;
+            scenariosLoaded = (DefaultPluginVars.pmcScenarioSelection?.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0) &&
+                              (DefaultPluginVars.scavScenarioSelection?.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0);
+
+#if DEBUG
+            //DonutsPlugin.Logger.LogError("scenariosLoaded:" + scenariosLoaded);
+#endif
         }
 
         internal static void Enable()
         {
+            
+
             // Apply the cached styles to ensure consistency
             PluginGUIHelper.ApplyCachedStyles();
 

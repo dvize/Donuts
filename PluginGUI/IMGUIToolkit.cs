@@ -12,25 +12,29 @@ namespace Donuts
         private static GUIStyle dropdownButtonStyle;
         private static GUIStyle toggleStyle;
         private static GUIStyle accordionButtonStyle;
+        private static GUIStyle tooltipStyle;
+        private static GUIStyle textFieldStyle;
 
         public static void InitializeStyles()
         {
             dropdownStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleLeft,
-                fixedHeight = 25
+                fixedHeight = 25,
+                fontSize = 18
             };
 
             dropdownButtonStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleLeft,
-                fixedHeight = 25
+                fixedHeight = 25,
+                fontSize = 18
             };
 
             toggleStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 14,
+                fontSize = 18,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
             };
@@ -39,8 +43,19 @@ namespace Donuts
             {
                 alignment = TextAnchor.MiddleLeft,
                 fixedHeight = 30,
-                fontSize = 16,
+                fontSize = 18,
                 fontStyle = FontStyle.Bold
+            };
+
+            textFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                fontSize = 18
+            };
+
+            tooltipStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 18,
+                wordWrap = true
             };
 
             // Create textures for the toggle button states
@@ -96,11 +111,11 @@ namespace Donuts
 
             // Draw label with tooltip
             GUIContent labelContent = new GUIContent(setting.Name, setting.ToolTipText);
-            GUILayout.Label(labelContent, GUILayout.Width(150)); // Increased width
+            GUILayout.Label(labelContent, GUILayout.Width(200)); // Increased width
 
             // Draw button with tooltip
             GUIContent buttonContent = new GUIContent(setting.Options[selectedIndex]?.ToString(), setting.ToolTipText);
-            if (GUILayout.Button(buttonContent, dropdownStyle, GUILayout.Width(200)))
+            if (GUILayout.Button(buttonContent, dropdownStyle, GUILayout.Width(300)))
             {
                 dropdownStates[dropdownId] = !dropdownStates[dropdownId];
             }
@@ -112,7 +127,7 @@ namespace Donuts
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
                     GUIContent optionContent = new GUIContent(setting.Options[i]?.ToString(), setting.ToolTipText);
-                    if (GUILayout.Button(optionContent, dropdownButtonStyle, GUILayout.Width(200)))
+                    if (GUILayout.Button(optionContent, dropdownButtonStyle, GUILayout.Width(300)))
                     {
                         selectedIndex = i;
                         setting.Value = setting.Options[i];
@@ -125,17 +140,18 @@ namespace Donuts
             ShowTooltip();
 
             return selectedIndex;
-        } 
+        }
+
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Label(labelContent, GUILayout.Width(200));
             GUILayout.Space(10);
-            value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200));
+            value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300));
 
             string valueStr = value.ToString("F2");
-            valueStr = GUILayout.TextField(valueStr, GUILayout.Width(50));
+            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
 
             if (float.TryParse(valueStr, out float parsedValue))
             {
@@ -153,12 +169,12 @@ namespace Donuts
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Label(labelContent, GUILayout.Width(200));
             GUILayout.Space(10);
-            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(200)));
+            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300)));
 
             string valueStr = value.ToString();
-            valueStr = GUILayout.TextField(valueStr, GUILayout.Width(50));
+            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
 
             if (int.TryParse(valueStr, out int parsedValue))
             {
@@ -176,9 +192,9 @@ namespace Donuts
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(150));
-            GUILayout.Space(10); 
-            text = GUILayout.TextField(text, GUILayout.Width(250));
+            GUILayout.Label(labelContent, GUILayout.Width(200));
+            GUILayout.Space(10);
+            text = GUILayout.TextField(text, textFieldStyle, GUILayout.Width(300));
             GUILayout.EndHorizontal();
 
             ShowTooltip();
@@ -190,12 +206,12 @@ namespace Donuts
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(150));
+            GUILayout.Label(labelContent, GUILayout.Width(200));
             GUILayout.Space(10);
 
             // Apply the custom toggle style
             GUIContent toggleContent = new GUIContent(value ? "YES" : "NO", toolTip);
-            bool newValue = GUILayout.Toggle(value, toggleContent, toggleStyle, GUILayout.Width(100), GUILayout.Height(25));
+            bool newValue = GUILayout.Toggle(value, toggleContent, toggleStyle, GUILayout.Width(150), GUILayout.Height(35));
 
             GUILayout.EndHorizontal();
 
@@ -212,7 +228,7 @@ namespace Donuts
             }
 
             GUIContent buttonContent = new GUIContent(label, toolTip);
-            bool result = GUILayout.Button(buttonContent, style, GUILayout.Width(150));
+            bool result = GUILayout.Button(buttonContent, style, GUILayout.Width(200));
 
             ShowTooltip();
 
@@ -244,14 +260,13 @@ namespace Donuts
             ShowTooltip();
         }
 
-
         private static void ShowTooltip()
         {
             if (!string.IsNullOrEmpty(GUI.tooltip))
             {
                 Vector2 mousePosition = Event.current.mousePosition;
-                GUIStyle tooltipStyle = new GUIStyle(GUI.skin.box);
                 Vector2 size = tooltipStyle.CalcSize(new GUIContent(GUI.tooltip));
+                size.y = tooltipStyle.CalcHeight(new GUIContent(GUI.tooltip), size.x);
                 Rect tooltipRect = new Rect(mousePosition.x, mousePosition.y - size.y, size.x, size.y);
                 GUI.Box(tooltipRect, GUI.tooltip, tooltipStyle);
             }

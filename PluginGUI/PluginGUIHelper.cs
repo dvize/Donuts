@@ -6,12 +6,17 @@ using UnityEngine;
 
 namespace Donuts
 {
-    //Has the main tabs and the bottom footer.  Also sets up all the styles to be used in sub pages
     public class PluginGUIHelper : MonoBehaviour
     {
-        private Rect windowRect = new Rect(20, 20, 1280, 720);
+        private Rect windowRect = new Rect(20, 20, 1664, 936);
         private bool isDragging = false;
         private Vector2 dragOffset;
+        private Vector2 scrollPosition = Vector2.zero;
+
+        private const float ResizeHandleSize = 30f;
+        private bool isResizing = false;
+        private Vector2 resizeStartPos;
+
 
         internal static GUIStyle cachedWindowStyle;
         internal static GUIStyle cachedLabelStyle;
@@ -32,12 +37,11 @@ namespace Donuts
                     CacheGUIStyles();
                 }
 
-                // Apply the cached styles to ensure consistency
                 ApplyCachedStyles();
 
-                // Draw the window with the defined styles
+                // Make the window resizable
                 windowRect = GUI.Window(1, windowRect, MainWindowFunc, "Donuts Configuration", cachedWindowStyle);
-                GUI.FocusWindow(1); // Ensure the window remains focused
+                GUI.FocusWindow(1);
             }
         }
 
@@ -52,31 +56,27 @@ namespace Donuts
 
         private void MainWindowFunc(int windowID)
         {
+            GUILayout.BeginVertical();
+
+            // Main content area with scroll view
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
+
             DrawMainTabs();
             DrawSelectedTabContent();
+
+            GUILayout.EndScrollView();
+
+            // Footer section
             DrawFooter();
 
-            // Handle dragging
-            if (Event.current.type == EventType.MouseDown && new Rect(0, 0, windowRect.width, 20).Contains(Event.current.mousePosition))
-            {
-                isDragging = true;
-                dragOffset = Event.current.mousePosition;
-            }
+            GUILayout.EndVertical();
 
-            if (isDragging)
-            {
-                if (Event.current.type == EventType.MouseUp)
-                {
-                    isDragging = false;
-                }
-                else if (Event.current.type == EventType.MouseDrag)
-                {
-                    windowRect.position += (Vector2)Event.current.mousePosition - dragOffset;
-                }
-            }
+            HandleWindowDragging();
+            HandleWindowResizing();
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width, 20));
         }
+
 
         private void DrawMainTabs()
         {
@@ -118,27 +118,86 @@ namespace Donuts
                     break;
             }
         }
+
         private void DrawFooter()
         {
-            GUILayout.FlexibleSpace(); // Pushes content to the top
+            GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
 
-            GUILayout.FlexibleSpace(); // Pushes content to the left and right
+            GUIStyle greenButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 0.0f)), textColor = Color.white },
+                fontSize = 20,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
 
-            // Save All Changes button on the right
-            GUIStyle greenButtonStyle = new GUIStyle(GUI.skin.button);
-            greenButtonStyle.normal.textColor = Color.white;
-            greenButtonStyle.normal.background = MakeTex(1, 1, new Color(0.0f, 0.5f, 0.0f));
-
-            if (GUILayout.Button("Save All Changes", greenButtonStyle, GUILayout.Width(150), GUILayout.Height(30)))
+            if (GUILayout.Button("Save All Changes", greenButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ExportConfig();
                 DonutsPlugin.Logger.LogWarning("All changes saved.");
             }
 
+            GUILayout.Space(ResizeHandleSize);
+
             GUILayout.EndHorizontal();
         }
 
+        private void HandleWindowDragging()
+        {
+            if (Event.current.type == EventType.MouseDown && new Rect(0, 0, windowRect.width, 20).Contains(Event.current.mousePosition))
+            {
+                isDragging = true;
+                dragOffset = Event.current.mousePosition;
+            }
+
+            if (isDragging)
+            {
+                if (Event.current.type == EventType.MouseUp)
+                {
+                    isDragging = false;
+                }
+                else if (Event.current.type == EventType.MouseDrag)
+                {
+                    windowRect.position += (Vector2)Event.current.mousePosition - dragOffset;
+                }
+            }
+        }
+        private void HandleWindowResizing()
+        {
+            Rect resizeHandleRect = new Rect(windowRect.width - ResizeHandleSize, windowRect.height - ResizeHandleSize, ResizeHandleSize, ResizeHandleSize);
+            GUI.DrawTexture(resizeHandleRect, Texture2D.whiteTexture);
+
+            // Check for resizing start
+            if (Event.current.type == EventType.MouseDown && resizeHandleRect.Contains(Event.current.mousePosition))
+            {
+                isResizing = true;
+                resizeStartPos = Event.current.mousePosition;
+                Event.current.Use(); // Consume the event so other controls don't use it
+            }
+
+            // Handle resizing
+            if (isResizing)
+            {
+                if (Event.current.type == EventType.MouseUp)
+                {
+                    isResizing = false;
+                }
+                else if (Event.current.type == EventType.MouseDrag)
+                {
+                    Vector2 delta = Event.current.mousePosition - resizeStartPos;
+                    windowRect.width = Mathf.Max(300, windowRect.width + delta.x);
+                    windowRect.height = Mathf.Max(200, windowRect.height + delta.y);
+                    resizeStartPos = Event.current.mousePosition;
+                    Event.current.Use(); // Consume the event so other controls don't use it
+                }
+                else if (Event.current.type == EventType.MouseMove)
+                {
+                    Event.current.Use(); // Consume the event to keep resizing
+                }
+            }
+        }
 
         internal Texture2D MakeTex(int width, int height, Color col)
         {
@@ -178,7 +237,8 @@ namespace Donuts
             cachedLabelStyle = new GUIStyle(GUI.skin.label)
             {
                 normal = { textColor = Color.white },
-                fontSize = 20
+                fontSize = 20,
+                fontStyle = FontStyle.Bold,
             };
 
             cachedButtonStyle = new GUIStyle(GUI.skin.button)
@@ -186,7 +246,8 @@ namespace Donuts
                 normal = { background = buttonNormalTex, textColor = Color.white },
                 hover = { background = buttonHoverTex, textColor = Color.white },
                 active = { background = buttonActiveTex, textColor = Color.white },
-                fontSize = 14,
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
 
@@ -224,7 +285,7 @@ namespace Donuts
             cachedSubTabLabelStyle = new GUIStyle(cachedLabelStyle)
             {
                 normal = { textColor = new Color(0.5f, 0.5f, 1f, 1f) },
-                fontSize = 16,
+                fontSize = 22,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
@@ -239,12 +300,10 @@ namespace Donuts
 
         public static void ExportConfig()
         {
-            // Get the path of the currently executing assembly
             var dllPath = Assembly.GetExecutingAssembly().Location;
             var configDirectory = Path.Combine(Path.GetDirectoryName(dllPath), "Config");
             var configFilePath = Path.Combine(configDirectory, "DefaultPluginVars.json");
 
-            // Ensure the directory exists
             if (!Directory.Exists(configDirectory))
             {
                 Directory.CreateDirectory(configDirectory);
@@ -253,7 +312,5 @@ namespace Donuts
             string json = DefaultPluginVars.ExportToJson();
             File.WriteAllText(configFilePath, json);
         }
-
-        
     }
 }

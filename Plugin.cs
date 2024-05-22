@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using Cysharp.Threading.Tasks.CompilerServices;
 using Donuts.Models;
 using Donuts.Patches;
 using EFT;
@@ -34,9 +36,8 @@ namespace Donuts
         {
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
         }
-        private void Awake()
+        private async void Awake()
         {
-
             // Run dependency checker
             if (!DependencyChecker.ValidateDependencies(Logger, Info, this.GetType(), Config))
             {
@@ -53,7 +54,7 @@ namespace Donuts
 
             escapeKey = KeyCode.Escape;
 
-            //Patches
+            // Patches
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
@@ -65,39 +66,56 @@ namespace Donuts
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
 
-            SetupScenariosUI();
+            await SetupScenariosUI();
             ImportConfig();
         }
 
-        private void SetupScenariosUI()
+        private async Task SetupScenariosUI()
         {
-            LoadDonutsFolders();
+            await LoadDonutsFoldersAsync();
 
-            var scenarioValuesList = DefaultPluginVars.scenarioValues?.ToList() ?? new List<string>();
-            var scavScenarioValuesList = DefaultPluginVars.scavScenarioValues?.ToList() ?? new List<string>();
+            var scenarioValuesList = DefaultPluginVars.pmcScenarioCombinedArray?.ToList() ?? new List<string>();
+            var scavScenarioValuesList = DefaultPluginVars.scavScenarioCombinedArray?.ToList() ?? new List<string>();
 
-            AddScenarioNamesToValuesList(DefaultPluginVars.scenarios, ref scenarioValuesList, folder => folder.Name);
-            AddScenarioNamesToValuesList(DefaultPluginVars.randomScenarios, ref scenarioValuesList, folder => folder.RandomScenarioConfig);
+            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcScenarios, scenarioValuesList, folder => folder.Name);
+            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcRandomScenarios, scenarioValuesList, folder => folder.RandomScenarioConfig);
 
-            AddScenarioNamesToValuesList(DefaultPluginVars.scavScenarios, ref scavScenarioValuesList, folder => folder.Name);
-            AddScenarioNamesToValuesList(DefaultPluginVars.randomScavScenarios, ref scavScenarioValuesList, folder => folder.RandomScenarioConfig);
+            await AddScenarioNamesToListAsync(DefaultPluginVars.scavScenarios, scavScenarioValuesList, folder => folder.Name);
+            await AddScenarioNamesToListAsync(DefaultPluginVars.randomScavScenarios, scavScenarioValuesList, folder => folder.RandomScenarioConfig);
 
-            DefaultPluginVars.scenarioValues = scenarioValuesList.ToArray();
-            DefaultPluginVars.scavScenarioValues = scavScenarioValuesList.ToArray();
+            DefaultPluginVars.pmcScenarioCombinedArray = scenarioValuesList.ToArray();
+            DefaultPluginVars.scavScenarioCombinedArray = scavScenarioValuesList.ToArray();
 
-            Logger.LogWarning($"Loaded PMC Scenarios: {DefaultPluginVars.scenarioValues.ToString()} ");
-            Logger.LogWarning($"Loaded Scav Scenarios: {DefaultPluginVars.scavScenarioValues.ToString()} ");
+            // Dynamically initialize the scenario settings
+            DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
+                "PMC Raid Spawn Preset Selection",
+                "Select a preset to use when spawning as PMC",
+                DefaultPluginVars.pmcScenarioSelection?.Value ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.pmcScenarioCombinedArray
+            );
 
-            //if there is no default value selected from our loaded DefaultPluginVars, set the value to the first index
-            if (DefaultPluginVars.pmcScenarioSelection.Value == null || DefaultPluginVars.pmcScenarioSelection.Value == "")
-            {
-                DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.scenarioValues[0];
-            }
-            if (DefaultPluginVars.scavScenarioSelection.Value == null || DefaultPluginVars.scavScenarioSelection.Value == "")
-            {
-                DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioValues[0];
-            }
+            DefaultPluginVars.scavScenarioSelection = new Setting<string>(
+                "SCAV Raid Spawn Preset Selection",
+                "Select a preset to use when spawning as SCAV",
+                DefaultPluginVars.scavScenarioSelection?.Value ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.scavScenarioCombinedArray
+            );
+
+#if DEBUG
+            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
+            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
+#endif
+
+            // Call InitializeDropdownIndices to ensure scenarios are loaded and indices are set
+            DrawMainSettings.InitializeDropdownIndices();
         }
+
 
         private void Update()
         {
@@ -150,45 +168,37 @@ namespace Donuts
         }
 
         #region Donuts Non-Raid Related Methods
-        internal void LoadDonutsFolders()
+        private async Task LoadDonutsFoldersAsync()
         {
             var dllPath = Assembly.GetExecutingAssembly().Location;
             var directoryPath = Path.GetDirectoryName(dllPath);
 
-            DefaultPluginVars.scenarios = LoadFolders(Path.Combine(directoryPath, "ScenarioConfig.json"));
-            DefaultPluginVars.randomScenarios = LoadFolders(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
-            DefaultPluginVars.scavScenarios = LoadFolders(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
-            DefaultPluginVars.randomScavScenarios = LoadFolders(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
+            DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
+            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
+            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
 
-            PopulateScenarioValues();
+            await PopulateScenarioValuesAsync();
             DrawMainSettings.InitializeDropdownIndices();  // Re-initialize dropdown indices after loading scenarios
-            DrawMainSettings.scenariosLoaded = DefaultPluginVars.pmcScenarioSelection.Options.Length > 0 &&
-                                               DefaultPluginVars.scavScenarioSelection.Options.Length > 0;
         }
 
-        private void PopulateScenarioValues()
+        private async Task PopulateScenarioValuesAsync()
         {
-            DefaultPluginVars.scenarioValues = GenerateScenarioValues(DefaultPluginVars.scenarios, DefaultPluginVars.randomScenarios);
-            DefaultPluginVars.scavScenarioValues = GenerateScenarioValues(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
+            DefaultPluginVars.pmcScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.pmcScenarios, DefaultPluginVars.pmcRandomScenarios);
+            DefaultPluginVars.scavScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
         }
 
-        private static string[] GenerateScenarioValues(List<Folder> scenarios, List<Folder> randomScenarios)
+        private async Task<string[]> GenerateScenarioValuesAsync(List<Folder> scenarios, List<Folder> randomScenarios)
         {
             var valuesList = new List<string>();
 
-            AddScenarioNamesToValuesList(scenarios, ref valuesList, folder => folder.Name);
-            AddScenarioNamesToValuesList(randomScenarios, ref valuesList, folder => folder.RandomScenarioConfig);
-
-            // Log the contents of the final valuesList
-           /* Logger.LogInfo("Final scenario values list:");
-            foreach (var value in valuesList)
-            {
-                Logger.LogInfo(value);
-            }*/
+            await AddScenarioNamesToListAsync(scenarios, valuesList, folder => folder.Name);
+            await AddScenarioNamesToListAsync(randomScenarios, valuesList, folder => folder.RandomScenarioConfig);
 
             return valuesList.ToArray();
         }
-        private static void AddScenarioNamesToValuesList(IEnumerable<Folder> folders, ref List<string> valuesList, Func<Folder, string> getNameFunc)
+
+        private async Task AddScenarioNamesToListAsync(IEnumerable<Folder> folders, List<string> valuesList, Func<Folder, string> getNameFunc)
         {
             if (folders != null)
             {
@@ -200,7 +210,8 @@ namespace Donuts
                 }
             }
         }
-        private static List<Folder> LoadFolders(string filePath)
+
+        private static async Task<List<Folder>> LoadFoldersAsync(string filePath)
         {
             if (!File.Exists(filePath))
             {
@@ -208,7 +219,7 @@ namespace Donuts
                 return new List<Folder>();
             }
 
-            var fileContent = File.ReadAllText(filePath);
+            var fileContent = await Task.Run(() => File.ReadAllText(filePath));
             var folders = JsonConvert.DeserializeObject<List<Folder>>(fileContent);
 
             if (folders == null || folders.Count == 0)
@@ -222,13 +233,14 @@ namespace Donuts
             return folders;
         }
 
+
         #endregion
 
         #region Donuts Raid Related Scenario Selection Methods
 
         internal static Folder GrabDonutsFolder(string folderName)
         {
-            return DefaultPluginVars.scenarios.FirstOrDefault(folder => folder.Name == folderName);
+            return DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == folderName);
         }
 
         internal static string RunWeightedScenarioSelection()
@@ -243,8 +255,8 @@ namespace Donuts
                     scenarioSelection = DefaultPluginVars.scavScenarioSelection.Value;
                 }
 
-                var selectedFolder = DefaultPluginVars.scenarios.FirstOrDefault(folder => folder.Name == scenarioSelection)
-                                     ?? DefaultPluginVars.randomScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
+                var selectedFolder = DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == scenarioSelection)
+                                     ?? DefaultPluginVars.pmcRandomScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
 
                 if (selectedFolder != null)
                 {
