@@ -335,8 +335,10 @@ namespace Donuts
                 {
                     newKeybinds[keybindId] = e.keyCode;
                     keybindStates[keybindId] = false;
-                    isSettingKeybind = false; // Reset the flag
                     currentKey = e.keyCode; // Update the current key
+
+                    //delay 1 second non blocking
+                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(t => isSettingKeybind = false);
                 }
             }
 

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using static Donuts.PluginGUIHelper;
+using static Donuts.DefaultPluginVars;
 
 namespace Donuts
 {
@@ -7,9 +8,23 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Draw content for Debugging
-            GUILayout.Label("Debugging", cachedLabelStyle);
-            // Add more settings here
+            // Apply the cached styles to ensure consistency
+            PluginGUIHelper.ApplyCachedStyles();
+
+            GUILayout.Space(30);
+            GUILayout.BeginHorizontal();
+            GUILayout.BeginVertical();
+
+            // Add toggles for DebugGizmos and gizmoRealSize
+            DebugGizmos.Value = ImGUIToolkit.Toggle(DebugGizmos.Name, DebugGizmos.ToolTipText, DebugGizmos.Value);
+            GUILayout.Space(10); 
+
+            gizmoRealSize.Value = ImGUIToolkit.Toggle(gizmoRealSize.Name, gizmoRealSize.ToolTipText, gizmoRealSize.Value);
+            GUILayout.Space(10); 
+
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
         }
     }
+
 }
