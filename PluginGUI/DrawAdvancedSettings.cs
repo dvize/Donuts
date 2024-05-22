@@ -83,6 +83,9 @@ namespace Donuts
 
             // Reset dropdown indices
             DrawMainSettings.InitializeDropdownIndices();
+
+            // Reset dropdown indices for spawn point maker settings
+            DrawSpawnPointMaker.InitializeDropdownIndices();
         }
         private static void RestartPluginGUIHelper()
         {

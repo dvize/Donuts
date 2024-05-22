@@ -307,18 +307,25 @@ namespace Donuts
             if (keybindStates[keybindId])
             {
                 GUIContent waitingContent = new GUIContent("Press any key...", toolTip);
-                GUILayout.Button(waitingContent, keybindFieldStyle, GUILayout.Width(300));
+                GUILayout.Button(waitingContent, keybindFieldStyle, GUILayout.Width(200));
                 isSettingKeybind = true; // Indicate that we are setting a keybind
             }
             else
             {
                 GUIContent keyContent = new GUIContent(currentKey.ToString(), toolTip);
-                if (GUILayout.Button(keyContent, keybindFieldStyle, GUILayout.Width(300)))
+                if (GUILayout.Button(keyContent, keybindFieldStyle, GUILayout.Width(200)))
                 {
                     keybindStates[keybindId] = true;
                     isSettingKeybind = true; // Indicate that we are setting a keybind
                 }
             }
+
+            // Add a "Clear" button
+            if (GUILayout.Button("Clear", GUILayout.Width(90)))
+            {
+                currentKey = KeyCode.None;
+            }
+
             GUILayout.EndHorizontal();
 
             if (keybindStates[keybindId])
@@ -329,19 +336,19 @@ namespace Donuts
                     newKeybinds[keybindId] = e.keyCode;
                     keybindStates[keybindId] = false;
                     isSettingKeybind = false; // Reset the flag
+                    currentKey = e.keyCode; // Update the current key
                 }
             }
 
             ShowTooltip();
 
-            return newKeybinds[keybindId];
+            return currentKey; // Return the updated keybind
         }
 
         public static bool IsSettingKeybind()
         {
             return isSettingKeybind;
         }
-
 
         private static void ShowTooltip()
         {
