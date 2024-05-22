@@ -14,6 +14,7 @@ namespace Donuts
         private static GUIStyle accordionButtonStyle;
         private static GUIStyle tooltipStyle;
         private static GUIStyle textFieldStyle;
+        private static GUIStyle expandedDropdownStyle;
 
         public static void InitializeStyles()
         {
@@ -56,6 +57,11 @@ namespace Donuts
             {
                 fontSize = 18,
                 wordWrap = true
+            };
+
+            expandedDropdownStyle = new GUIStyle(dropdownStyle)
+            {
+                normal = { background = MakeTex(1, 1, Color.blue) }
             };
 
             // Create textures for the toggle button states
@@ -111,11 +117,14 @@ namespace Donuts
 
             // Draw label with tooltip
             GUIContent labelContent = new GUIContent(setting.Name, setting.ToolTipText);
-            GUILayout.Label(labelContent, GUILayout.Width(200)); // Increased width
+            GUILayout.Label(labelContent, GUILayout.Width(200)); 
+
+            // Choose style based on dropdown state
+            GUIStyle currentDropdownStyle = dropdownStates[dropdownId] ? expandedDropdownStyle : dropdownStyle;
 
             // Draw button with tooltip
             GUIContent buttonContent = new GUIContent(setting.Options[selectedIndex]?.ToString(), setting.ToolTipText);
-            if (GUILayout.Button(buttonContent, dropdownStyle, GUILayout.Width(300)))
+            if (GUILayout.Button(buttonContent, currentDropdownStyle, GUILayout.Width(300)))
             {
                 dropdownStates[dropdownId] = !dropdownStates[dropdownId];
             }
@@ -124,6 +133,11 @@ namespace Donuts
 
             if (dropdownStates[dropdownId])
             {
+                GUILayout.BeginHorizontal(); // Begin a new horizontal group to align buttons
+                GUILayout.Space(209); // Adjust the space to match the label width
+
+                GUILayout.BeginVertical(); // Begin a vertical group to stack buttons
+
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
                     GUIContent optionContent = new GUIContent(setting.Options[i]?.ToString(), setting.ToolTipText);
@@ -134,6 +148,9 @@ namespace Donuts
                         dropdownStates[dropdownId] = false;
                     }
                 }
+
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
             }
 
             // Use the centralized ShowTooltip method
@@ -141,6 +158,7 @@ namespace Donuts
 
             return selectedIndex;
         }
+
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
