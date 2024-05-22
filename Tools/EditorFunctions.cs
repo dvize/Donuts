@@ -8,6 +8,7 @@ using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
+using Cysharp.Threading.Tasks;
 using static Donuts.DefaultPluginVars;
 
 #pragma warning disable IDE0007, IDE0044
@@ -23,13 +24,8 @@ namespace Donuts
 
         public EditorFunctions()
         {
-            if (Logger == null)
-            {
-                Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(EditorFunctions));
-            }
-
+            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(EditorFunctions));
         }
-        
 
         internal static void DeleteSpawnMarker()
         {
@@ -113,13 +109,7 @@ namespace Donuts
 
                     // Edit the DonutComponent.drawnCoordinates and gizmoSpheres list to remove the objects
                     var coordinate = new Vector3(closestEntry.Position.x, closestEntry.Position.y, closestEntry.Position.z);
-                    Gizmos.drawnCoordinates.Remove(coordinate);
-
-                    var sphere = Gizmos.gizmoSpheres.FirstOrDefault(x => x.transform.position == coordinate);
-                    Gizmos.gizmoSpheres.Remove(sphere);
-
-                    // Destroy the sphere game object in the actual game world
-                    if (sphere != null)
+                    if (Gizmos.gizmoMarkers.TryRemove(coordinate, out var sphere))
                     {
                         GameWorld.Destroy(sphere);
                     }
@@ -164,10 +154,7 @@ namespace Donuts
             // Add new entry to sessionLocations.Locations list since we adding new ones
 
             // Check if Locations is null
-            if (DonutComponent.sessionLocations.Locations == null)
-            {
-                DonutComponent.sessionLocations.Locations = new List<Entry>();
-            }
+            DonutComponent.sessionLocations.Locations ??= new List<Entry>();
 
             DonutComponent.sessionLocations.Locations.Add(newEntry);
 
@@ -188,11 +175,9 @@ namespace Donuts
             {
                 displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
-
-
         }
 
-        internal static void WriteToJsonFile()
+        internal static async UniTask WriteToJsonFile()
         {
             // Check if any of the required objects are null
             if (Donuts.DonutComponent.gameWorld == null)
@@ -228,7 +213,13 @@ namespace Donuts
 
             //write json to file with filename == Donuts.DonutComponent.maplocation + random number
             string jsonFilePath = Path.Combine(jsonFolderPath, fileName);
-            File.WriteAllText(jsonFilePath, json);
+
+            await UniTask.SwitchToThreadPool();
+            using (StreamWriter writer = new StreamWriter(jsonFilePath, false))
+            {
+                await writer.WriteAsync(json);
+            }
+            await UniTask.SwitchToMainThread();
 
             var txt = $"Donuts: Wrote Json File to: {jsonFilePath}";
             var displayMessageNotificationMethod = Gizmos.GetDisplayMessageNotificationMethod();
@@ -237,5 +228,6 @@ namespace Donuts
                 displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
         }
+
     }
 }

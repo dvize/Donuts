@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using BepInEx.Configuration;
-using DG.Tweening.Plugins;
 using Donuts.Models;
 using Newtonsoft.Json;
 using UnityEngine;
-using static GClass1738;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -98,7 +95,7 @@ namespace Donuts
         internal static Setting<KeyCode> CreateSpawnMarkerKey;
         internal static Setting<KeyCode> DeleteSpawnMarkerKey;
 
-        internal static string[] wildSpawnTypes = 
+        internal static string[] wildSpawnTypes =
         {
             "arenafighterevent",
             "assault",
@@ -525,7 +522,7 @@ namespace Donuts
                 "Bot Cache Replenish Interval",
                 "The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
                 10f,
-                10f, 
+                10f,
                 0f,
                 300f);
 
@@ -596,7 +593,7 @@ namespace Donuts
                 "Wild Spawn Type",
                 "Select an option.",
                 "pmc",
-                "pmc", 
+                "pmc",
                 null,
                 null,
                 wildSpawnTypes);
@@ -840,4 +837,4 @@ namespace Donuts
 
     }
 }
-       
+

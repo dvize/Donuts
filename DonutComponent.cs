@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -98,7 +97,6 @@ namespace Donuts
             var displayMessageNotification = PatchConstants.EftTypes.Single(x => x.GetMethod("DisplayMessageNotification") != null).GetMethod("DisplayMessageNotification");
             if (displayMessageNotification != null)
             {
-                displayMessageNotificationMethod = displayMessageNotification;
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 

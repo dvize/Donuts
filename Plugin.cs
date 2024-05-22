@@ -8,7 +8,6 @@ using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using Cysharp.Threading.Tasks.CompilerServices;
 using Donuts.Models;
 using Donuts.Patches;
 using EFT;

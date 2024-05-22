@@ -41,9 +41,6 @@ namespace Donuts
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
 
-            Gizmos.drawnCoordinates = new HashSet<Vector3>();
-            gizmoSpheres = new List<GameObject>();
-
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
