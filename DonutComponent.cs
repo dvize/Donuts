@@ -365,15 +365,15 @@ namespace Donuts
         }
         private bool IsRaidTimeRemaining(string spawnType)
         {
-            int hardStopTime = 0;
-            int hardStopPercent = 0;
+            int hardStopTime;
+            int hardStopPercent;
 
             if (spawnType == "pmc")
             {
                 hardStopTime = hardStopTimePMC.Value;
                 hardStopPercent = hardStopPercentPMC.Value;
             }
-            else if (spawnType == "scav")
+            else
             {
                 hardStopTime = hardStopTimeSCAV.Value;
                 hardStopPercent = hardStopPercentSCAV.Value;
@@ -382,6 +382,9 @@ namespace Donuts
             int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds(); // Time left
             int raidTimeLeftPercent = (int)(Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100f); // Percent left
 
+            //why is this method failing?
+
+            Logger.LogWarning("RaidTimeLeftTime: " + raidTimeLeftTime + " RaidTimeLeftPercent: " + raidTimeLeftPercent + " HardStopTime: " + hardStopTime + " HardStopPercent: " + hardStopPercent);
             return useTimeBasedHardStop.Value ? raidTimeLeftTime >= hardStopTime : raidTimeLeftPercent >= hardStopPercent;
         }
         private void ResetGroupTimers(int groupNum)

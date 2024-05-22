@@ -37,12 +37,6 @@ namespace Donuts
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
 
-            if (!IsRaidTimeRemaining(hotspotSpawnType))
-            {
-                DonutComponent.Logger.LogDebug("Spawn not allowed due to raid time conditions - skipping this spawn");
-                return;
-            }
-
             int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
@@ -54,42 +48,8 @@ namespace Donuts
                 }
             }
 
-            if (HardCapEnabled.Value)
-            {
-                maxCount = BotCountManager.HandleHardCap(hotspotSpawnType, maxCount);
-                if (maxCount == 0)
-                {
-                    DonutComponent.Logger.LogDebug("Hard cap exceeded - no bots can be spawned");
-                    return;
-                }
-            }
-
             bool isGroup = maxCount > 1;
             await SetupSpawn(hotspotTimer, maxCount, isGroup, wildSpawnType, coordinate);
-        }
-
-        private static bool IsRaidTimeRemaining(string hotspotSpawnType)
-        {
-            int hardStopTime = GetHardStopTime(hotspotSpawnType); // Time or percent remaining return
-            int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds(); // Time left
-            int raidTimeLeftPercent = (int)(Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100f); // Percent left
-            return useTimeBasedHardStop.Value ? raidTimeLeftTime >= hardStopTime : raidTimeLeftPercent >= hardStopTime;
-        }
-
-        private static int GetHardStopTime(string hotspotSpawnType)
-        {
-            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && hardStopOptionPMC.Value) ||
-                (hotspotSpawnType == ScavSpawnType && hardStopOptionSCAV.Value))
-            {
-                // Time based hard stop
-                if (useTimeBasedHardStop.Value)
-                {
-                    return hotspotSpawnType == ScavSpawnType ? hardStopTimeSCAV.Value : hardStopTimePMC.Value;
-                }
-                // Percentage based hard stop
-                return hotspotSpawnType == ScavSpawnType ? hardStopPercentSCAV.Value : hardStopPercentPMC.Value;
-            }
-            return int.MaxValue;
         }
 
         private static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
@@ -360,7 +320,7 @@ namespace Donuts
             await ClearBotCacheAfterActivation(botData);
         }
 
-        internal static async UniTask ClearBotCacheAfterActivation(BotCacheClass botData)
+        internal static UniTask ClearBotCacheAfterActivation(BotCacheClass botData)
         {
             var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
             if (botInfo != null)
@@ -372,6 +332,7 @@ namespace Donuts
 #endif
             }
 
+            return UniTask.CompletedTask;
         }
 
         internal static bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
