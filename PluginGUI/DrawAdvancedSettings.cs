@@ -49,11 +49,15 @@ namespace Donuts
             GUILayout.Space(150);
 
             // Reset to Default Values button
-            GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button);
-            redButtonStyle.normal.textColor = Color.white;
-            redButtonStyle.normal.background = DonutsPlugin.pluginGUIHelper.MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f));
+            GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                normal = { background = DonutsPlugin.pluginGUIHelper.MakeTex(1, 1, new Color(0.0f, 0.5f, 0.0f)), textColor = Color.white },
+                fontSize = 20,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
 
-            if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(200), GUILayout.Height(30)))
+            if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ResetToDefaults();
                 DonutsPlugin.Logger.LogWarning("All settings have been reset to default values.");
