@@ -69,8 +69,8 @@ namespace Donuts
                 foreach (Player bot in gameWorld.AllAlivePlayersList)
                 {
                     if (!bot.IsYourPlayer &&
-                        ((IsSCAV(bot.Profile.Info.Settings.Role) && spawnType == "assault") ||
-                        (IsPMC(bot.Profile.Info.Settings.Role) && spawnType != "assault")))
+                        (IsSCAV(bot.Profile.Info.Settings.Role) ||
+                        (IsPMC(bot.Profile.Info.Settings.Role))))
                     {
                         count++;
                     }
