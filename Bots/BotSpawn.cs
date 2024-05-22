@@ -350,10 +350,10 @@ namespace Donuts
             GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
 
             botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
-            ClearBotCacheAfterActivation(botData);
+            await ClearBotCacheAfterActivation(botData);
         }
 
-        internal static void ClearBotCacheAfterActivation(BotCacheClass botData)
+        internal static async UniTask ClearBotCacheAfterActivation(BotCacheClass botData)
         {
             var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
             if (botInfo != null)
@@ -364,6 +364,7 @@ namespace Donuts
                 DonutComponent.Logger.LogDebug($"Cleared cached bot info for bot type: {botInfo.SpawnType}");
 #endif
             }
+
         }
 
         internal static bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)

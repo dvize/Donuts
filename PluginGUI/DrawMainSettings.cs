@@ -63,7 +63,7 @@ namespace Donuts
 
         internal static void Enable()
         {
-            
+
 
             // Apply the cached styles to ensure consistency
             PluginGUIHelper.ApplyCachedStyles();
@@ -175,21 +175,43 @@ namespace Donuts
             DefaultPluginVars.HardCapEnabled.Value = Toggle(DefaultPluginVars.HardCapEnabled.Name,
                 DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
 
+            DefaultPluginVars.useTimeBasedHardStop.Value = Toggle(DefaultPluginVars.useTimeBasedHardStop.Name,
+                               DefaultPluginVars.useTimeBasedHardStop.ToolTipText, DefaultPluginVars.useTimeBasedHardStop.Value);
+
             DefaultPluginVars.hardStopOptionPMC.Value = Toggle(DefaultPluginVars.hardStopOptionPMC.Name,
                 DefaultPluginVars.hardStopOptionPMC.ToolTipText, DefaultPluginVars.hardStopOptionPMC.Value);
 
-            DefaultPluginVars.hardStopTimePMC.Value = Slider(DefaultPluginVars.hardStopTimePMC.Name,
-                DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
+            //if the time based hard stop is enabled, show the slider
+            if (DefaultPluginVars.useTimeBasedHardStop.Value)
+            {
+                DefaultPluginVars.hardStopTimePMC.Value = Slider(DefaultPluginVars.hardStopTimePMC.Name,
+                    DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
+            }
+            else
+            {
+                //show the hardstoppercentagepmc as slider
+                DefaultPluginVars.hardStopPercentPMC.Value = Slider(DefaultPluginVars.hardStopPercentPMC.Name,
+                    DefaultPluginVars.hardStopPercentPMC.ToolTipText, DefaultPluginVars.hardStopPercentPMC.Value, 0, 100);
+            }
 
             DefaultPluginVars.hardStopOptionSCAV.Value = Toggle(DefaultPluginVars.hardStopOptionSCAV.Name,
                 DefaultPluginVars.hardStopOptionSCAV.ToolTipText, DefaultPluginVars.hardStopOptionSCAV.Value);
 
-            DefaultPluginVars.hardStopTimeSCAV.Value = Slider(DefaultPluginVars.hardStopTimeSCAV.Name,
-                DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+            if (DefaultPluginVars.useTimeBasedHardStop.Value)
+            {
+                DefaultPluginVars.hardStopTimeSCAV.Value = Slider(DefaultPluginVars.hardStopTimeSCAV.Name,
+                    DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+            }
+            else
+            {
+                DefaultPluginVars.hardStopPercentSCAV.Value = Slider(DefaultPluginVars.hardStopPercentSCAV.Name,
+                    DefaultPluginVars.hardStopPercentSCAV.ToolTipText, DefaultPluginVars.hardStopPercentSCAV.Value, 0, 100);
+            }
 
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
+
             DefaultPluginVars.coolDownTimer.Value = Slider(DefaultPluginVars.coolDownTimer.Name,
                 DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
 
