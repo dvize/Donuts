@@ -298,7 +298,7 @@ namespace Donuts
 
             hardStopOptionPMC = new Setting<bool>(
                 "PMC Spawn Hard Stop",
-                "If enabled, all PMC spawns stop completely once there is n time or percentage time left in your raid. This is configurable in seconds (see below).",
+                "If enabled, all PMC spawns stop completely once there is n time or percentage time left in your raid. This is configurable in either seconds or percentage (see below).",
                 false,
                 false);
 
@@ -318,7 +318,7 @@ namespace Donuts
 
             hardStopOptionSCAV = new Setting<bool>(
                 "SCAV Spawn Hard Stop",
-                "If enabled, all SCAV spawns stop completely once there is n time or percentage time left in your raid. This is configurable in seconds (see below).",
+                "If enabled, all SCAV spawns stop completely once there is n time or percentage time left in your raid. This is configurable in either seconds or percentage (see below).",
                 false,
                 false);
 
