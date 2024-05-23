@@ -159,7 +159,6 @@ namespace Donuts
 
             return selectedIndex;
         }
-
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             EnsureStylesInitialized();
