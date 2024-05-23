@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using EFT.Visual;
+using UnityEngine;
 using static Donuts.ImGUIToolkit;
 using static Donuts.PluginGUIHelper;
 
@@ -63,58 +64,54 @@ namespace Donuts
 
         internal static void Enable()
         {
-
-
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
-
-            // Initialize the custom styles for the dropdown
-            InitializeStyles();
-            GUILayout.Space(30);
-            GUILayout.BeginHorizontal();
-
-            // Left-hand navigation menu for sub-tabs
-            GUILayout.BeginVertical(GUILayout.Width(150));
-
-            GUILayout.Space(20);
-            DrawSubTabs();
-            GUILayout.EndVertical();
-
-            // Space between menu and subtab pages
-            GUILayout.Space(40);
-
-            // Right-hand content area for selected sub-tab
-            GUILayout.BeginVertical();
-
-            switch (selectedMainSettingsIndex)
+            // Apply the custom skin to ensure consistency
+            PluginGUIHelper.ApplyCustomSkin(() =>
             {
-                case 0:
-                    DrawMainSettingsGeneral();
-                    break;
-                case 1:
-                    DrawMainSettingsSpawnFrequency();
-                    break;
-                case 2:
-                    DrawMainSettingsBotAttributes();
-                    break;
-            }
+                // Initialize the custom styles for the dropdown
+                InitializeStyles();
+                GUILayout.Space(30);
+                GUILayout.BeginHorizontal();
 
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
+                // Left-hand navigation menu for sub-tabs
+                GUILayout.BeginVertical(GUILayout.Width(150));
+
+                GUILayout.Space(20);
+                DrawSubTabs();
+                GUILayout.EndVertical();
+
+                // Space between menu and subtab pages
+                GUILayout.Space(40);
+
+                // Right-hand content area for selected sub-tab
+                GUILayout.BeginVertical();
+
+                switch (selectedMainSettingsIndex)
+                {
+                    case 0:
+                        DrawMainSettingsGeneral();
+                        break;
+                    case 1:
+                        DrawMainSettingsSpawnFrequency();
+                        break;
+                    case 2:
+                        DrawMainSettingsBotAttributes();
+                        break;
+                }
+
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+            });
         }
 
         private static void DrawSubTabs()
         {
             for (int i = 0; i < mainSettingsSubTabs.Length; i++)
             {
-                GUIStyle currentStyle = cachedSubTabButtonStyle;
+                GUIStyle currentStyle = customSkin.customStyles[2]; // subTabButtonStyle
                 if (selectedMainSettingsIndex == i)
                 {
-                    currentStyle = cachedSubTabButtonActiveStyle;
+                    currentStyle = customSkin.customStyles[3]; // subTabButtonActiveStyle
                 }
-
-                // Set background color explicitly for each button
-                PluginGUIHelper.ApplyCachedStyles();
 
                 if (GUILayout.Button(mainSettingsSubTabs[i], currentStyle))
                 {
@@ -125,36 +122,33 @@ namespace Donuts
 
         internal static void DrawMainSettingsGeneral()
         {
-            // Draw general spawn settings
-
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
-            DefaultPluginVars.PluginEnabled.Value = Toggle(DefaultPluginVars.PluginEnabled.Name,
-                DefaultPluginVars.PluginEnabled.ToolTipText, DefaultPluginVars.PluginEnabled.Value);
+            DefaultPluginVars.PluginEnabled.Value = Toggle(DefaultPluginVars.PluginEnabled.Name, DefaultPluginVars.PluginEnabled.ToolTipText, DefaultPluginVars.PluginEnabled.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.DespawnEnabledPMC.Value = Toggle(DefaultPluginVars.DespawnEnabledPMC.Name,
-                DefaultPluginVars.DespawnEnabledPMC.ToolTipText, DefaultPluginVars.DespawnEnabledPMC.Value);
+            DefaultPluginVars.DespawnEnabledPMC.Value = Toggle(DefaultPluginVars.DespawnEnabledPMC.Name, DefaultPluginVars.DespawnEnabledPMC.ToolTipText, DefaultPluginVars.DespawnEnabledPMC.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.DespawnEnabledSCAV.Value = Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name,
-                DefaultPluginVars.DespawnEnabledSCAV.ToolTipText, DefaultPluginVars.DespawnEnabledSCAV.Value);
+            DefaultPluginVars.DespawnEnabledSCAV.Value = Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name, DefaultPluginVars.DespawnEnabledSCAV.ToolTipText, DefaultPluginVars.DespawnEnabledSCAV.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.despawnInterval.Value = Slider(DefaultPluginVars.despawnInterval.Name,
-                DefaultPluginVars.despawnInterval.ToolTipText, DefaultPluginVars.despawnInterval.Value, 0f, 1000f);
+            DefaultPluginVars.despawnInterval.Value = Slider(DefaultPluginVars.despawnInterval.Name, DefaultPluginVars.despawnInterval.ToolTipText, DefaultPluginVars.despawnInterval.Value, 0f, 1000f);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.ShowRandomFolderChoice.Value = Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name,
-                DefaultPluginVars.ShowRandomFolderChoice.ToolTipText, DefaultPluginVars.ShowRandomFolderChoice.Value);
+            DefaultPluginVars.ShowRandomFolderChoice.Value = Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name, DefaultPluginVars.ShowRandomFolderChoice.ToolTipText, DefaultPluginVars.ShowRandomFolderChoice.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.battleStateCoolDown.Value = Slider(DefaultPluginVars.battleStateCoolDown.Name,
-                DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
+            DefaultPluginVars.battleStateCoolDown.Value = Slider(DefaultPluginVars.battleStateCoolDown.Name, DefaultPluginVars.battleStateCoolDown.ToolTipText, DefaultPluginVars.battleStateCoolDown.Value, 0f, 1000f);
+            GUILayout.Space(10);
 
             if (scenariosLoaded)
             {
-                // Dropdown for PMC scenario selection
                 pmcScenarioSelectionIndex = Dropdown(DefaultPluginVars.pmcScenarioSelection, pmcScenarioSelectionIndex);
                 DefaultPluginVars.pmcScenarioSelection.Value = DefaultPluginVars.pmcScenarioSelection.Options[pmcScenarioSelectionIndex];
+                GUILayout.Space(10);
 
-                // Dropdown for SCAV scenario selection
                 scavScenarioSelectionIndex = Dropdown(DefaultPluginVars.scavScenarioSelection, scavScenarioSelectionIndex);
                 DefaultPluginVars.scavScenarioSelection.Value = DefaultPluginVars.scavScenarioSelection.Options[scavScenarioSelectionIndex];
             }
@@ -170,65 +164,58 @@ namespace Donuts
 
         internal static void DrawMainSettingsSpawnFrequency()
         {
-            // Draw advanced spawn settings
-
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
-            DefaultPluginVars.HardCapEnabled.Value = Toggle(DefaultPluginVars.HardCapEnabled.Name,
-                DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
+            DefaultPluginVars.HardCapEnabled.Value = Toggle(DefaultPluginVars.HardCapEnabled.Name, DefaultPluginVars.HardCapEnabled.ToolTipText, DefaultPluginVars.HardCapEnabled.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.useTimeBasedHardStop.Value = Toggle(DefaultPluginVars.useTimeBasedHardStop.Name,
-                               DefaultPluginVars.useTimeBasedHardStop.ToolTipText, DefaultPluginVars.useTimeBasedHardStop.Value);
+            DefaultPluginVars.useTimeBasedHardStop.Value = Toggle(DefaultPluginVars.useTimeBasedHardStop.Name, DefaultPluginVars.useTimeBasedHardStop.ToolTipText, DefaultPluginVars.useTimeBasedHardStop.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.hardStopOptionPMC.Value = Toggle(DefaultPluginVars.hardStopOptionPMC.Name,
-                DefaultPluginVars.hardStopOptionPMC.ToolTipText, DefaultPluginVars.hardStopOptionPMC.Value);
-
-            //if the time based hard stop is enabled, show the slider
-            if (DefaultPluginVars.useTimeBasedHardStop.Value)
-            {
-                DefaultPluginVars.hardStopTimePMC.Value = Slider(DefaultPluginVars.hardStopTimePMC.Name,
-                    DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
-            }
-            else
-            {
-                //show the hardstoppercentagepmc as slider
-                DefaultPluginVars.hardStopPercentPMC.Value = Slider(DefaultPluginVars.hardStopPercentPMC.Name,
-                    DefaultPluginVars.hardStopPercentPMC.ToolTipText, DefaultPluginVars.hardStopPercentPMC.Value, 0, 100);
-            }
-
-            DefaultPluginVars.hardStopOptionSCAV.Value = Toggle(DefaultPluginVars.hardStopOptionSCAV.Name,
-                DefaultPluginVars.hardStopOptionSCAV.ToolTipText, DefaultPluginVars.hardStopOptionSCAV.Value);
+            DefaultPluginVars.hardStopOptionPMC.Value = Toggle(DefaultPluginVars.hardStopOptionPMC.Name, DefaultPluginVars.hardStopOptionPMC.ToolTipText, DefaultPluginVars.hardStopOptionPMC.Value);
+            GUILayout.Space(10);
 
             if (DefaultPluginVars.useTimeBasedHardStop.Value)
             {
-                DefaultPluginVars.hardStopTimeSCAV.Value = Slider(DefaultPluginVars.hardStopTimeSCAV.Name,
-                    DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+                DefaultPluginVars.hardStopTimePMC.Value = Slider(DefaultPluginVars.hardStopTimePMC.Name, DefaultPluginVars.hardStopTimePMC.ToolTipText, DefaultPluginVars.hardStopTimePMC.Value, 0, 10000);
             }
             else
             {
-                DefaultPluginVars.hardStopPercentSCAV.Value = Slider(DefaultPluginVars.hardStopPercentSCAV.Name,
-                    DefaultPluginVars.hardStopPercentSCAV.ToolTipText, DefaultPluginVars.hardStopPercentSCAV.Value, 0, 100);
+                DefaultPluginVars.hardStopPercentPMC.Value = Slider(DefaultPluginVars.hardStopPercentPMC.Name, DefaultPluginVars.hardStopPercentPMC.ToolTipText, DefaultPluginVars.hardStopPercentPMC.Value, 0, 100);
             }
+            GUILayout.Space(10);
+
+            DefaultPluginVars.hardStopOptionSCAV.Value = Toggle(DefaultPluginVars.hardStopOptionSCAV.Name, DefaultPluginVars.hardStopOptionSCAV.ToolTipText, DefaultPluginVars.hardStopOptionSCAV.Value);
+            GUILayout.Space(10);
+
+            if (DefaultPluginVars.useTimeBasedHardStop.Value)
+            {
+                DefaultPluginVars.hardStopTimeSCAV.Value = Slider(DefaultPluginVars.hardStopTimeSCAV.Name, DefaultPluginVars.hardStopTimeSCAV.ToolTipText, DefaultPluginVars.hardStopTimeSCAV.Value, 0, 10000);
+            }
+            else
+            {
+                DefaultPluginVars.hardStopPercentSCAV.Value = Slider(DefaultPluginVars.hardStopPercentSCAV.Name, DefaultPluginVars.hardStopPercentSCAV.ToolTipText, DefaultPluginVars.hardStopPercentSCAV.Value, 0, 100);
+            }
+            GUILayout.Space(10);
 
             GUILayout.EndVertical();
-
             GUILayout.BeginVertical();
 
-            DefaultPluginVars.coolDownTimer.Value = Slider(DefaultPluginVars.coolDownTimer.Name,
-                DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
+            DefaultPluginVars.coolDownTimer.Value = Slider(DefaultPluginVars.coolDownTimer.Name, DefaultPluginVars.coolDownTimer.ToolTipText, DefaultPluginVars.coolDownTimer.Value, 0f, 1000f);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.hotspotBoostPMC.Value = Toggle(DefaultPluginVars.hotspotBoostPMC.Name,
-                DefaultPluginVars.hotspotBoostPMC.ToolTipText, DefaultPluginVars.hotspotBoostPMC.Value);
+            DefaultPluginVars.hotspotBoostPMC.Value = Toggle(DefaultPluginVars.hotspotBoostPMC.Name, DefaultPluginVars.hotspotBoostPMC.ToolTipText, DefaultPluginVars.hotspotBoostPMC.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.hotspotBoostSCAV.Value = Toggle(DefaultPluginVars.hotspotBoostSCAV.Name,
-                DefaultPluginVars.hotspotBoostSCAV.ToolTipText, DefaultPluginVars.hotspotBoostSCAV.Value);
+            DefaultPluginVars.hotspotBoostSCAV.Value = Toggle(DefaultPluginVars.hotspotBoostSCAV.Name, DefaultPluginVars.hotspotBoostSCAV.ToolTipText, DefaultPluginVars.hotspotBoostSCAV.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name,
-                DefaultPluginVars.hotspotIgnoreHardCapPMC.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapPMC.Value);
+            DefaultPluginVars.hotspotIgnoreHardCapPMC.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapPMC.Name, DefaultPluginVars.hotspotIgnoreHardCapPMC.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapPMC.Value);
+            GUILayout.Space(10);
 
-            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name,
-                DefaultPluginVars.hotspotIgnoreHardCapSCAV.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value);
+            DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value = Toggle(DefaultPluginVars.hotspotIgnoreHardCapSCAV.Name, DefaultPluginVars.hotspotIgnoreHardCapSCAV.ToolTipText, DefaultPluginVars.hotspotIgnoreHardCapSCAV.Value);
+            GUILayout.Space(10);
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
@@ -238,6 +225,7 @@ namespace Donuts
 
             pmcGroupChanceIndex = Dropdown(DefaultPluginVars.pmcGroupChance, pmcGroupChanceIndex);
             DefaultPluginVars.pmcGroupChance.Value = DefaultPluginVars.pmcGroupChance.Options[pmcGroupChanceIndex];
+            GUILayout.Space(10);
 
             scavGroupChanceIndex = Dropdown(DefaultPluginVars.scavGroupChance, scavGroupChanceIndex);
             DefaultPluginVars.scavGroupChance.Value = DefaultPluginVars.scavGroupChance.Options[scavGroupChanceIndex];
@@ -252,21 +240,31 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
-            // Draw the dropdowns with proper handling of selected indices
+            // Add spacing before each control to ensure proper vertical alignment
             botDifficultiesPMCIndex = Dropdown(DefaultPluginVars.botDifficultiesPMC, botDifficultiesPMCIndex);
             DefaultPluginVars.botDifficultiesPMC.Value = DefaultPluginVars.botDifficultiesPMC.Options[botDifficultiesPMCIndex];
+
+            GUILayout.Space(10); // Add vertical space
 
             botDifficultiesSCAVIndex = Dropdown(DefaultPluginVars.botDifficultiesSCAV, botDifficultiesSCAVIndex);
             DefaultPluginVars.botDifficultiesSCAV.Value = DefaultPluginVars.botDifficultiesSCAV.Options[botDifficultiesSCAVIndex];
 
+            GUILayout.Space(10); // Add vertical space
+
             botDifficultiesOtherIndex = Dropdown(DefaultPluginVars.botDifficultiesOther, botDifficultiesOtherIndex);
             DefaultPluginVars.botDifficultiesOther.Value = DefaultPluginVars.botDifficultiesOther.Options[botDifficultiesOtherIndex];
+
+            GUILayout.Space(10); // Add vertical space
 
             pmcFactionIndex = Dropdown(DefaultPluginVars.pmcFaction, pmcFactionIndex);
             DefaultPluginVars.pmcFaction.Value = DefaultPluginVars.pmcFaction.Options[pmcFactionIndex];
 
+            GUILayout.Space(10); // Add vertical space
+
             forceAllBotTypeIndex = Dropdown(DefaultPluginVars.forceAllBotType, forceAllBotTypeIndex);
             DefaultPluginVars.forceAllBotType.Value = DefaultPluginVars.forceAllBotType.Options[forceAllBotTypeIndex];
+
+            GUILayout.Space(10); // Add vertical space
 
             DefaultPluginVars.pmcFactionRatio.Value = Slider(DefaultPluginVars.pmcFactionRatio.Name,
                 DefaultPluginVars.pmcFactionRatio.ToolTipText, DefaultPluginVars.pmcFactionRatio.Value, 0, 100);

@@ -22,6 +22,8 @@ namespace Donuts
         private static GUIStyle textFieldStyle;
         private static GUIStyle expandedDropdownStyle;
         private static GUIStyle keybindFieldStyle;
+        private static GUIStyle sliderStyle;
+        private static GUIStyle sliderThumbStyle;
         public static void InitializeStyles()
         {
             dropdownStyle = new GUIStyle(GUI.skin.button)
@@ -56,13 +58,15 @@ namespace Donuts
 
             textFieldStyle = new GUIStyle(GUI.skin.textField)
             {
-                fontSize = 18
+                fontSize = 18,
+                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
             };
 
             tooltipStyle = new GUIStyle(GUI.skin.box)
             {
                 fontSize = 18,
-                wordWrap = true
+                wordWrap = true,
+                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 0.8f)) }
             };
 
             expandedDropdownStyle = new GUIStyle(dropdownStyle)
@@ -76,6 +80,20 @@ namespace Donuts
                 fixedHeight = 25,
                 fontSize = 18,
                 normal = { textColor = Color.white }
+            };
+
+            sliderStyle = new GUIStyle(GUI.skin.horizontalSlider)
+            {
+                fixedHeight = 18,
+                margin = new RectOffset(0, 0, 10, 0),
+                normal = { background = MakeTex(1, 1, Color.gray) }
+            };
+
+            sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                fixedHeight = 18,
+                fixedWidth = 10,
+                normal = { background = MakeTex(1, 1, Color.blue) } // Blue slider thumb
             };
 
             // Create textures for the toggle button states
@@ -178,11 +196,19 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300));
+
+            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300));
+            float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
+            float sliderHeight = sliderStyle.fixedHeight;
+            float verticalOffset = (labelHeight - sliderHeight) / 2;
+
+            Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
+            value = GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle);
+
+            GUILayout.Space(10); // Add some space between the slider and the text field
 
             string valueStr = value.ToString("F2");
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100), GUILayout.Height(sliderHeight));
 
             if (float.TryParse(valueStr, out float parsedValue))
             {
@@ -190,7 +216,6 @@ namespace Donuts
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;
@@ -201,11 +226,19 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300)));
+
+            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300));
+            float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
+            float sliderHeight = sliderStyle.fixedHeight;
+            float verticalOffset = (labelHeight - sliderHeight) / 2;
+
+            Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
+            value = Mathf.RoundToInt(GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle));
+
+            GUILayout.Space(10); // Add some space between the slider and the text field
 
             string valueStr = value.ToString();
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100), GUILayout.Height(sliderHeight));
 
             if (int.TryParse(valueStr, out int parsedValue))
             {
@@ -213,7 +246,6 @@ namespace Donuts
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;

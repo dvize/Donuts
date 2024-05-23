@@ -1,9 +1,8 @@
-﻿using UnityEngine;
-using static Donuts.PluginGUIHelper;
-using static Donuts.DefaultPluginVars;
-using Donuts.Models;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using Donuts.Models;
+using UnityEngine;
+using static Donuts.DefaultPluginVars;
 
 namespace Donuts
 {
@@ -11,25 +10,26 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
-
-            GUILayout.Space(30);
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-
-            ImGUIToolkit.Accordion("Global Min Distance To Player Settings", "Click to expand/collapse", () =>
+            // Apply the custom skin to ensure consistency
+            PluginGUIHelper.ApplyCustomSkin(() =>
             {
-                // Toggle for globalMinSpawnDistanceFromPlayerBool
-                globalMinSpawnDistanceFromPlayerBool.Value = ImGUIToolkit.Toggle(
-                    globalMinSpawnDistanceFromPlayerBool.Name,
-                    globalMinSpawnDistanceFromPlayerBool.ToolTipText,
-                    globalMinSpawnDistanceFromPlayerBool.Value
-                );
 
-                // List of float settings
-                var floatSettings = new List<Setting<float>>
+                GUILayout.Space(30);
+                GUILayout.BeginHorizontal();
+                GUILayout.BeginVertical();
+
+                ImGUIToolkit.Accordion("Global Min Distance To Player Settings", "Click to expand/collapse", () =>
                 {
+                    // Toggle for globalMinSpawnDistanceFromPlayerBool
+                    globalMinSpawnDistanceFromPlayerBool.Value = ImGUIToolkit.Toggle(
+                        globalMinSpawnDistanceFromPlayerBool.Name,
+                        globalMinSpawnDistanceFromPlayerBool.ToolTipText,
+                        globalMinSpawnDistanceFromPlayerBool.Value
+                    );
+
+                    // List of float settings
+                    var floatSettings = new List<Setting<float>>
+                    {
                     globalMinSpawnDistanceFromPlayerFactory,
                     globalMinSpawnDistanceFromPlayerCustoms,
                     globalMinSpawnDistanceFromPlayerReserve,
@@ -40,22 +40,24 @@ namespace Donuts
                     globalMinSpawnDistanceFromPlayerGroundZero,
                     globalMinSpawnDistanceFromPlayerInterchange,
                     globalMinSpawnDistanceFromPlayerLighthouse
-                };
+                    };
 
-                // Sort the settings by name in ascending order
-                floatSettings.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+                    // Sort the settings by name in ascending order
+                    floatSettings.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 
-                // Create sliders for the sorted settings
-                foreach (var setting in floatSettings)
-                {
-                    setting.Value = ImGUIToolkit.Slider(
-                        setting.Name,
-                        setting.ToolTipText,
-                        setting.Value,
-                        0f,
-                        1000f
-                    );
-                }
+                    // Create sliders for the sorted settings
+                    foreach (var setting in floatSettings)
+                    {
+                        setting.Value = ImGUIToolkit.Slider(
+                            setting.Name,
+                            setting.ToolTipText,
+                            setting.Value,
+                            0f,
+                            1000f
+                        );
+                    }
+                });
+
             });
 
             ImGUIToolkit.Accordion("Global Min Distance To Other Bots Settings", "Click to expand/collapse", () =>
@@ -103,8 +105,8 @@ namespace Donuts
             GUILayout.EndHorizontal();
         }
 
-        
 
-        
+
+
     }
 }
