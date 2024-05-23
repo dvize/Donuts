@@ -394,6 +394,39 @@ namespace Donuts
                     timer.Hotspot.IgnoreTimerFirstSpawn = false;
             }
         }
+        private UniTask<Player> UpdateDistancesAndFindFurthestBot()
+        {
+            return UniTask.Create(async () =>
+            {
+                float maxDistance = float.MinValue;
+                Player furthestBot = null;
+
+                foreach (var bot in gameWorld.AllAlivePlayersList)
+                {
+                    // Get distance of bot to player using squared distance
+                    float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
+
+                    // Check if this is the furthest distance
+                    if (distance > maxDistance)
+                    {
+                        maxDistance = distance;
+                        furthestBot = bot;
+                    }
+                }
+
+                if (furthestBot == null)
+                {
+                    Logger.LogWarning("Furthest bot is null. No bots found in the list.");
+                }
+                else
+                {
+                    Logger.LogDebug($"Furthest bot found: {furthestBot.Profile.Info.Nickname} at distance {Mathf.Sqrt(maxDistance)}");
+                }
+
+                return furthestBot;
+            });
+        }
+
         private async UniTask DespawnFurthestBot(string bottype)
         {
             if (bottype != "pmc" && bottype != "scav")
@@ -411,30 +444,32 @@ namespace Donuts
                 return;
             }
 
-            await UniTask.SwitchToMainThread();
-
-            UpdateDistancesAndFindFurthestBot(out Player furthestBot);
+            Player furthestBot = await UpdateDistancesAndFindFurthestBot();
 
             if (furthestBot != null)
             {
-                await UniTask.SwitchToThreadPool();
                 DespawnBot(furthestBot, bottype);
             }
-        }
-
-        private async UniTask<bool> ShouldConsiderDespawning(string botType)
-        {
-            int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
-            int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
-
-            return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
+            else
+            {
+                Logger.LogWarning("No bot found to despawn.");
+            }
         }
 
         private void DespawnBot(Player furthestBot, string bottype)
         {
+            if (furthestBot == null)
+            {
+                Logger.LogError("Attempted to despawn a null bot.");
+                return;
+            }
+
             BotOwner botOwner = furthestBot.AIData.BotOwner;
             if (botOwner == null)
+            {
+                Logger.LogError("BotOwner is null for the furthest bot.");
                 return;
+            }
 
 #if DEBUG
             Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
@@ -463,24 +498,15 @@ namespace Donuts
             }
         }
 
-        private void UpdateDistancesAndFindFurthestBot(out Player furthestBot)
+        private async UniTask<bool> ShouldConsiderDespawning(string botType)
         {
-            float maxDistance = float.MinValue;
-            furthestBot = null;
+            int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
+            int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
 
-            foreach (var bot in gameWorld.AllAlivePlayersList)
-            {
-                // Get distance of bot to player using squared distance
-                float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
-
-                // Check if this is the furthest distance
-                if (distance > maxDistance)
-                {
-                    maxDistance = distance;
-                    furthestBot = bot;
-                }
-            }
+            return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
+
+        
 
         private void OnGUI()
         {

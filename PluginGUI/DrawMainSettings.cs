@@ -139,6 +139,9 @@ namespace Donuts
             DefaultPluginVars.DespawnEnabledSCAV.Value = Toggle(DefaultPluginVars.DespawnEnabledSCAV.Name,
                 DefaultPluginVars.DespawnEnabledSCAV.ToolTipText, DefaultPluginVars.DespawnEnabledSCAV.Value);
 
+            DefaultPluginVars.despawnInterval.Value = Slider(DefaultPluginVars.despawnInterval.Name,
+                DefaultPluginVars.despawnInterval.ToolTipText, DefaultPluginVars.despawnInterval.Value, 0f, 1000f);
+
             DefaultPluginVars.ShowRandomFolderChoice.Value = Toggle(DefaultPluginVars.ShowRandomFolderChoice.Name,
                 DefaultPluginVars.ShowRandomFolderChoice.ToolTipText, DefaultPluginVars.ShowRandomFolderChoice.Value);
 
