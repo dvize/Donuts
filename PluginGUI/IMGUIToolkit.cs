@@ -190,17 +190,18 @@ namespace Donuts
 
             return selectedIndex;
         }
-
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
 
-            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300));
             float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
             float sliderHeight = sliderStyle.fixedHeight;
-            float verticalOffset = (labelHeight - sliderHeight) / 2;
+            float controlHeight = Mathf.Max(labelHeight, sliderHeight);
+
+            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300), GUILayout.Height(controlHeight));
+            float verticalOffset = (controlHeight - sliderHeight) / 2;
 
             Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
             value = GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle);
@@ -208,7 +209,10 @@ namespace Donuts
             GUILayout.Space(10); // Add some space between the slider and the text field
 
             string valueStr = value.ToString("F2");
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100), GUILayout.Height(sliderHeight));
+            float textFieldHeight = textFieldStyle.fixedHeight > 0 ? textFieldStyle.fixedHeight : sliderHeight;
+            float textFieldVerticalOffset = (controlHeight - textFieldHeight) / 2;
+            Rect textFieldRect = new Rect(controlRect.x + controlRect.width + 10, controlRect.y + textFieldVerticalOffset, 100, textFieldHeight);
+            valueStr = GUI.TextField(textFieldRect, valueStr, textFieldStyle);
 
             if (float.TryParse(valueStr, out float parsedValue))
             {
@@ -227,10 +231,12 @@ namespace Donuts
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
 
-            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300));
             float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
             float sliderHeight = sliderStyle.fixedHeight;
-            float verticalOffset = (labelHeight - sliderHeight) / 2;
+            float controlHeight = Mathf.Max(labelHeight, sliderHeight);
+
+            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300), GUILayout.Height(controlHeight));
+            float verticalOffset = (controlHeight - sliderHeight) / 2;
 
             Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
             value = Mathf.RoundToInt(GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle));
@@ -238,7 +244,10 @@ namespace Donuts
             GUILayout.Space(10); // Add some space between the slider and the text field
 
             string valueStr = value.ToString();
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100), GUILayout.Height(sliderHeight));
+            float textFieldHeight = textFieldStyle.fixedHeight > 0 ? textFieldStyle.fixedHeight : sliderHeight;
+            float textFieldVerticalOffset = (controlHeight - textFieldHeight) / 2;
+            Rect textFieldRect = new Rect(controlRect.x + controlRect.width + 10, controlRect.y + textFieldVerticalOffset, 100, textFieldHeight);
+            valueStr = GUI.TextField(textFieldRect, valueStr, textFieldStyle);
 
             if (int.TryParse(valueStr, out int parsedValue))
             {
