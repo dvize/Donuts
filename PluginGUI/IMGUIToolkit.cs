@@ -23,8 +23,77 @@ namespace Donuts
         {
             if (!stylesInitialized)
             {
-                PluginGUIHelper.InitializeStyles();
-                stylesInitialized = true;
+                alignment = TextAnchor.MiddleLeft,
+                fixedHeight = 25,
+                fontSize = 18
+            };
+
+            dropdownButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fixedHeight = 25,
+                fontSize = 18
+            };
+
+            toggleStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white }
+            };
+
+            accordionButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fixedHeight = 30,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold
+            };
+
+            textFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                fontSize = 18,
+                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
+            };
+
+            tooltipStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 18,
+                wordWrap = true,
+                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white }, // vibrant blue background with white text
+                fontStyle = FontStyle.Bold
+            };
+
+            expandedDropdownStyle = new GUIStyle(dropdownStyle)
+            {
+                normal = { background = MakeTex(1, 1, Color.blue) }
+            };
+
+            keybindFieldStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fixedHeight = 25,
+                fontSize = 18,
+                normal = { textColor = Color.white }
+            };
+
+            sliderStyle = new GUIStyle(GUI.skin.horizontalSlider);
+            sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                normal = { background = MakeTex(1, 1, Color.blue) }
+            };
+
+            // Create textures for the toggle button states
+            CreateToggleButtonTextures();
+        }
+
+        internal static Texture2D MakeTex(int width, int height, Color col)
+        {
+            Color[] pix = new Color[width * height];
+            for (int i = 0; i < pix.Length; i++)
+            {
+                pix[i] = col;
             }
         }
 

@@ -64,48 +64,53 @@ namespace Donuts
 
         internal static void Enable()
         {
-            // Initialize the custom styles for the dropdown
-            GUILayout.Space(30);
-            GUILayout.BeginHorizontal();
-
-            // Left-hand navigation menu for sub-tabs
-            GUILayout.BeginVertical(GUILayout.Width(150));
-
-            GUILayout.Space(20);
-            DrawSubTabs();
-            GUILayout.EndVertical();
-
-            // Space between menu and subtab pages
-            GUILayout.Space(40);
-
-            // Right-hand content area for selected sub-tab
-            GUILayout.BeginVertical();
-
-            switch (selectedMainSettingsIndex)
+            // Apply the custom skin to ensure consistency
+            PluginGUIHelper.ApplyCustomSkin(() =>
             {
-                case 0:
-                    DrawMainSettingsGeneral();
-                    break;
-                case 1:
-                    DrawMainSettingsSpawnFrequency();
-                    break;
-                case 2:
-                    DrawMainSettingsBotAttributes();
-                    break;
-            }
+                // Initialize the custom styles for the dropdown
+                InitializeStyles();
+                GUILayout.Space(30);
+                GUILayout.BeginHorizontal();
 
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
+                // Left-hand navigation menu for sub-tabs
+                GUILayout.BeginVertical(GUILayout.Width(150));
+
+                GUILayout.Space(20);
+                DrawSubTabs();
+                GUILayout.EndVertical();
+
+                // Space between menu and subtab pages
+                GUILayout.Space(40);
+
+                // Right-hand content area for selected sub-tab
+                GUILayout.BeginVertical();
+
+                switch (selectedMainSettingsIndex)
+                {
+                    case 0:
+                        DrawMainSettingsGeneral();
+                        break;
+                    case 1:
+                        DrawMainSettingsSpawnFrequency();
+                        break;
+                    case 2:
+                        DrawMainSettingsBotAttributes();
+                        break;
+                }
+
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+            });
         }
 
         private static void DrawSubTabs()
         {
             for (int i = 0; i < mainSettingsSubTabs.Length; i++)
             {
-                GUIStyle currentStyle = subTabButtonStyle; // Use the defined subTabButtonStyle
+                GUIStyle currentStyle = customSkin.customStyles[2]; // subTabButtonStyle
                 if (selectedMainSettingsIndex == i)
                 {
-                    currentStyle = subTabButtonActiveStyle; // Use the defined subTabButtonActiveStyle
+                    currentStyle = customSkin.customStyles[3]; // subTabButtonActiveStyle
                 }
 
                 if (GUILayout.Button(mainSettingsSubTabs[i], currentStyle))
