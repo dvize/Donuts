@@ -1,15 +1,18 @@
 using System;
 using Aki.PrePatch;
+using Cysharp.Threading.Tasks;
 using EFT;
 using static Donuts.DonutComponent;
+
+#pragma warning disable IDE0007, IDE0044
 
 namespace Donuts
 {
     public static class BotCountManager
     {
-        public static int HandleHardCap(string spawnType, int requestedCount)
+        public static async UniTask<int> HandleHardCap(string spawnType, int requestedCount)
         {
-            int currentBotsAlive = GetAlivePlayers(spawnType);
+            int currentBotsAlive = await GetAlivePlayers(spawnType);
             int botLimit = GetBotLimit(spawnType);
             if (currentBotsAlive + requestedCount > botLimit)
             {
@@ -57,18 +60,22 @@ namespace Donuts
             return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
         }
 
-        public static int GetAlivePlayers(string spawnType)
+        public static UniTask<int> GetAlivePlayers(string spawnType)
         {
-            int count = 0;
-            foreach (Player bot in gameWorld.AllAlivePlayersList)
+            return UniTask.Create(async () =>
             {
-                if (!bot.IsYourPlayer && ((spawnType == "assault" && IsSCAV(bot.Profile.Info.Settings.Role)) ||
-                                          (spawnType != "assault" && IsPMC(bot.Profile.Info.Settings.Role))))
+                int count = 0;
+                foreach (Player bot in gameWorld.AllAlivePlayersList)
                 {
-                    count++;
+                    if (!bot.IsYourPlayer &&
+                        (IsSCAV(bot.Profile.Info.Settings.Role) ||
+                        (IsPMC(bot.Profile.Info.Settings.Role))))
+                    {
+                        count++;
+                    }
                 }
-            }
-            return count;
+                return count;
+            });
         }
 
         private static bool IsPMC(WildSpawnType role)

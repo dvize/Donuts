@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Aki.PrePatch;
 using Comfort.Common;
+using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
+using static Donuts.DefaultPluginVars;
 using static Donuts.DonutComponent;
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
@@ -20,6 +21,9 @@ namespace Donuts
 {
     internal class BotSpawn
     {
+        private const string PmcSpawnTypes = "pmc,sptusec,sptbear";
+        private const string ScavSpawnType = "assault";
+
         internal static AICorePoint GetClosestCorePoint(Vector3 position)
         {
             var botGame = Singleton<IBotGame>.Instance;
@@ -28,26 +32,11 @@ namespace Donuts
             return groupPoint.CorePointInGame;
         }
 
-        private const string PmcSpawnTypes = "pmc,sptusec,sptbear";
-        private const string ScavSpawnType = "assault";
-
-        internal static async Task SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        internal static async UniTask SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
             WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
 
-            // Check Spawn Hard Stop
-            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
-                (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
-            {
-                if (!IsRaidTimeRemaining(hotspotSpawnType))
-                {
-                    DonutComponent.Logger.LogDebug("Spawn not allowed due to raid time conditions - skipping this spawn");
-                    return;
-                }
-            }
-
-            // Handle starting bots first
             int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
             if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
             {
@@ -59,45 +48,17 @@ namespace Donuts
                 }
             }
 
-            // Check Hard Cap
-            if (DonutsPlugin.HardCapEnabled.Value)
-            {
-                maxCount = BotCountManager.HandleHardCap(hotspotSpawnType, maxCount);
-                if (maxCount == 0)
-                {
-                    DonutComponent.Logger.LogDebug("Hard cap exceeded - no bots can be spawned");
-                    return;
-                }
-            }
-
             bool isGroup = maxCount > 1;
             await SetupSpawn(hotspotTimer, maxCount, isGroup, wildSpawnType, coordinate);
         }
 
-        private static bool IsRaidTimeRemaining(string hotspotSpawnType)
-        {
-            int hardStopTime = GetHardStopTime(hotspotSpawnType);
-            int raidTimeLeft = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds();
-            return raidTimeLeft >= hardStopTime;
-        }
-
-        private static int GetHardStopTime(string hotspotSpawnType)
-        {
-            if ((PmcSpawnTypes.Contains(hotspotSpawnType) && DonutsPlugin.hardStopOptionPMC.Value) ||
-                (hotspotSpawnType == ScavSpawnType && DonutsPlugin.hardStopOptionSCAV.Value))
-            {
-                return hotspotSpawnType == ScavSpawnType ? DonutsPlugin.hardStopTimeSCAV.Value : DonutsPlugin.hardStopTimePMC.Value;
-            }
-            return int.MaxValue;
-        }
-
         private static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
         {
-            string groupChance = spawnType == "assault" ? DonutsPlugin.scavGroupChance.Value : DonutsPlugin.pmcGroupChance.Value;
+            string groupChance = spawnType == "assault" ? scavGroupChance.Value : pmcGroupChance.Value;
             return getActualBotCount(groupChance, defaultMaxCount);
         }
 
-        private static async Task SetupSpawn(HotspotTimer hotspotTimer, int maxCount, bool isGroup, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SetupSpawn(HotspotTimer hotspotTimer, int maxCount, bool isGroup, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
             DonutComponent.Logger.LogDebug($"Attempting to spawn {(isGroup ? "group" : "solo")} with bot count {maxCount}");
             if (isGroup)
@@ -110,16 +71,17 @@ namespace Donuts
             }
         }
 
-        private static async Task SpawnGroupBots(HotspotTimer hotspotTimer, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnGroupBots(HotspotTimer hotspotTimer, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
 #if DEBUG
             DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots.");
 #endif
-            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType, sptUsec, sptBear);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
+            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, sptUsec, sptBear);
 
-            // Attempt to find a cached group of bots matching the required count and type
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, count);
             if (cachedBotGroup == null)
             {
@@ -136,88 +98,59 @@ namespace Donuts
                 DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
             }
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
                 return;
             }
 
-            // Assuming a method exists to handle the spawning process
-            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, count, hotspotTimer);
+            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, hotspotTimer);
         }
 
-        private static async Task SpawnSingleBot(HotspotTimer hotspotTimer, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnSingleBot(HotspotTimer hotspotTimer, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
             DonutComponent.Logger.LogDebug($"Spawning a single bot.");
-            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType, sptUsec, sptBear);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
+            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, sptUsec, sptBear);
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, DonutsPlugin.maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
                 return;
             }
 
-            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, (Vector3)spawnPosition, cancellationTokenSource, botDifficulty, hotspotTimer);
+            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, hotspotTimer);
         }
 
         private static WildSpawnType DetermineWildSpawnType(HotspotTimer hotspotTimer, string hotspotSpawnType)
         {
-            WildSpawnType wildSpawnType;
-            if (DonutsPlugin.forceAllBotType.Value == "PMC")
-            {
-                wildSpawnType = GetWildSpawnType("pmc");
-            }
-            else if (DonutsPlugin.forceAllBotType.Value == "SCAV")
-            {
-                wildSpawnType = GetWildSpawnType("assault");
-            }
-            else
-            {
-                wildSpawnType = GetWildSpawnType(hotspotTimer.Hotspot.WildSpawnType);
-            }
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            WildSpawnType wildSpawnType = GetWildSpawnType(
+                forceAllBotType.Value == "PMC" ? "pmc" :
+                forceAllBotType.Value == "SCAV" ? "assault" :
+                hotspotTimer.Hotspot.WildSpawnType, sptUsec, sptBear);
 
-            if (wildSpawnType == GetWildSpawnType("pmc"))
-            {
-                wildSpawnType = DeterminePMCFactionBasedOnRatio();
-            }
-
-            return wildSpawnType;
+            return wildSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : wildSpawnType;
         }
 
-        private static WildSpawnType DeterminePMCFactionBasedOnRatio()
+        private static WildSpawnType DeterminePMCFactionBasedOnRatio(WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            int factionRatio = DonutsPlugin.pmcFactionRatio.Value;
+            int factionRatio = pmcFactionRatio.Value;
             Random rand = new Random();
-            int chance = rand.Next(100);
-
-            if (chance < factionRatio)
-            {
-                return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            }
-            else
-            {
-                return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            }
+            return rand.Next(100) < factionRatio ? sptUsec : sptBear;
         }
 
-        private static int GetBotLimit(string spawnType)
-        {
-            // Limits are defined elsewhere, here we use them directly
-            if (spawnType.Contains("pmc"))
-                return PMCBotLimit;
-            else if (spawnType.Contains("assault"))
-                return SCAVBotLimit;
-            return 0;
-        }
         #region botHelperMethods
 
         #region botDifficulty
-        internal static BotDifficulty GetBotDifficulty(WildSpawnType wildSpawnType)
+        internal static BotDifficulty GetBotDifficulty(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
             if (wildSpawnType == WildSpawnType.assault)
             {
@@ -232,19 +165,14 @@ namespace Donuts
                 return grabOtherDifficulty();
             }
         }
+
         internal static BotDifficulty grabPMCDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesPMC.Value.ToLower())
+            switch (botDifficultiesPMC.Value.ToLower())
             {
                 case "asonline":
-                    //return random difficulty from array of easy, normal, hard
-                    BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy,
-                        BotDifficulty.normal,
-                        BotDifficulty.hard
-                    };
-                    var diff = UnityEngine.Random.Range(0, 3);
-                    return randomDifficulty[diff];
+                    BotDifficulty[] randomDifficulty = { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    return randomDifficulty[UnityEngine.Random.Range(0, 3)];
                 case "easy":
                     return BotDifficulty.easy;
                 case "normal":
@@ -257,19 +185,14 @@ namespace Donuts
                     return BotDifficulty.normal;
             }
         }
+
         internal static BotDifficulty grabSCAVDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesSCAV.Value.ToLower())
+            switch (botDifficultiesSCAV.Value.ToLower())
             {
                 case "asonline":
-                    //return random difficulty from array of easy, normal, hard
-                    BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy,
-                        BotDifficulty.normal,
-                        BotDifficulty.hard
-                    };
-                    var diff = UnityEngine.Random.Range(0, 3);
-                    return randomDifficulty[diff];
+                    BotDifficulty[] randomDifficulty = { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    return randomDifficulty[UnityEngine.Random.Range(0, 3)];
                 case "easy":
                     return BotDifficulty.easy;
                 case "normal":
@@ -282,19 +205,14 @@ namespace Donuts
                     return BotDifficulty.normal;
             }
         }
+
         internal static BotDifficulty grabOtherDifficulty()
         {
-            switch (DonutsPlugin.botDifficultiesOther.Value.ToLower())
+            switch (botDifficultiesOther.Value.ToLower())
             {
                 case "asonline":
-                    //return random difficulty from array of easy, normal, hard
-                    BotDifficulty[] randomDifficulty = {
-                        BotDifficulty.easy,
-                        BotDifficulty.normal,
-                        BotDifficulty.hard
-                    };
-                    var diff = UnityEngine.Random.Range(0, 3);
-                    return randomDifficulty[diff];
+                    BotDifficulty[] randomDifficulty = { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
+                    return randomDifficulty[UnityEngine.Random.Range(0, 3)];
                 case "easy":
                     return BotDifficulty.easy;
                 case "normal":
@@ -310,7 +228,7 @@ namespace Donuts
 
         #endregion
 
-        internal static async Task SpawnBotFromCacheOrCreateNew(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+        internal static async UniTask SpawnBotFromCacheOrCreateNew(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
             BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, HotspotTimer hotspotTimer)
         {
 #if DEBUG
@@ -320,98 +238,96 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                //don't need to remove this bot from the cache, it will be removed when it is activated
-                //botCacheList.Remove(botCacheElement);
-
-                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
-                var closestCorePoint = GetClosestCorePoint(spawnPosition);
-                // may need to check if null?
-                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
-
-#if DEBUG
-                DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} for hotspot {hotspotTimer.Hotspot.Name} ");
-#endif
-                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, hotspotTimer);
             }
-
             else
             {
 #if DEBUG
                 DonutComponent.Logger.LogDebug("Bot Cache is empty for solo bot. Creating a new bot.");
 #endif
-                CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource);
+                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource);
             }
         }
 
-        internal static async Task SpawnBotForGroup(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-    BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, HotspotTimer hotspotTimer)
+        private static async UniTask ActivateBotFromCache(BotCacheClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, HotspotTimer hotspotTimer)
+        {
+            var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
+            var closestCorePoint = GetClosestCorePoint(spawnPosition);
+            botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
+
+#if DEBUG
+            DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                                             $"of side: {botCacheElement.Side} for hotspot {hotspotTimer.Hotspot.Name} ");
+#endif
+            await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+        }
+
+        internal static async UniTask SpawnBotForGroup(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, HotspotTimer hotspotTimer)
         {
             if (botCacheElement != null)
             {
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);
-                // may need to check if null?
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
 #if DEBUG
                 DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                    $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
+                                                 $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
 #endif
 
-                ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
             }
             else
             {
                 DonutComponent.Logger.LogError("Attempted to spawn a group bot but the botCacheElement was null.");
             }
         }
-        internal static async Task CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource)
+
+        internal static async UniTask CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource)
         {
-            BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType);
+            BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType, (WildSpawnType)AkiBotsPrePatcher.sptUsecValue, (WildSpawnType)AkiBotsPrePatcher.sptBearValue);
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
             var closestCorePoint = GetClosestCorePoint(spawnPosition);
-            bot.AddPosition((Vector3)spawnPosition, closestCorePoint.Id);
+            bot.AddPosition(spawnPosition, closestCorePoint.Id);
 
-            var closestBotZone = botSpawnerClass.GetClosestZone((Vector3)spawnPosition, out float dist);
+            var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
 #if DEBUG
-            DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance((Vector3)spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                $"of side: {bot.Side} and difficulty: {botdifficulty}");
+            DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                                             $"of side: {bot.Side} and difficulty: {botdifficulty}");
 #endif
 
-            ActivateBot(closestBotZone, bot, cancellationTokenSource);
+            await ActivateBot(closestBotZone, bot, cancellationTokenSource);
         }
 
-        internal static void ActivateBot(BotZone botZone, BotCacheClass botData, CancellationTokenSource cancellationTokenSource)
+        internal static async UniTask ActivateBot(BotZone botZone, BotCacheClass botData, CancellationTokenSource cancellationTokenSource)
         {
-            CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper();
-            createBotCallbackWrapper.botData = botData;
+            CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
+            {
+                botData = botData
+            };
 
             GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
 
-            // Call ActivateBot directly, using our own group callback and bot created callback
-            // NOTE: Make sure to pass "false" for the third parameter to avoid "assaultGroup" conversion
             botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
-
-            // Reset or clear the Bots property after successful activation
-            ClearBotCacheAfterActivation(botData);
+            await ClearBotCacheAfterActivation(botData);
         }
 
-        internal static void ClearBotCacheAfterActivation(BotCacheClass botData)
+        internal static UniTask ClearBotCacheAfterActivation(BotCacheClass botData)
         {
-            // Find the corresponding PrepBotInfo and clear its Bots property
             var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
             if (botInfo != null)
             {
-                //reset the bot spawn timer since we don't want it immediately refreshing bots after a spawn
                 DonutsBotPrep.timeSinceLastReplenish = 0f;
-                botInfo.Bots = null; // Clear the Bots property
+                botInfo.Bots = null;
 #if DEBUG
                 DonutComponent.Logger.LogDebug($"Cleared cached bot info for bot type: {botInfo.SpawnType}");
 #endif
             }
+
+            return UniTask.CompletedTask;
         }
 
         internal static bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
@@ -420,20 +336,13 @@ namespace Donuts
             {
                 foreach (var player in playerList)
                 {
-                    if (player == null || player.HealthController == null)
-                    {
-                        continue;
-                    }
-                    if (!player.HealthController.IsAlive)
-                    {
-                        continue;
-                    }
-                    float distanceSquared = (player.Position - position).sqrMagnitude;
+                    if (player?.HealthController == null || !player.HealthController.IsAlive) continue;
 
+                    float distanceSquared = (player.Position - position).sqrMagnitude;
                     float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
+
                     if (distanceSquared <= activationDistanceSquared)
                     {
-                        //TODO - this may be true when it shouldn't, e.g. player 1 is in correct range, player 2 is standing next to spawn point
                         return true;
                     }
                 }
@@ -443,7 +352,7 @@ namespace Donuts
             return false;
         }
 
-        internal static WildSpawnType GetWildSpawnType(string spawnType)
+        internal static WildSpawnType GetWildSpawnType(string spawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
             switch (spawnType.ToLower())
             {
@@ -475,7 +384,7 @@ namespace Donuts
                     return WildSpawnType.crazyAssaultEvent;
                 case "cursedassault":
                     return WildSpawnType.cursedAssault;
-                case "exusec-rogues":
+                case "exusec":
                     return WildSpawnType.exUsec;
                 case "followerboar":
                     return WildSpawnType.followerBoar;
@@ -508,13 +417,11 @@ namespace Donuts
                 case "sectantwarrior":
                     return WildSpawnType.sectantWarrior;
                 case "usec":
-                    return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                case "bear":
-                    return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
                 case "sptusec":
-                    return (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                    return sptUsec;
+                case "bear":
                 case "sptbear":
-                    return (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+                    return sptBear;
                 case "followerbigpipe":
                     return WildSpawnType.followerBigPipe;
                 case "followerbirdeye":
@@ -522,19 +429,14 @@ namespace Donuts
                 case "bossknight":
                     return WildSpawnType.bossKnight;
                 case "pmc":
-                    //random wildspawntype is either assigned sptusec or sptbear at 50/50 chance
-                    return (UnityEngine.Random.Range(0, 2) == 0) ? (WildSpawnType)AkiBotsPrePatcher.sptUsecValue : (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+                    return UnityEngine.Random.Range(0, 2) == 0 ? sptUsec : sptBear;
                 default:
                     return WildSpawnType.assault;
             }
-
         }
-        internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
-        {
-            //define spt wildspawn
-            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
+        internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        {
             if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
             {
                 return EPlayerSide.Usec;
@@ -559,56 +461,36 @@ namespace Donuts
             {
                 return 1;
             }
-            else if (pluginGroupChance == "Max")
+            if (pluginGroupChance == "Max")
             {
                 return count;
             }
-            else if (pluginGroupChance == "Random")
+            if (pluginGroupChance == "Random")
             {
                 string[] groupChances = { "None", "Low", "Default", "High", "Max" };
                 pluginGroupChance = groupChances[UnityEngine.Random.Range(0, groupChances.Length)];
             }
             else
             {
-                // Assuming getGroupChance is the actual implementation for non-random cases
                 int actualGroupChance = getGroupChance(pluginGroupChance, count);
                 return actualGroupChance;
             }
 
-            // Recursively call the function with the updated pluginGroupChance
             return getActualBotCount(pluginGroupChance, count);
         }
 
-        // i'm not sure how all this works, ChatGPT wrote this for me
         internal static int getGroupChance(string pmcGroupChance, int maxCount)
         {
-            int actualMaxCount = maxCount;
-
-            // Adjust probabilities based on maxCount
-            double[] probabilities;
-            try
-            {
-                probabilities = GetProbabilityArray(pmcGroupChance);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error getting probability array for group chance {pmcGroupChance}. Using default.");
-                probabilities = GetDefaultProbabilityArray(pmcGroupChance);
-            }
-
+            double[] probabilities = GetProbabilityArray(pmcGroupChance) ?? GetDefaultProbabilityArray(pmcGroupChance);
             System.Random random = new System.Random();
-
-            // Determine actualMaxCount based on pmcGroupChance and probabilities
-            actualMaxCount = getOutcomeWithProbability(random, probabilities, maxCount) + 1;
-
-            return Math.Min(actualMaxCount, maxCount);
+            return getOutcomeWithProbability(random, probabilities, maxCount) + 1;
         }
 
         internal static double[] GetProbabilityArray(string pmcGroupChance)
         {
-            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
-                double totalWeight = relativeWeights.Sum(); // Sum of all weights
+                double totalWeight = relativeWeights.Sum();
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();
             }
 
@@ -617,9 +499,9 @@ namespace Donuts
 
         internal static double[] GetDefaultProbabilityArray(string pmcGroupChance)
         {
-            if (DonutsPlugin.groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
+            if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
-                double totalWeight = relativeWeights.Sum(); // Sum of all weights
+                double totalWeight = relativeWeights.Sum();
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();
             }
 
@@ -628,12 +510,7 @@ namespace Donuts
 
         internal static int getOutcomeWithProbability(System.Random random, double[] probabilities, int maxCount)
         {
-            double probabilitySum = 0.0;
-            foreach (var probability in probabilities)
-            {
-                probabilitySum += probability;
-            }
-
+            double probabilitySum = probabilities.Sum();
             if (Math.Abs(probabilitySum - 1.0) > 0.0001)
             {
                 throw new InvalidOperationException("Probabilities should sum up to 1.");
@@ -649,13 +526,9 @@ namespace Donuts
                     return i;
                 }
             }
-            // Default outcome if probabilities are not well-defined
             return maxCount - 1;
         }
 
         #endregion
-
-
-
     }
 }
