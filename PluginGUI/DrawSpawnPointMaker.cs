@@ -9,7 +9,7 @@ namespace Donuts
 {
     internal class DrawSpawnPointMaker
     {
-        //For tab
+        // For tab
         private static int selectedSpawnMakerSettingsIndex = 0;
         private static string[] spawnMakerSettingsSubTabs = { "Keybinds", "Spawn Setup" };
 
@@ -29,54 +29,51 @@ namespace Donuts
 
         internal static void Enable()
         {
-
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
-
-            // Initialize the custom styles for the dropdown
-            InitializeStyles();
-            GUILayout.Space(30);
-            GUILayout.BeginHorizontal();
-
-            // Left-hand navigation menu for sub-tabs
-            GUILayout.BeginVertical(GUILayout.Width(150));
-
-            GUILayout.Space(20);
-            DrawSubTabs();
-            GUILayout.EndVertical();
-
-            // Space between menu and subtab pages
-            GUILayout.Space(40);
-
-            // Right-hand content area for selected sub-tab
-            GUILayout.BeginVertical();
-
-            switch (selectedSpawnMakerSettingsIndex)
+            // Apply the custom skin to ensure consistency
+            PluginGUIHelper.ApplyCustomSkin(() =>
             {
-                case 0:
-                    DrawKeybindsTab();
-                    break;
-                case 1:
-                    DrawSpawnSetupTab();
-                    break;
-            }
+                // Initialize the custom styles for the dropdown
+                InitializeStyles();
+                GUILayout.Space(30);
+                GUILayout.BeginHorizontal();
 
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
+                // Left-hand navigation menu for sub-tabs
+                GUILayout.BeginVertical(GUILayout.Width(150));
+
+                GUILayout.Space(20);
+                DrawSubTabs();
+                GUILayout.EndVertical();
+
+                // Space between menu and subtab pages
+                GUILayout.Space(40);
+
+                // Right-hand content area for selected sub-tab
+                GUILayout.BeginVertical();
+
+                switch (selectedSpawnMakerSettingsIndex)
+                {
+                    case 0:
+                        DrawKeybindsTab();
+                        break;
+                    case 1:
+                        DrawSpawnSetupTab();
+                        break;
+                }
+
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+            });
         }
 
         private static void DrawSubTabs()
         {
             for (int i = 0; i < spawnMakerSettingsSubTabs.Length; i++)
             {
-                GUIStyle currentStyle = cachedSubTabButtonStyle;
+                GUIStyle currentStyle = customSkin.customStyles[2]; // subTabButtonStyle
                 if (selectedSpawnMakerSettingsIndex == i)
                 {
-                    currentStyle = cachedSubTabButtonActiveStyle;
+                    currentStyle = customSkin.customStyles[3]; // subTabButtonActiveStyle
                 }
-
-                // Set background color explicitly for each button
-                PluginGUIHelper.ApplyCachedStyles();
 
                 if (GUILayout.Button(spawnMakerSettingsSubTabs[i], currentStyle))
                 {
@@ -88,7 +85,6 @@ namespace Donuts
         internal static void DrawKeybindsTab()
         {
             // Draw general spawn settings
-
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
@@ -107,14 +103,13 @@ namespace Donuts
         internal static void DrawSpawnSetupTab()
         {
             // Draw advanced spawn settings
-
             GUILayout.BeginHorizontal();
 
             // First column
             GUILayout.BeginVertical();
 
             spawnName.Value = TextField(spawnName.Name, spawnName.ToolTipText, spawnName.Value);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             groupNum.Value = Slider(groupNum.Name, groupNum.ToolTipText, groupNum.Value, groupNum.MinValue, groupNum.MaxValue);
             GUILayout.Space(10);
@@ -128,10 +123,10 @@ namespace Donuts
             GUILayout.Space(10);
 
             maxSpawnDist.Value = Slider(maxSpawnDist.Name, maxSpawnDist.ToolTipText, maxSpawnDist.Value, maxSpawnDist.MinValue, maxSpawnDist.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             botTriggerDistance.Value = Slider(botTriggerDistance.Name, botTriggerDistance.ToolTipText, botTriggerDistance.Value, botTriggerDistance.MinValue, botTriggerDistance.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             GUILayout.EndVertical();
 
@@ -139,29 +134,25 @@ namespace Donuts
             GUILayout.BeginVertical();
 
             botTimerTrigger.Value = Slider(botTimerTrigger.Name, botTimerTrigger.ToolTipText, botTimerTrigger.Value, botTimerTrigger.MinValue, botTimerTrigger.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             maxRandNumBots.Value = Slider(maxRandNumBots.Name, maxRandNumBots.ToolTipText, maxRandNumBots.Value, maxRandNumBots.MinValue, maxRandNumBots.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             spawnChance.Value = Slider(spawnChance.Name, spawnChance.ToolTipText, spawnChance.Value, spawnChance.MinValue, spawnChance.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             maxSpawnsBeforeCooldown.Value = Slider(maxSpawnsBeforeCooldown.Name, maxSpawnsBeforeCooldown.ToolTipText, maxSpawnsBeforeCooldown.Value, maxSpawnsBeforeCooldown.MinValue, maxSpawnsBeforeCooldown.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             ignoreTimerFirstSpawn.Value = Toggle(ignoreTimerFirstSpawn.Name, ignoreTimerFirstSpawn.ToolTipText, ignoreTimerFirstSpawn.Value);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             minSpawnDistanceFromPlayer.Value = Slider(minSpawnDistanceFromPlayer.Name, minSpawnDistanceFromPlayer.ToolTipText, minSpawnDistanceFromPlayer.Value, minSpawnDistanceFromPlayer.MinValue, minSpawnDistanceFromPlayer.MaxValue);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             GUILayout.EndVertical();
-
             GUILayout.EndHorizontal();
-
         }
-
     }
 }
-

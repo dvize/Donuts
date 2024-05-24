@@ -22,6 +22,7 @@ namespace Donuts
         private static GUIStyle textFieldStyle;
         private static GUIStyle expandedDropdownStyle;
         private static GUIStyle keybindFieldStyle;
+
         private static GUIStyle sliderThumbStyle;
         private static GUIStyle sliderStyle;
 
@@ -59,15 +60,18 @@ namespace Donuts
 
             textFieldStyle = new GUIStyle(GUI.skin.textField)
             {
-                fontSize = 18
+                fontSize = 18,
+                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
             };
 
             tooltipStyle = new GUIStyle(GUI.skin.box)
             {
                 fontSize = 18,
                 wordWrap = true,
+
                 normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white }, // vibrant blue background with white text
                 fontStyle = FontStyle.Bold
+
             };
 
             expandedDropdownStyle = new GUIStyle(dropdownStyle)
@@ -87,6 +91,7 @@ namespace Donuts
             sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
             {
                 normal = { background = MakeTex(1, 1, Color.blue) }
+
             };
 
             // Create textures for the toggle button states
@@ -183,7 +188,6 @@ namespace Donuts
 
             return selectedIndex;
         }
-
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
@@ -196,13 +200,13 @@ namespace Donuts
 
             string valueStr = GUILayout.TextField(value.ToString("F2"), textFieldStyle, GUILayout.Width(100));
 
+
             if (float.TryParse(valueStr, out float parsedValue))
             {
                 value = Mathf.Clamp(parsedValue, min, max);
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;
@@ -221,13 +225,13 @@ namespace Donuts
             // Draw the textbox next to the slider without extra vertical space
             string valueStr = GUILayout.TextField(value.ToString(), textFieldStyle, GUILayout.Width(100));
 
+
             if (int.TryParse(valueStr, out int parsedValue))
             {
                 value = Mathf.Clamp(parsedValue, min, max);
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;
