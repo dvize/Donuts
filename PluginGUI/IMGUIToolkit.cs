@@ -22,6 +22,9 @@ namespace Donuts
         private static GUIStyle textFieldStyle;
         private static GUIStyle expandedDropdownStyle;
         private static GUIStyle keybindFieldStyle;
+        private static GUIStyle sliderThumbStyle;
+        private static GUIStyle sliderStyle;
+
         public static void InitializeStyles()
         {
             dropdownStyle = new GUIStyle(GUI.skin.button)
@@ -62,7 +65,9 @@ namespace Donuts
             tooltipStyle = new GUIStyle(GUI.skin.box)
             {
                 fontSize = 18,
-                wordWrap = true
+                wordWrap = true,
+                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white }, // vibrant blue background with white text
+                fontStyle = FontStyle.Bold
             };
 
             expandedDropdownStyle = new GUIStyle(dropdownStyle)
@@ -76,6 +81,12 @@ namespace Donuts
                 fixedHeight = 25,
                 fontSize = 18,
                 normal = { textColor = Color.white }
+            };
+
+            sliderStyle = new GUIStyle(GUI.skin.horizontalSlider);
+            sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                normal = { background = MakeTex(1, 1, Color.blue) }
             };
 
             // Create textures for the toggle button states
@@ -147,10 +158,10 @@ namespace Donuts
 
             if (dropdownStates[dropdownId])
             {
-                GUILayout.BeginHorizontal(); // Begin a new horizontal group to align buttons
-                GUILayout.Space(209); // Adjust the space to match the label width
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(209);
 
-                GUILayout.BeginVertical(); // Begin a vertical group to stack buttons
+                GUILayout.BeginVertical();
 
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
@@ -176,13 +187,14 @@ namespace Donuts
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
+
+            // Draw the label
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300));
 
-            string valueStr = value.ToString("F2");
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            value = GUILayout.HorizontalSlider(value, min, max, sliderStyle, sliderThumbStyle, GUILayout.Width(300));
+
+            string valueStr = GUILayout.TextField(value.ToString("F2"), textFieldStyle, GUILayout.Width(100));
 
             if (float.TryParse(valueStr, out float parsedValue))
             {
@@ -199,13 +211,15 @@ namespace Donuts
         public static int Slider(string label, string toolTip, int value, int min, int max)
         {
             GUILayout.BeginHorizontal();
+
+            // Draw the label
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300)));
 
-            string valueStr = value.ToString();
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, sliderStyle, sliderThumbStyle, GUILayout.Width(300)));
+
+            // Draw the textbox next to the slider without extra vertical space
+            string valueStr = GUILayout.TextField(value.ToString(), textFieldStyle, GUILayout.Width(100));
 
             if (int.TryParse(valueStr, out int parsedValue))
             {
@@ -219,12 +233,14 @@ namespace Donuts
             return value;
         }
 
+
+
         public static string TextField(string label, string toolTip, string text)
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
+            GUILayout.FlexibleSpace();
             text = GUILayout.TextField(text, textFieldStyle, GUILayout.Width(300));
             GUILayout.EndHorizontal();
 

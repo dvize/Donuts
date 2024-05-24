@@ -1,18 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Donuts.Models
 {
     internal class Setting<T>
     {
+        private string toolTipText;
+
         public string Name
         {
             get; set;
         }
+
         public string ToolTipText
         {
-            get; set;
+            get => toolTipText;
+            set => toolTipText = InsertCarriageReturns(value, 50);
         }
+
         public T Value
         {
             get; set;
@@ -60,6 +66,36 @@ namespace Donuts.Models
                 return true;
             }
             return false;
+        }
+
+        private string InsertCarriageReturns(string text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+            {
+                return text;
+            }
+
+            StringBuilder formattedText = new StringBuilder();
+            int start = 0;
+
+            while (start < text.Length)
+            {
+                int end = Math.Min(start + maxLength, text.Length);
+                if (end < text.Length && text[end] != ' ')
+                {
+                    int lastSpace = text.LastIndexOf(' ', end, end - start);
+                    if (lastSpace > start)
+                    {
+                        end = lastSpace;
+                    }
+                }
+
+                formattedText.Append(text.Substring(start, end - start).Trim());
+                formattedText.AppendLine();
+                start = end + 1;
+            }
+
+            return formattedText.ToString().Trim();
         }
     }
 }
