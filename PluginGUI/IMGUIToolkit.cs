@@ -22,8 +22,10 @@ namespace Donuts
         private static GUIStyle textFieldStyle;
         private static GUIStyle expandedDropdownStyle;
         private static GUIStyle keybindFieldStyle;
-        private static GUIStyle sliderStyle;
+
         private static GUIStyle sliderThumbStyle;
+        private static GUIStyle sliderStyle;
+
         public static void InitializeStyles()
         {
             dropdownStyle = new GUIStyle(GUI.skin.button)
@@ -66,7 +68,10 @@ namespace Donuts
             {
                 fontSize = 18,
                 wordWrap = true,
-                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 0.8f)) }
+
+                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white }, // vibrant blue background with white text
+                fontStyle = FontStyle.Bold
+
             };
 
             expandedDropdownStyle = new GUIStyle(dropdownStyle)
@@ -82,18 +87,11 @@ namespace Donuts
                 normal = { textColor = Color.white }
             };
 
-            sliderStyle = new GUIStyle(GUI.skin.horizontalSlider)
-            {
-                fixedHeight = 18,
-                margin = new RectOffset(0, 0, 10, 0),
-                normal = { background = MakeTex(1, 1, Color.gray) }
-            };
-
+            sliderStyle = new GUIStyle(GUI.skin.horizontalSlider);
             sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
             {
-                fixedHeight = 18,
-                fixedWidth = 10,
-                normal = { background = MakeTex(1, 1, Color.blue) } // Blue slider thumb
+                normal = { background = MakeTex(1, 1, Color.blue) }
+
             };
 
             // Create textures for the toggle button states
@@ -165,10 +163,10 @@ namespace Donuts
 
             if (dropdownStates[dropdownId])
             {
-                GUILayout.BeginHorizontal(); // Begin a new horizontal group to align buttons
-                GUILayout.Space(209); // Adjust the space to match the label width
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(209);
 
-                GUILayout.BeginVertical(); // Begin a vertical group to stack buttons
+                GUILayout.BeginVertical();
 
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
@@ -193,26 +191,15 @@ namespace Donuts
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             GUILayout.BeginHorizontal();
+
+            // Draw the label
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
 
-            float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
-            float sliderHeight = sliderStyle.fixedHeight;
-            float controlHeight = Mathf.Max(labelHeight, sliderHeight);
+            value = GUILayout.HorizontalSlider(value, min, max, sliderStyle, sliderThumbStyle, GUILayout.Width(300));
 
-            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300), GUILayout.Height(controlHeight));
-            float verticalOffset = (controlHeight - sliderHeight) / 2;
+            string valueStr = GUILayout.TextField(value.ToString("F2"), textFieldStyle, GUILayout.Width(100));
 
-            Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
-            value = GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle);
-
-            GUILayout.Space(10); // Add some space between the slider and the text field
-
-            string valueStr = value.ToString("F2");
-            float textFieldHeight = textFieldStyle.fixedHeight > 0 ? textFieldStyle.fixedHeight : sliderHeight;
-            float textFieldVerticalOffset = (controlHeight - textFieldHeight) / 2;
-            Rect textFieldRect = new Rect(controlRect.x + controlRect.width + 10, controlRect.y + textFieldVerticalOffset, 100, textFieldHeight);
-            valueStr = GUI.TextField(textFieldRect, valueStr, textFieldStyle);
 
             if (float.TryParse(valueStr, out float parsedValue))
             {
@@ -228,26 +215,16 @@ namespace Donuts
         public static int Slider(string label, string toolTip, int value, int min, int max)
         {
             GUILayout.BeginHorizontal();
+
+            // Draw the label
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
 
-            float labelHeight = GUI.skin.label.CalcHeight(labelContent, 200);
-            float sliderHeight = sliderStyle.fixedHeight;
-            float controlHeight = Mathf.Max(labelHeight, sliderHeight);
+            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, sliderStyle, sliderThumbStyle, GUILayout.Width(300)));
 
-            Rect controlRect = GUILayoutUtility.GetRect(new GUIContent(), GUIStyle.none, GUILayout.Width(300), GUILayout.Height(controlHeight));
-            float verticalOffset = (controlHeight - sliderHeight) / 2;
+            // Draw the textbox next to the slider without extra vertical space
+            string valueStr = GUILayout.TextField(value.ToString(), textFieldStyle, GUILayout.Width(100));
 
-            Rect sliderRect = new Rect(controlRect.x, controlRect.y + verticalOffset, controlRect.width, sliderHeight);
-            value = Mathf.RoundToInt(GUI.HorizontalSlider(sliderRect, value, min, max, sliderStyle, sliderThumbStyle));
-
-            GUILayout.Space(10); // Add some space between the slider and the text field
-
-            string valueStr = value.ToString();
-            float textFieldHeight = textFieldStyle.fixedHeight > 0 ? textFieldStyle.fixedHeight : sliderHeight;
-            float textFieldVerticalOffset = (controlHeight - textFieldHeight) / 2;
-            Rect textFieldRect = new Rect(controlRect.x + controlRect.width + 10, controlRect.y + textFieldVerticalOffset, 100, textFieldHeight);
-            valueStr = GUI.TextField(textFieldRect, valueStr, textFieldStyle);
 
             if (int.TryParse(valueStr, out int parsedValue))
             {
@@ -260,12 +237,14 @@ namespace Donuts
             return value;
         }
 
+
+
         public static string TextField(string label, string toolTip, string text)
         {
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
             GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
+            GUILayout.FlexibleSpace();
             text = GUILayout.TextField(text, textFieldStyle, GUILayout.Width(300));
             GUILayout.EndHorizontal();
 
