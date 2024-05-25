@@ -20,6 +20,8 @@ namespace Donuts
 {
     internal class Initialization
     {
+        private static MapConfig mapConfig;
+
         internal static void InitializeStaticVariables()
         {
             fightLocations = new FightLocations()
@@ -47,54 +49,20 @@ namespace Donuts
 
         internal static void SetupBotLimit(string folderName)
         {
-            Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
-            switch (maplocation)
+            if (mapConfig == null)
             {
-                case "factory4_day":
-                case "factory4_night":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.FactoryBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.FactoryBotLimit;
-                    break;
-                case "bigmap":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.CustomsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.CustomsBotLimit;
-                    break;
-                case "interchange":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.InterchangeBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.InterchangeBotLimit;
-                    break;
-                case "rezervbase":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ReserveBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ReserveBotLimit;
-                    break;
-                case "laboratory":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LaboratoryBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LaboratoryBotLimit;
-                    break;
-                case "lighthouse":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LighthouseBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LighthouseBotLimit;
-                    break;
-                case "shoreline":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ShorelineBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ShorelineBotLimit;
-                    break;
-                case "woods":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.WoodsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.WoodsBotLimit;
-                    break;
-                case "tarkovstreets":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
-                    break;
-                case "sandbox":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
-                    break;
-                default:
-                    PMCBotLimit = 8;
-                    SCAVBotLimit = 5;
-                    break;
+                throw new InvalidOperationException("MapConfig is not loaded.");
+            }
+
+            if (mapConfig.MaxBotCaps.TryGetValue(maplocation, out MaxBotCap maxBotCap))
+            {
+                PMCBotLimit = maxBotCap.PMC;
+                SCAVBotLimit = maxBotCap.SCAV;
+            }
+            else
+            {
+                PMCBotLimit = 5; // Default value
+                SCAVBotLimit = 5; // Default value
             }
         }
 
@@ -126,13 +94,18 @@ namespace Donuts
         {
             if (!fileLoaded)
             {
+                private static BotManager botManager;
+
                 MethodInfo displayMessageNotificationMethod;
                 methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod);
 
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
-                string jsonFolderPath = Path.Combine(directoryPath, "patterns");
+                string jsonFolderPath = Path.Combine(directoryPath, "MaxBotCaps.json");
+
+                // Load the bot configurations from the JSON file
+                botManager = BotManager.LoadFromJson(jsonFilePath);
 
                 var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
 

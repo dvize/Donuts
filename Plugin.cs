@@ -31,6 +31,7 @@ namespace Donuts
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
         internal static new ManualLogSource Logger;
+
         DonutsPlugin()
         {
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
@@ -67,6 +68,32 @@ namespace Donuts
 
             await SetupScenariosUI();
             ImportConfig();
+
+            LoadSpawnPoints();
+        }
+
+        private void LoadSpawnPoints()
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+            string zoneConfigDirectoryPath = Path.Combine(directoryPath, "dvize.Donuts", "zoneSpawnPoints");
+
+            allMapsZoneConfig = AllMapsZoneConfig.LoadFromDirectory(zoneConfigDirectoryPath);
+
+            foreach (var map in allMapsZoneConfig.Maps)
+            {
+                Debug.Log($"Map Name: {map.MapName}");
+                foreach (var zone in map.Zones)
+                {
+                    foreach (var location in zone.Value)
+                    {
+                        foreach (var coord in location.Value)
+                        {
+                            Debug.Log($"{location.Key}: ({coord.x}, {coord.y}, {coord.z})");
+                        }
+                    }
+                }
+            }
         }
 
         private async Task SetupScenariosUI()
@@ -128,7 +155,7 @@ namespace Donuts
             {
                 if (IsKeyPressed(escapeKey))
                 {
-                    //check if the config window is open    
+                    //check if the config window is open
                     if (DefaultPluginVars.showGUI)
                     {
                         DefaultPluginVars.showGUI = false;
