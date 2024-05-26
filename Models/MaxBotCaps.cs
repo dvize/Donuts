@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Donuts.Models
 {
@@ -17,7 +17,7 @@ namespace Donuts.Models
         public static MapConfig LoadFromJson(string filePath)
         {
             var jsonString = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<MapConfig>(jsonString);
+            return JsonConvert.DeserializeObject<MapConfig>(jsonString);
         }
     }
 }

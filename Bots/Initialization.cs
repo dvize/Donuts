@@ -9,10 +9,8 @@ using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
-using Cysharp.Threading.Tasks;
 using static Donuts.DonutComponent;
-using static Donuts.DefaultPluginVars;
-using static Donuts.Gizmos;
+using Cysharp.Threading.Tasks;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -20,7 +18,25 @@ namespace Donuts
 {
     internal class Initialization
     {
-        private static MapConfig mapConfig;
+        private static BotManager botManager;
+
+        private static void LoadStartingBots()
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+            string jsonFilePath = Path.Combine(directoryPath, "StartingBots.json");
+
+            if (File.Exists(jsonFilePath))
+            {
+                var jsonString = File.ReadAllText(jsonFilePath);
+                botManager = JsonConvert.DeserializeObject<BotManager>(jsonString);
+                DonutComponent.Logger.LogDebug("Loaded StartingBots.json successfully.");
+            }
+            else
+            {
+                DonutComponent.Logger.LogError("StartingBots.json file not found.");
+            }
+        }
 
         internal static void InitializeStaticVariables()
         {
@@ -43,21 +59,24 @@ namespace Donuts
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
 
+            LoadStartingBots();
+
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
 
-        internal static void SetupBotLimit(string folderName)
+        internal static void SetupBotLimit(string mapName)
         {
-            if (mapConfig == null)
+            if (botManager == null)
             {
-                throw new InvalidOperationException("MapConfig is not loaded.");
+                throw new InvalidOperationException("BotManager is not loaded.");
             }
 
-            if (mapConfig.MaxBotCaps.TryGetValue(maplocation, out MaxBotCap maxBotCap))
+            var selectedConfig = botManager.StartingBotsData.FirstOrDefault(config => config.Name == selectionName);
+            if (selectedConfig != null && selectedConfig.Maps.TryGetValue(mapName, out var mapBotConfig))
             {
-                PMCBotLimit = maxBotCap.PMC;
-                SCAVBotLimit = maxBotCap.SCAV;
+                PMCBotLimit = mapBotConfig.PMC.MaxCount;
+                SCAVBotLimit = mapBotConfig.SCAV.MaxCount;
             }
             else
             {
@@ -94,18 +113,16 @@ namespace Donuts
         {
             if (!fileLoaded)
             {
-                private static BotManager botManager;
-
                 MethodInfo displayMessageNotificationMethod;
                 methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod);
 
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
-                string jsonFolderPath = Path.Combine(directoryPath, "MaxBotCaps.json");
+                string jsonFilePath = Path.Combine(directoryPath, "MaxBotCaps.json");
 
                 // Load the bot configurations from the JSON file
-                botManager = BotManager.LoadFromJson(jsonFilePath);
+                mapConfig = MapConfig.LoadFromJson(jsonFilePath);
 
                 var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
 
@@ -120,7 +137,7 @@ namespace Donuts
                     return;
                 }
 
-                string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
+                string PatternFolderPath = Path.Combine(jsonFilePath, selectionName);
 
                 if (!Directory.Exists(PatternFolderPath))
                 {
@@ -148,7 +165,7 @@ namespace Donuts
 
                 foreach (string file in jsonFiles)
                 {
-                    string fileContent = await UniTask.Create(async () => File.ReadAllText(file));
+                    string fileContent = await UniTask.Run(() => File.ReadAllText(file));
                     FightLocations fightfile = JsonConvert.DeserializeObject<FightLocations>(fileContent);
                     combinedLocations.AddRange(fightfile.Locations);
                 }

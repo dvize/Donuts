@@ -150,14 +150,14 @@ namespace Donuts
         private Stopwatch spawnCheckTimer = new Stopwatch();
         private const int SpawnCheckInterval = 1000;
 
-        private void Start()
+        private async void Start()
         {
             Initialization.InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + maplocation);
-            Initialization.LoadFightLocations();
+            await Initialization.LoadFightLocations();
             if (PluginEnabled.Value && fileLoaded)
             {
                 Initialization.InitializeHotspotTimers();
@@ -505,8 +505,6 @@ namespace Donuts
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
-
-        
 
         private void OnGUI()
         {

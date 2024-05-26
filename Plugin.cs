@@ -31,6 +31,7 @@ namespace Donuts
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
         internal static new ManualLogSource Logger;
+        private AllMapsZoneConfig allMapsZoneConfig;
 
         DonutsPlugin()
         {
@@ -70,27 +71,25 @@ namespace Donuts
             ImportConfig();
 
             LoadSpawnPoints();
+            // LoadStartingBots? if we don't put it here then it can be customizable from the GUI, better maybe?
         }
 
         private void LoadSpawnPoints()
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string zoneConfigDirectoryPath = Path.Combine(directoryPath, "dvize.Donuts", "zoneSpawnPoints");
+            string zoneConfigDirectoryPath = Path.Combine(directoryPath, "zoneSpawnPoints");
 
-            allMapsZoneConfig = AllMapsZoneConfig.LoadFromDirectory(zoneConfigDirectoryPath);
+            var allMapsZoneConfig = AllMapsZoneConfig.LoadFromDirectory(zoneConfigDirectoryPath);
 
-            foreach (var map in allMapsZoneConfig.Maps)
+            foreach (var map in allMapsZoneConfig.Maps.Values)
             {
-                Debug.Log($"Map Name: {map.MapName}");
+                Logger.LogDebug($"Map Name: {map.MapName}");
                 foreach (var zone in map.Zones)
                 {
-                    foreach (var location in zone.Value)
+                    foreach (var coord in zone.Value)
                     {
-                        foreach (var coord in location.Value)
-                        {
-                            Debug.Log($"{location.Key}: ({coord.x}, {coord.y}, {coord.z})");
-                        }
+                        Logger.LogDebug($"{zone.Key}: ({coord.x}, {coord.y}, {coord.z})");
                     }
                 }
             }
@@ -205,7 +204,7 @@ namespace Donuts
             var dllPath = Assembly.GetExecutingAssembly().Location;
             var directoryPath = Path.GetDirectoryName(dllPath);
 
-            DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            // DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
             DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
             DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
             DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));

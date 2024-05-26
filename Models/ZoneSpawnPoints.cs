@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Donuts.Models
 {
@@ -11,20 +11,15 @@ namespace Donuts.Models
         public double z { get; set; }
     }
 
-    public class Zones
-    {
-        public Dictionary<string, List<Coordinate>> Locations { get; set; }
-    }
-
     public class MapZoneConfig
     {
         public string MapName { get; set; }
-        public Dictionary<string, Dictionary<string, List<Coordinate>>> Zones { get; set; }
+        public Dictionary<string, List<Coordinate>> Zones { get; set; }
     }
 
     public class AllMapsZoneConfig
     {
-        public List<MapZoneConfig> Maps { get; set; } = new List<MapZoneConfig>();
+        public Dictionary<string, MapZoneConfig> Maps { get; set; } = new Dictionary<string, MapZoneConfig>();
 
         public static AllMapsZoneConfig LoadFromDirectory(string directoryPath)
         {
@@ -34,8 +29,29 @@ namespace Donuts.Models
             foreach (var file in files)
             {
                 var jsonString = File.ReadAllText(file);
-                var mapConfig = JsonSerializer.Deserialize<MapZoneConfig>(jsonString);
-                allMapsConfig.Maps.Add(mapConfig);
+                var mapConfig = JsonConvert.DeserializeObject<MapZoneConfig>(jsonString);
+
+                if (mapConfig != null)
+                {
+                    if (!allMapsConfig.Maps.ContainsKey(mapConfig.MapName))
+                    {
+                        allMapsConfig.Maps[mapConfig.MapName] = new MapZoneConfig
+                        {
+                            MapName = mapConfig.MapName,
+                            Zones = new Dictionary<string, List<Coordinate>>()
+                        };
+                    }
+
+                    foreach (var zone in mapConfig.Zones)
+                    {
+                        if (!allMapsConfig.Maps[mapConfig.MapName].Zones.ContainsKey(zone.Key))
+                        {
+                            allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key] = new List<Coordinate>();
+                        }
+
+                        allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key].AddRange(zone.Value);
+                    }
+                }
             }
 
             return allMapsConfig;

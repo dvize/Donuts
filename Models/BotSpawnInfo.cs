@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using EFT;
+using UnityEngine;
+
 public class BotSpawnInfo
 {
     public WildSpawnType BotType { get; set; }
