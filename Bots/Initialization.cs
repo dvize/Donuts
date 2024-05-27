@@ -18,7 +18,7 @@ namespace Donuts
 {
     internal class Initialization
     {
-        private static BotManager botManager;
+        private static StartingBotsManager startingBotsManager;
 
         private static void LoadStartingBots()
         {
@@ -29,7 +29,10 @@ namespace Donuts
             if (File.Exists(jsonFilePath))
             {
                 var jsonString = File.ReadAllText(jsonFilePath);
-                botManager = JsonConvert.DeserializeObject<BotManager>(jsonString);
+                startingBotsManager = new StartingBotsManager
+                {
+                    StartingBotsData = JsonConvert.DeserializeObject<List<StartingBotConfig>>(jsonString)
+                };
                 DonutComponent.Logger.LogDebug("Loaded StartingBots.json successfully.");
             }
             else
@@ -65,23 +68,56 @@ namespace Donuts
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
 
-        internal static void SetupBotLimit(string mapName)
+        internal static void SetupBotLimit(string folderName)
         {
-            if (botManager == null)
+            Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
+            switch (maplocation)
             {
-                throw new InvalidOperationException("BotManager is not loaded.");
-            }
-
-            var selectedConfig = botManager.StartingBotsData.FirstOrDefault(config => config.Name == selectionName);
-            if (selectedConfig != null && selectedConfig.Maps.TryGetValue(mapName, out var mapBotConfig))
-            {
-                PMCBotLimit = mapBotConfig.PMC.MaxCount;
-                SCAVBotLimit = mapBotConfig.SCAV.MaxCount;
-            }
-            else
-            {
-                PMCBotLimit = 5; // Default value
-                SCAVBotLimit = 5; // Default value
+                case "factory4_day":
+                case "factory4_night":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.FactoryBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.FactoryBotLimit;
+                    break;
+                case "bigmap":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.CustomsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.CustomsBotLimit;
+                    break;
+                case "interchange":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.InterchangeBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.InterchangeBotLimit;
+                    break;
+                case "rezervbase":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ReserveBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ReserveBotLimit;
+                    break;
+                case "laboratory":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LaboratoryBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LaboratoryBotLimit;
+                    break;
+                case "lighthouse":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LighthouseBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LighthouseBotLimit;
+                    break;
+                case "shoreline":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ShorelineBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ShorelineBotLimit;
+                    break;
+                case "woods":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.WoodsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.WoodsBotLimit;
+                    break;
+                case "tarkovstreets":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
+                    break;
+                case "sandbox":
+                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
+                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
+                    break;
+                default:
+                    PMCBotLimit = 8;
+                    SCAVBotLimit = 5;
+                    break;
             }
         }
 
@@ -119,10 +155,7 @@ namespace Donuts
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
 
-                string jsonFilePath = Path.Combine(directoryPath, "MaxBotCaps.json");
-
-                // Load the bot configurations from the JSON file
-                mapConfig = MapConfig.LoadFromJson(jsonFilePath);
+                string jsonFolderPath = Path.Combine(directoryPath, "patterns");
 
                 var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
 
@@ -137,7 +170,7 @@ namespace Donuts
                     return;
                 }
 
-                string PatternFolderPath = Path.Combine(jsonFilePath, selectionName);
+                string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
 
                 if (!Directory.Exists(PatternFolderPath))
                 {
