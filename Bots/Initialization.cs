@@ -9,8 +9,10 @@ using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
-using static Donuts.DonutComponent;
 using Cysharp.Threading.Tasks;
+using static Donuts.DonutComponent;
+using static Donuts.DefaultPluginVars;
+using static Donuts.Gizmos;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -18,29 +20,7 @@ namespace Donuts
 {
     internal class Initialization
     {
-        private static StartingBotsManager startingBotsManager;
-
-        private static void LoadStartingBots()
-        {
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "StartingBots.json");
-
-            if (File.Exists(jsonFilePath))
-            {
-                var jsonString = File.ReadAllText(jsonFilePath);
-                startingBotsManager = new StartingBotsManager
-                {
-                    StartingBotsData = JsonConvert.DeserializeObject<List<StartingBotConfig>>(jsonString)
-                };
-                DonutComponent.Logger.LogDebug("Loaded StartingBots.json successfully.");
-            }
-            else
-            {
-                DonutComponent.Logger.LogError("StartingBots.json file not found.");
-            }
-        }
-
+        internal static string selectionName;
         internal static void InitializeStaticVariables()
         {
             fightLocations = new FightLocations()
@@ -61,8 +41,6 @@ namespace Donuts
             SCAVBotLimit = 0;
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
-
-            LoadStartingBots();
 
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -198,7 +176,7 @@ namespace Donuts
 
                 foreach (string file in jsonFiles)
                 {
-                    string fileContent = await UniTask.Run(() => File.ReadAllText(file));
+                    string fileContent = await UniTask.Create(async () => File.ReadAllText(file));
                     FightLocations fightfile = JsonConvert.DeserializeObject<FightLocations>(fileContent);
                     combinedLocations.AddRange(fightfile.Locations);
                 }

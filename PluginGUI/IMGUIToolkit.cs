@@ -53,8 +53,7 @@ namespace Donuts
 
             textFieldStyle = new GUIStyle(GUI.skin.textField)
             {
-                fontSize = 18,
-                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
+                fontSize = 18
             };
 
             tooltipStyle = new GUIStyle(GUI.skin.box)
@@ -159,6 +158,7 @@ namespace Donuts
 
             return selectedIndex;
         }
+
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
             EnsureStylesInitialized();
@@ -177,6 +177,7 @@ namespace Donuts
             }
 
             GUILayout.EndHorizontal();
+
             ShowTooltip();
 
             return value;
@@ -200,6 +201,7 @@ namespace Donuts
             }
 
             GUILayout.EndHorizontal();
+
             ShowTooltip();
 
             return value;

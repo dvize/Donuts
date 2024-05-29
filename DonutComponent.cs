@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Aki.PrePatch;
@@ -10,6 +11,7 @@ using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using HarmonyLib;
+using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
@@ -150,14 +152,14 @@ namespace Donuts
         private Stopwatch spawnCheckTimer = new Stopwatch();
         private const int SpawnCheckInterval = 1000;
 
-        private async void Start()
+        private void Start()
         {
             Initialization.InitializeStaticVariables();
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + maplocation);
-            await Initialization.LoadFightLocations();
+            Initialization.LoadFightLocations();
             if (PluginEnabled.Value && fileLoaded)
             {
                 Initialization.InitializeHotspotTimers();
@@ -319,6 +321,51 @@ namespace Donuts
             }
 
             ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
+        }
+
+        public static StartingBotConfig GetStartingBotConfig(string selectionName)
+        {
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+            string jsonFilePath = Path.Combine(directoryPath, "StartingBots.json");
+
+            if (File.Exists(jsonFilePath))
+            {
+                var jsonString = File.ReadAllText(jsonFilePath);
+                var startingBotsData = JsonConvert.DeserializeObject<List<StartingBotConfig>>(jsonString);
+                return startingBotsData.FirstOrDefault(config => config.Name == selectionName);
+            }
+            else
+            {
+                Logger.LogError("StartingBots.json file not found.");
+                return null;
+            }
+        }
+
+        public static List<Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
+        {
+            var mapConfig = allMapsZoneConfig.Maps[maplocation];
+            var spawnPoints = new List<Vector3>();
+
+            if (zones.Contains("all"))
+            {
+                foreach (var zone in mapConfig.Zones.Values)
+                {
+                    spawnPoints.AddRange(zone.Select(coord => new Vector3(coord.x, coord.y, coord.z)));
+                }
+            }
+            else
+            {
+                foreach (var zoneName in zones)
+                {
+                    if (mapConfig.Zones.TryGetValue(zoneName, out var zonePoints))
+                    {
+                        spawnPoints.AddRange(zonePoints.Select(coord => new Vector3(coord.x, coord.y, coord.z)));
+                    }
+                }
+            }
+
+            return spawnPoints.OrderBy(_ => UnityEngine.Random.value).ToList();
         }
 
         private async UniTask<bool> CheckHardCap(string wildSpawnType)

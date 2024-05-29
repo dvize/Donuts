@@ -8,23 +8,22 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Apply the custom skin to ensure consistency
-            PluginGUIHelper.ApplyCustomSkin(() =>
-            {
-                GUILayout.Space(30);
-                GUILayout.BeginHorizontal();
-                GUILayout.BeginVertical();
+            // Apply the cached styles to ensure consistency
+            PluginGUIHelper.ApplyCachedStyles();
 
-                // Add toggles for DebugGizmos and gizmoRealSize
-                DebugGizmos.Value = ImGUIToolkit.Toggle(DebugGizmos.Name, DebugGizmos.ToolTipText, DebugGizmos.Value);
-                GUILayout.Space(10);
+            GUILayout.Space(30);
+            GUILayout.BeginHorizontal();
+            GUILayout.BeginVertical();
 
-                gizmoRealSize.Value = ImGUIToolkit.Toggle(gizmoRealSize.Name, gizmoRealSize.ToolTipText, gizmoRealSize.Value);
-                GUILayout.Space(10);
+            // Add toggles for DebugGizmos and gizmoRealSize
+            DebugGizmos.Value = ImGUIToolkit.Toggle(DebugGizmos.Name, DebugGizmos.ToolTipText, DebugGizmos.Value);
+            GUILayout.Space(10); 
 
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
-            });
+            gizmoRealSize.Value = ImGUIToolkit.Toggle(gizmoRealSize.Name, gizmoRealSize.ToolTipText, gizmoRealSize.Value);
+            GUILayout.Space(10); 
+
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
         }
     }
 

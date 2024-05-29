@@ -6,9 +6,9 @@ namespace Donuts.Models
 {
     public class Coordinate
     {
-        public double x { get; set; }
-        public double y { get; set; }
-        public double z { get; set; }
+        public float x { get; set; }
+        public float y { get; set; }
+        public float z { get; set; }
     }
 
     public class MapZoneConfig
