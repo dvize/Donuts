@@ -68,7 +68,6 @@ namespace Donuts
             PluginGUIHelper.ApplyCustomSkin(() =>
             {
                 // Initialize the custom styles for the dropdown
-                InitializeStyles();
                 GUILayout.Space(30);
                 GUILayout.BeginHorizontal();
 

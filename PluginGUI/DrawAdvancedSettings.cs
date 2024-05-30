@@ -51,7 +51,7 @@ namespace Donuts
                 // Reset to Default Values button
                 GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button)
                 {
-                    normal = { background = ImGUIToolkit.MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f)), textColor = Color.white },
+                    normal = { background = MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f)), textColor = Color.white },
                     fontSize = 20,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleCenter

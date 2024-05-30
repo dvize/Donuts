@@ -2,8 +2,6 @@
 using System.Reflection;
 using UnityEngine;
 
-#pragma warning disable IDE0007
-
 namespace Donuts
 {
     public class PluginGUIHelper : MonoBehaviour
@@ -43,15 +41,9 @@ namespace Donuts
 
                 ApplyCustomSkin(() =>
                 {
-                   /* // Draw a styled background box to capture all events
-                    GUIStyle backgroundStyle = new GUIStyle();
-                    backgroundStyle.normal.background = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f)); // Match your custom skin background color
-                    GUI.Box(new Rect(0, 0, Screen.width, Screen.height), GUIContent.none, backgroundStyle);
-*/
-                    windowRect = GUI.Window(1, windowRect, MainWindowFunc, "Donuts Configuration");
-                    GUI.FocusWindow(1);
+                    windowRect = GUI.Window(123, windowRect, MainWindowFunc, "Donuts Configuration");
+                    GUI.FocusWindow(123);
 
-                    // Capture all events within the window area
                     if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
                     {
                         if (windowRect.Contains(Event.current.mousePosition))
@@ -63,7 +55,6 @@ namespace Donuts
             }
         }
 
-
         private void Update()
         {
             if (DefaultPluginVars.showGUI)
@@ -71,7 +62,6 @@ namespace Donuts
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
 
-                // Block all game inputs. was clicking through imgui window
                 if (Input.anyKey)
                 {
                     Input.ResetInputAxes();
@@ -83,13 +73,11 @@ namespace Donuts
         {
             GUILayout.BeginVertical();
 
-            // Main content area with scroll view
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
             DrawMainTabs();
             DrawSelectedTabContent();
             GUILayout.EndScrollView();
 
-            // Footer section
             DrawFooter();
 
             GUILayout.EndVertical();
@@ -194,15 +182,13 @@ namespace Donuts
             Rect resizeHandleRect = new Rect(windowRect.width - ResizeHandleSize, windowRect.height - ResizeHandleSize, ResizeHandleSize, ResizeHandleSize);
             GUI.DrawTexture(resizeHandleRect, Texture2D.whiteTexture);
 
-            // Check for resizing start
             if (Event.current.type == EventType.MouseDown && resizeHandleRect.Contains(Event.current.mousePosition))
             {
                 isResizing = true;
                 resizeStartPos = Event.current.mousePosition;
-                Event.current.Use(); // Consume the event so other controls don't use it
+                Event.current.Use();
             }
 
-            // Handle resizing
             if (isResizing)
             {
                 if (Event.current.type == EventType.MouseUp)
@@ -215,11 +201,11 @@ namespace Donuts
                     windowRect.width = Mathf.Max(300, windowRect.width + delta.x);
                     windowRect.height = Mathf.Max(200, windowRect.height + delta.y);
                     resizeStartPos = Event.current.mousePosition;
-                    Event.current.Use(); // Consume the event so other controls don't use it
+                    Event.current.Use();
                 }
                 else if (Event.current.type == EventType.MouseMove)
                 {
-                    Event.current.Use(); // Consume the event to keep resizing
+                    Event.current.Use();
                 }
             }
         }
@@ -306,10 +292,72 @@ namespace Donuts
                 active = { background = subTabActiveTex, textColor = Color.yellow },
             };
 
-            customSkin.customStyles = new GUIStyle[] { customSkin.button, activeButtonStyle, subTabButtonStyle, subTabButtonActiveStyle };
+            customSkin.customStyles = new GUIStyle[]
+            {
+                customSkin.button,
+                activeButtonStyle,
+                subTabButtonStyle,
+                subTabButtonActiveStyle,
+                new GUIStyle(GUI.skin.box)
+                {
+                    fontSize = 18,
+                    wordWrap = true,
+                    normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white },
+                    fontStyle = FontStyle.Bold
+                },
+                new GUIStyle(GUI.skin.button)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fixedHeight = 25,
+                    fontSize = 18
+                },
+                new GUIStyle(GUI.skin.button)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fixedHeight = 25,
+                    fontSize = 18
+                },
+                new GUIStyle(GUI.skin.button)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 18,
+                    fontStyle = FontStyle.Bold,
+                    normal = { textColor = Color.white }
+                },
+                new GUIStyle(GUI.skin.button)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fixedHeight = 30,
+                    fontSize = 18,
+                    fontStyle = FontStyle.Bold
+                },
+                new GUIStyle(GUI.skin.textField)
+                {
+                    fontSize = 18,
+                    normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
+                },
+                new GUIStyle(GUI.skin.horizontalSlider),
+                new GUIStyle(GUI.skin.horizontalSliderThumb)
+                {
+                    normal = { background = MakeTex(1, 1, Color.blue) }
+                }
+            };
+
+            CreateToggleButtonTextures();
         }
 
-        private static Texture2D MakeTex(int width, int height, Color col)
+        private static void CreateToggleButtonTextures()
+        {
+            customSkin.customStyles[7].normal.background = MakeTex(1, 1, Color.gray);
+            customSkin.customStyles[7].hover.background = MakeTex(1, 1, Color.gray);
+            customSkin.customStyles[7].active.background = MakeTex(1, 1, Color.gray);
+
+            customSkin.customStyles[7].onNormal.background = MakeTex(1, 1, Color.red);
+            customSkin.customStyles[7].onHover.background = MakeTex(1, 1, Color.red);
+            customSkin.customStyles[7].onActive.background = MakeTex(1, 1, Color.red);
+        }
+
+        internal static Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];
             for (int i = 0; i < pix.Length; i++)
@@ -322,19 +370,11 @@ namespace Donuts
             return result;
         }
 
-
         public static void ApplyCustomSkin(System.Action drawAction)
         {
-            // Save the current GUI skin
             var originalSkin = GUI.skin;
-
-            // Apply the custom skin
             GUI.skin = customSkin;
-
-            // Execute the drawing action
             drawAction();
-
-            // Restore the original GUI skin
             GUI.skin = originalSkin;
         }
 
