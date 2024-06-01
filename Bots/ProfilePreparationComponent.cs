@@ -10,6 +10,7 @@ using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using HarmonyLib;
+using Newtonsoft.Json;
 using UnityEngine;
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
@@ -20,6 +21,8 @@ namespace Donuts
 {
     internal class DonutsBotPrep : MonoBehaviour
     {
+        internal static string selectionName;
+        internal static string maplocation;
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
@@ -98,9 +101,10 @@ namespace Donuts
 
         public async void Awake()
         {
+            maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
-            mainplayer = gameWorld.MainPlayer;
+            mainplayer = gameWorld?.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
             BotInfos = new List<PrepBotInfo>();
             timeSinceLastReplenish = 0;
@@ -125,15 +129,39 @@ namespace Donuts
                 mainplayer.BeingHitAction += Mainplayer_BeingHitAction;
             }
 
-            var startingBotConfig = DonutComponent.GetStartingBotConfig(Initialization.selectionName);
+            selectionName = DonutsPlugin.RunWeightedScenarioSelection();
+
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
             if (startingBotConfig != null)
             {
+                Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));
+
                 allMapsZoneConfig = AllMapsZoneConfig.LoadFromDirectory(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "zoneSpawnPoints"));
-                await InitializeAllBotInfos(startingBotConfig, DonutComponent.maplocation);
+
+                if (allMapsZoneConfig == null)
+                {
+                    Logger.LogError("Failed to load AllMapsZoneConfig.");
+                    return;
+                }
+
+                Logger.LogDebug("allMapsZoneConfig: " + JsonConvert.SerializeObject(allMapsZoneConfig));
+
+                if (string.IsNullOrEmpty(maplocation))
+                {
+                    Logger.LogError("Map location is null or empty.");
+                    return;
+                }
+
+                await InitializeAllBotInfos(startingBotConfig, maplocation);
+            }
+            else
+            {
+                Logger.LogError("startingBotConfig is null for selectionName: " + selectionName);
             }
 
             IsBotPreparationComplete = true;
         }
+
 
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
         {
@@ -173,13 +201,21 @@ namespace Donuts
         {
             var mapBotConfig = startingBotConfig.Maps[maplocation].PMC;
             var difficultiesForSetting = GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesPMC.Value.ToLower());
-            int botCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            int totalBotCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            Logger.LogDebug("totalBotCount: " + totalBotCount);
             var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
-            for (int i = 0; i < botCount; i++)
+            int totalBots = 0;
+
+            while (totalBots < totalBotCount) 
             {
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 int groupSize = UnityEngine.Random.Range(1, mapBotConfig.MaxGroupSize + 1);
+
+                if ((totalBots + groupSize) > totalBotCount)
+                {
+                    groupSize = totalBotCount - totalBots;
+                }
 
                 var botInfo = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, groupSize > 1, groupSize);
                 await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
@@ -189,6 +225,8 @@ namespace Donuts
                 {
                     spawnPoints.RemoveAt(0);
                 }
+
+                totalBots += groupSize;
             }
         }
 
@@ -196,13 +234,21 @@ namespace Donuts
         {
             var mapBotConfig = startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesSCAV.Value.ToLower());
-            int botCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            int totalBotCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            Logger.LogDebug("totalBotCount: " + totalBotCount);
             var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
-            for (int i = 0; i < botCount; i++)
+            int totalBots = 0;
+
+            while (totalBots < totalBotCount) 
             {
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 int groupSize = UnityEngine.Random.Range(1, mapBotConfig.MaxGroupSize + 1);
+
+                if ((totalBots + groupSize) > totalBotCount)
+                {
+                    groupSize = totalBotCount - totalBots;
+                }
 
                 var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, groupSize > 1, groupSize);
                 await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
@@ -212,6 +258,8 @@ namespace Donuts
                 {
                     spawnPoints.RemoveAt(0);
                 }
+
+                totalBots += groupSize;
             }
         }
 
@@ -345,7 +393,7 @@ namespace Donuts
         {
             if (DonutsBotPrep.BotInfos == null)
             {
-                DonutComponent.Logger.LogError("BotInfos is null");
+                Logger.LogError("BotInfos is null");
                 return null;
             }
 
@@ -359,12 +407,12 @@ namespace Donuts
                     return botInfo.Bots;
                 }
 
-                DonutComponent.Logger.LogWarning($"No cached bots found for spawn type {spawnType}, difficulty {difficulty}, and target count {targetCount}");
+                Logger.LogWarning($"No cached bots found for spawn type {spawnType}, difficulty {difficulty}, and target count {targetCount}");
                 return null;
             }
             catch (Exception ex)
             {
-                DonutComponent.Logger.LogError($"Exception in FindCachedBots: {ex.Message}\n{ex.StackTrace}");
+                Logger.LogError($"Exception in FindCachedBots: {ex.Message}\n{ex.StackTrace}");
                 return null;
             }
         }

@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using Donuts.Models;
-using Newtonsoft.Json;
 
 namespace Donuts.Models
 {
@@ -24,10 +20,5 @@ namespace Donuts.Models
     {
         public string Name { get; set; }
         public Dictionary<string, MapBotConfig> Maps { get; set; }
-    }
-
-    public class StartingBotsManager
-    {
-        public List<StartingBotConfig> StartingBotsData { get; set; }
     }
 }

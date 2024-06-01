@@ -41,7 +41,6 @@ namespace Donuts
 
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
-        internal static string maplocation;
         internal static int PMCBotLimit = 0;
         internal static int SCAVBotLimit = 0;
         internal static int currentInitialPMCs = 0;
@@ -155,10 +154,9 @@ namespace Donuts
         private void Start()
         {
             Initialization.InitializeStaticVariables();
-            maplocation = gameWorld.MainPlayer.Location.ToLower();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
-            Logger.LogDebug("Setup maplocation: " + maplocation);
+            Logger.LogDebug("Setup DonutsBotPrep.maplocation: " + DonutsBotPrep.maplocation);
             Initialization.LoadFightLocations();
             if (PluginEnabled.Value && fileLoaded)
             {
@@ -276,7 +274,7 @@ namespace Donuts
 
         private bool CanSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
-            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && maplocation == hotspotTimer.Hotspot.MapName)
+            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && DonutsBotPrep.maplocation == hotspotTimer.Hotspot.MapName)
             {
                 if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
                     (hotspotTimer.Hotspot.WildSpawnType == "scav" && hotspotBoostSCAV.Value))

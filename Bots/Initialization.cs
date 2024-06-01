@@ -20,7 +20,6 @@ namespace Donuts
 {
     internal class Initialization
     {
-        internal static string selectionName;
         internal static void InitializeStaticVariables()
         {
             fightLocations = new FightLocations()
@@ -49,7 +48,7 @@ namespace Donuts
         internal static void SetupBotLimit(string folderName)
         {
             Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
-            switch (maplocation)
+            switch (DonutsBotPrep.maplocation)
             {
                 case "factory4_day":
                 case "factory4_night":
@@ -135,11 +134,9 @@ namespace Donuts
 
                 string jsonFolderPath = Path.Combine(directoryPath, "patterns");
 
-                var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
+                SetupBotLimit(DonutsBotPrep.selectionName);
 
-                SetupBotLimit(selectionName);
-
-                if (selectionName == null)
+                if (DonutsBotPrep.selectionName == null)
                 {
                     var txt = "Donuts Plugin: No valid Scenario Selection found for map";
                     DonutComponent.Logger.LogError(txt);
@@ -148,7 +145,7 @@ namespace Donuts
                     return;
                 }
 
-                string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
+                string PatternFolderPath = Path.Combine(jsonFolderPath, DonutsBotPrep.selectionName);
 
                 if (!Directory.Exists(PatternFolderPath))
                 {
@@ -195,7 +192,7 @@ namespace Donuts
 
                 fightLocations = new FightLocations { Locations = combinedLocations };
 
-                fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
+                fightLocations.Locations.RemoveAll(x => x.MapName != DonutsBotPrep.maplocation);
 
                 if (fightLocations.Locations.Count == 0)
                 {

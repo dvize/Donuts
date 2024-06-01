@@ -131,7 +131,7 @@ namespace Donuts
             {
                 Name = spawnName.Value,
                 GroupNum = groupNum.Value,
-                MapName = DonutComponent.maplocation,
+                MapName = DonutsBotPrep.maplocation,
                 WildSpawnType = wildSpawns.Value,
                 MinDistance = minSpawnDist.Value,
                 MaxDistance = maxSpawnDist.Value,
@@ -197,7 +197,7 @@ namespace Donuts
             {
                 // take the sessionLocations object only and serialize it to json
                 json = JsonConvert.SerializeObject(Donuts.DonutComponent.sessionLocations, Formatting.Indented);
-                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_NewLocOnly.json";
+                fileName = DonutsBotPrep.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_NewLocOnly.json";
             }
             else
             {
@@ -208,7 +208,7 @@ namespace Donuts
                 };
 
                 json = JsonConvert.SerializeObject(combinedLocations, Formatting.Indented);
-                fileName = Donuts.DonutComponent.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_All.json";
+                fileName = DonutsBotPrep.maplocation + "_" + UnityEngine.Random.Range(0, 1000) + "_All.json";
             }
 
             //write json to file with filename == Donuts.DonutComponent.maplocation + random number

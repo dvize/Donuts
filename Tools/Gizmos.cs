@@ -44,7 +44,7 @@ namespace Donuts
             {
                 var newCoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
 
-                if (maplocation == hotspot.MapName && !gizmoMarkers.ContainsKey(newCoordinate))
+                if (DonutsBotPrep.maplocation == hotspot.MapName && !gizmoMarkers.ContainsKey(newCoordinate))
                 {
                     var marker = CreateMarker(newCoordinate, color, primitiveType, hotspot.MaxDistance);
                     gizmoMarkers[newCoordinate] = marker;
