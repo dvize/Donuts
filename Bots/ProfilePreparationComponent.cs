@@ -199,25 +199,43 @@ namespace Donuts
 
         private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation)
         {
-            var mapBotConfig = startingBotConfig.Maps[maplocation].PMC;
-            var difficultiesForSetting = GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesPMC.Value.ToLower());
-            int totalBotCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
-            Logger.LogDebug("totalBotCount: " + totalBotCount);
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+
+            if (DonutsPlugin.forceAllBotType.Value == "SCAV")
+            {
+                await InitializeBotType(startingBotConfig, maplocation, WildSpawnType.assault, EPlayerSide.Savage, DefaultPluginVars.botDifficultiesSCAV.Value.ToLower(), "SCAV");
+            }
+            else
+            {
+                WildSpawnType wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                EPlayerSide side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+
+                await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
+            }
+        }
+
+        private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
+        {
+            var mapBotConfig = startingBotConfig.Maps[maplocation][botType];
+            var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
+            int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            Logger.LogDebug($"{botType} maxBots: {maxBots}");
+
+            int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MaxGroupSize);
             var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
             int totalBots = 0;
 
-            while (totalBots < totalBotCount) 
+            while (totalBots < maxBots)
             {
-                var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
-                int groupSize = UnityEngine.Random.Range(1, mapBotConfig.MaxGroupSize + 1);
-
-                if ((totalBots + groupSize) > totalBotCount)
+                if ((totalBots + groupSize) > maxBots)
                 {
-                    groupSize = totalBotCount - totalBots;
+                    groupSize = maxBots - totalBots;
                 }
 
-                var botInfo = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, groupSize > 1, groupSize);
+                var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
+                var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
                 await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
                 BotInfos.Add(botInfo);
 
@@ -230,37 +248,59 @@ namespace Donuts
             }
         }
 
+        private WildSpawnType GetPMCWildSpawnType(WildSpawnType sptUsec, WildSpawnType sptBear)
+        {
+            if (DonutsPlugin.pmcFaction.Value == "Default")
+            {
+                return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
+            }
+            else if (DonutsPlugin.pmcFaction.Value == "USEC")
+            {
+                return sptUsec;
+            }
+            else if (DonutsPlugin.pmcFaction.Value == "BEAR")
+            {
+                return sptBear;
+            }
+            return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear); // Default fallback
+        }
+
+        private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        {
+            if (wildSpawnType == sptUsec)
+            {
+                return EPlayerSide.Usec;
+            }
+            else if (wildSpawnType == sptBear)
+            {
+                return EPlayerSide.Bear;
+            }
+            return EPlayerSide.Usec; // Default fallback
+        }
+
         private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
         {
-            var mapBotConfig = startingBotConfig.Maps[maplocation].SCAV;
-            var difficultiesForSetting = GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesSCAV.Value.ToLower());
-            int totalBotCount = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
-            Logger.LogDebug("totalBotCount: " + totalBotCount);
-            var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
+            WildSpawnType wildSpawnType;
+            EPlayerSide side;
+            string difficultySetting;
 
-            int totalBots = 0;
-
-            while (totalBots < totalBotCount) 
+            if (DonutsPlugin.forceAllBotType.Value == "PMC")
             {
-                var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
-                int groupSize = UnityEngine.Random.Range(1, mapBotConfig.MaxGroupSize + 1);
+                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
-                if ((totalBots + groupSize) > totalBotCount)
-                {
-                    groupSize = totalBotCount - totalBots;
-                }
-
-                var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, groupSize > 1, groupSize);
-                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
-                BotInfos.Add(botInfo);
-
-                if (spawnPoints.Any())
-                {
-                    spawnPoints.RemoveAt(0);
-                }
-
-                totalBots += groupSize;
+                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
             }
+            else
+            {
+                wildSpawnType = WildSpawnType.assault;
+                side = EPlayerSide.Savage;
+                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
+            }
+
+            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
         }
 
         private List<BotDifficulty> GetDifficultiesForSetting(string difficultySetting)
