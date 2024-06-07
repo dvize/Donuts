@@ -215,6 +215,31 @@ namespace Donuts
             }
         }
 
+        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        {
+            WildSpawnType wildSpawnType;
+            EPlayerSide side;
+            string difficultySetting;
+
+            if (DonutsPlugin.forceAllBotType.Value == "PMC")
+            {
+                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+
+                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
+            }
+            else
+            {
+                wildSpawnType = WildSpawnType.assault;
+                side = EPlayerSide.Savage;
+                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
+            }
+
+            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
+        }
+
         private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
         {
             var mapBotConfig = startingBotConfig.Maps[maplocation][botType];
@@ -276,31 +301,6 @@ namespace Donuts
                 return EPlayerSide.Bear;
             }
             return EPlayerSide.Usec; // Default fallback
-        }
-
-        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
-        {
-            WildSpawnType wildSpawnType;
-            EPlayerSide side;
-            string difficultySetting;
-
-            if (DonutsPlugin.forceAllBotType.Value == "PMC")
-            {
-                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-
-                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
-                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
-                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
-            }
-            else
-            {
-                wildSpawnType = WildSpawnType.assault;
-                side = EPlayerSide.Savage;
-                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
-            }
-
-            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
         }
 
         private List<BotDifficulty> GetDifficultiesForSetting(string difficultySetting)

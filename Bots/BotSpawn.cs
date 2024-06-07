@@ -457,6 +457,8 @@ namespace Donuts
 
         internal static int getActualBotCount(string pluginGroupChance, int count)
         {
+            InitializeGroupChanceWeights();
+
             if (pluginGroupChance == "None")
             {
                 return 1;
@@ -527,6 +529,22 @@ namespace Donuts
                 }
             }
             return maxCount - 1;
+        }
+
+        internal static void InitializeGroupChanceWeights()
+        {
+            int[] defaultWeights = ParseGroupWeightDistro(groupWeightDistroDefault.Value);
+            int[] lowWeights = ParseGroupWeightDistro(groupWeightDistroLow.Value);
+            int[] highWeights = ParseGroupWeightDistro(groupWeightDistroHigh.Value);
+
+            groupChanceWeights["Default"] = defaultWeights;
+            groupChanceWeights["Low"] = lowWeights;
+            groupChanceWeights["High"] = highWeights;
+        }
+
+        internal static int[] ParseGroupWeightDistro(string weightsString)
+        {
+            return weightsString.Split(',').Select(int.Parse).ToArray();
         }
 
         #endregion
