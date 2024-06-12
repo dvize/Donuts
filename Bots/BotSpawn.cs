@@ -32,6 +32,58 @@ namespace Donuts
             return groupPoint.CorePointInGame;
         }
 
+        internal static async UniTask SpawnBotsFromInfo(List<BotSpawnInfo> botSpawnInfos)
+        {
+            foreach (var botSpawnInfo in botSpawnInfos)
+            {
+                await SpawnStartingBots(botSpawnInfo);
+            }
+        }
+
+        internal static async UniTask SpawnStartingBots(BotSpawnInfo botSpawnInfo)
+        {
+            var wildSpawnType = botSpawnInfo.BotType;
+            var side = botSpawnInfo.Faction;
+            var groupSize = botSpawnInfo.GroupSize;
+            var coordinates = botSpawnInfo.Coordinates;
+            var botDifficulty = botSpawnInfo.Difficulty;
+
+            var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, groupSize);
+            if (cachedBotGroup == null)
+            {
+                Logger.LogError("Cached bot group not found, which should not happen. Check bot initialization logic.");
+                return;
+            }
+
+            foreach (var coordinate in coordinates)
+            {
+                await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize);
+            }
+        }
+
+        internal static async UniTask ActivateStartingBots(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, BotDifficulty botDifficulty, int maxCount)
+        {
+            if (botCacheElement != null)
+            {
+                var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out _);
+                var closestCorePoint = GetClosestCorePoint(spawnPosition);
+                botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
+
+#if DEBUG
+                Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position)} " +
+                                  $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
+#endif
+
+                var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
+                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+            }
+            else
+            {
+                Logger.LogError("Attempted to spawn a group bot but the botCacheElement was null.");
+            }
+        }
+
         internal static async UniTask SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
         {
             string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;

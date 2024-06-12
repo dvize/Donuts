@@ -248,6 +248,8 @@ namespace Donuts
             Logger.LogDebug($"{botType} maxBots: {maxBots}");
 
             int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MaxGroupSize);
+
+            // gets random spawn points, depending on StartingBots cfg, for all starting bots
             var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
             int totalBots = 0;
@@ -260,14 +262,25 @@ namespace Donuts
                 }
 
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
+                var coordinates = new List<Vector3>();
+
+                for (int i = 0; i < groupSize; i++)
+                {
+                    if (spawnPoints.Any())
+                    {
+                        coordinates.Add(spawnPoints[0]);
+                        spawnPoints.RemoveAt(0);
+                    }
+                }
+
+                // Add data to bot cache, this is required
                 var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
                 await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
                 BotInfos.Add(botInfo);
 
-                if (spawnPoints.Any())
-                {
-                    spawnPoints.RemoveAt(0);
-                }
+                // Starting Bots data for actually spawning them into raids
+                var botSpawnInfo = new BotSpawnInfo(wildSpawnType, groupSize, coordinates, difficulty, side);
+                botSpawnInfos.Add(botSpawnInfo);
 
                 totalBots += groupSize;
             }
