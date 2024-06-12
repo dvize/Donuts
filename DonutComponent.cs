@@ -39,6 +39,8 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
+        internal static bool hasSpawnedStartingBots = false;
+        internal static List<BotSpawnInfo> botSpawnInfos;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
         internal static int PMCBotLimit = 0;
@@ -212,6 +214,19 @@ namespace Donuts
 
         private async UniTask StartSpawnProcess()
         {
+            if (!hasSpawnedStartingBots)
+            {
+                if (botSpawnInfos != null && botSpawnInfos.Any())
+                {
+                    await BotSpawn.SpawnBotsFromInfo(botSpawnInfos);
+                    hasSpawnedStartingBots = true;
+                }
+                else
+                {
+                    Logger.LogError("botSpawnInfos is not defined or empty. Cannot call SpawnBotsFromInfo.");
+                }
+            }
+
             if (DespawnEnabledPMC.Value)
             {
                 await DespawnFurthestBot("pmc");
