@@ -51,7 +51,7 @@ namespace Donuts
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, groupSize);
             if (cachedBotGroup == null)
             {
-                Logger.LogError("Cached bot group not found, which should not happen. Check bot initialization logic.");
+                DonutComponent.Logger.LogError("Cached bot group not found, which should not happen. Check bot initialization logic.");
                 return;
             }
 
@@ -71,7 +71,7 @@ namespace Donuts
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
 #if DEBUG
-                Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position)} " +
+                DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position)} " +
                                   $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
 #endif
 
@@ -80,7 +80,7 @@ namespace Donuts
             }
             else
             {
-                Logger.LogError("Attempted to spawn a group bot but the botCacheElement was null.");
+                DonutComponent.Logger.LogError("Attempted to spawn a group bot but the botCacheElement was null.");
             }
         }
 
@@ -104,7 +104,7 @@ namespace Donuts
             await SetupSpawn(hotspotTimer, maxCount, isGroup, wildSpawnType, coordinate);
         }
 
-        private static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
+        public static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
         {
             string groupChance = spawnType == "assault" ? scavGroupChance.Value : pmcGroupChance.Value;
             return getActualBotCount(groupChance, defaultMaxCount);
@@ -192,7 +192,7 @@ namespace Donuts
             return wildSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : wildSpawnType;
         }
 
-        private static WildSpawnType DeterminePMCFactionBasedOnRatio(WildSpawnType sptUsec, WildSpawnType sptBear)
+        public static WildSpawnType DeterminePMCFactionBasedOnRatio(WildSpawnType sptUsec, WildSpawnType sptBear)
         {
             int factionRatio = pmcFactionRatio.Value;
             Random rand = new Random();
@@ -596,7 +596,11 @@ namespace Donuts
 
         internal static int[] ParseGroupWeightDistro(string weightsString)
         {
-            return weightsString.Split(',').Select(int.Parse).ToArray();
+            // Use the Split(char[]) method and manually remove empty entries
+            return weightsString.Split(new char[] { ',' })
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .Select(int.Parse)
+                                .ToArray();
         }
 
         #endregion

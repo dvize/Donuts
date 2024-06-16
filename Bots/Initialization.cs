@@ -134,8 +134,6 @@ namespace Donuts
 
                 string jsonFolderPath = Path.Combine(directoryPath, "patterns");
 
-                SetupBotLimit(DonutsBotPrep.selectionName);
-
                 if (DonutsBotPrep.selectionName == null)
                 {
                     var txt = "Donuts Plugin: No valid Scenario Selection found for map";

@@ -40,7 +40,6 @@ namespace Donuts
         };
 
         internal static bool hasSpawnedStartingBots = false;
-        internal static List<BotSpawnInfo> botSpawnInfos;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
         internal static int PMCBotLimit = 0;
@@ -158,7 +157,7 @@ namespace Donuts
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
-            Logger.LogDebug("Setup DonutsBotPrep.maplocation: " + DonutsBotPrep.maplocation);
+            Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
             Initialization.LoadFightLocations();
             if (PluginEnabled.Value && fileLoaded)
             {
@@ -216,9 +215,9 @@ namespace Donuts
         {
             if (!hasSpawnedStartingBots)
             {
-                if (botSpawnInfos != null && botSpawnInfos.Any())
+                if (DonutsBotPrep.botSpawnInfos != null && DonutsBotPrep.botSpawnInfos.Any())
                 {
-                    await BotSpawn.SpawnBotsFromInfo(botSpawnInfos);
+                    await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos);
                     hasSpawnedStartingBots = true;
                 }
                 else
@@ -494,6 +493,7 @@ namespace Donuts
 
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
             float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
+
             if (Time.time - despawnCooldown < despawnCooldownDuration)
             {
                 return;

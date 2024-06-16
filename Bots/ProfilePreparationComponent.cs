@@ -30,6 +30,8 @@ namespace Donuts
 
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
 
+        internal static List<BotSpawnInfo> botSpawnInfos = new List<BotSpawnInfo>();
+
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
@@ -129,7 +131,9 @@ namespace Donuts
                 mainplayer.BeingHitAction += Mainplayer_BeingHitAction;
             }
 
+            // Get selected preset and setup bot limits now
             selectionName = DonutsPlugin.RunWeightedScenarioSelection();
+            Initialization.SetupBotLimit(selectionName);
 
             var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
             if (startingBotConfig != null)
@@ -202,7 +206,7 @@ namespace Donuts
             WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
-            if (DonutsPlugin.forceAllBotType.Value == "SCAV")
+            if (DefaultPluginVars.forceAllBotType.Value == "SCAV")
             {
                 await InitializeBotType(startingBotConfig, maplocation, WildSpawnType.assault, EPlayerSide.Savage, DefaultPluginVars.botDifficultiesSCAV.Value.ToLower(), "SCAV");
             }
@@ -221,7 +225,7 @@ namespace Donuts
             EPlayerSide side;
             string difficultySetting;
 
-            if (DonutsPlugin.forceAllBotType.Value == "PMC")
+            if (DefaultPluginVars.forceAllBotType.Value == "PMC")
             {
                 WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
                 WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
@@ -242,9 +246,19 @@ namespace Donuts
 
         private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
         {
-            var mapBotConfig = startingBotConfig.Maps[maplocation][botType];
+            var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+            
+            if (botType == "PMC" && maxBots > DonutComponent.PMCBotLimit)
+            {
+                maxBots = DonutComponent.PMCBotLimit;
+            }
+            else if (botType == "SCAV" && maxBots > DonutComponent.SCAVBotLimit)
+            {
+                maxBots = DonutComponent.SCAVBotLimit;
+            }
+
             Logger.LogDebug($"{botType} maxBots: {maxBots}");
 
             int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MaxGroupSize);
@@ -288,15 +302,15 @@ namespace Donuts
 
         private WildSpawnType GetPMCWildSpawnType(WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (DonutsPlugin.pmcFaction.Value == "Default")
+            if (DefaultPluginVars.pmcFaction.Value == "Default")
             {
                 return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
             }
-            else if (DonutsPlugin.pmcFaction.Value == "USEC")
+            else if (DefaultPluginVars.pmcFaction.Value == "USEC")
             {
                 return sptUsec;
             }
-            else if (DonutsPlugin.pmcFaction.Value == "BEAR")
+            else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
             {
                 return sptBear;
             }
