@@ -15,9 +15,18 @@ namespace Donuts
         private bool isResizing = false;
         private Vector2 resizeStartPos;
 
-        internal static GUISkin customSkin;
-        internal static GUISkin originalSkin;
-        private static bool originalSkinCached = false;
+        internal static GUIStyle windowStyle;
+        internal static GUIStyle labelStyle;
+        internal static GUIStyle buttonStyle;
+        internal static GUIStyle activeButtonStyle;
+        internal static GUIStyle subTabButtonStyle;
+        internal static GUIStyle subTabButtonActiveStyle;
+        internal static GUIStyle textFieldStyle;
+        internal static GUIStyle horizontalSliderStyle;
+        internal static GUIStyle horizontalSliderThumbStyle;
+        internal static GUIStyle toggleButtonStyle;
+        internal static GUIStyle tooltipStyle;
+        private static bool stylesInitialized = false;
 
         private void Start()
         {
@@ -28,31 +37,129 @@ namespace Donuts
         {
             if (DefaultPluginVars.showGUI)
             {
-                if (!originalSkinCached)
+                if (!stylesInitialized)
                 {
-                    originalSkin = GUI.skin;
-                    originalSkinCached = true;
+                    InitializeStyles();
+                    stylesInitialized = true;
                 }
 
-                if (customSkin == null)
-                {
-                    CreateCustomSkin();
-                }
+                // Save the current GUI skin
+                GUISkin originalSkin = GUI.skin;
 
-                ApplyCustomSkin(() =>
-                {
-                    windowRect = GUI.Window(123, windowRect, MainWindowFunc, "Donuts Configuration");
-                    GUI.FocusWindow(123);
+                windowRect = GUI.Window(123, windowRect, MainWindowFunc, "Donuts Configuration", windowStyle);
+                GUI.FocusWindow(123);
 
-                    if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
+                if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
+                {
+                    if (windowRect.Contains(Event.current.mousePosition))
                     {
-                        if (windowRect.Contains(Event.current.mousePosition))
-                        {
-                            Event.current.Use();
-                        }
+                        Event.current.Use();
                     }
-                });
+                }
+                
+                // Restore the original GUI skin
+                GUI.skin = originalSkin;
             }
+        }
+
+        public static void InitializeStyles()
+        {
+            var windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f));
+            var buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));
+            var buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));
+            var buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));
+            var subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));
+            var subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));
+            var subTabActiveTex = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f));
+            var toggleEnabledTex = MakeTex(1, 1, Color.red);
+            var toggleDisabledTex = MakeTex(1, 1, Color.gray);
+
+            windowStyle = new GUIStyle(GUI.skin.window)
+            {
+                normal = { background = windowBackgroundTex, textColor = Color.white },
+                focused = { background = windowBackgroundTex, textColor = Color.white },
+                active = { background = windowBackgroundTex, textColor = Color.white },
+                hover = { background = windowBackgroundTex, textColor = Color.white },
+                onNormal = { background = windowBackgroundTex, textColor = Color.white },
+                onFocused = { background = windowBackgroundTex, textColor = Color.white },
+                onActive = { background = windowBackgroundTex, textColor = Color.white },
+                onHover = { background = windowBackgroundTex, textColor = Color.white },
+            };
+
+            labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = Color.white },
+                fontSize = 20,
+                fontStyle = FontStyle.Bold,
+            };
+
+            buttonStyle = new GUIStyle(GUI.skin.button)
+            {
+                normal = { background = buttonNormalTex, textColor = Color.white },
+                hover = { background = buttonHoverTex, textColor = Color.white },
+                active = { background = buttonActiveTex, textColor = Color.white },
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+
+            activeButtonStyle = new GUIStyle(buttonStyle)
+            {
+                normal = { background = buttonActiveTex, textColor = Color.yellow },
+                hover = { background = buttonHoverTex, textColor = Color.yellow },
+                active = { background = buttonActiveTex, textColor = Color.yellow },
+            };
+
+            subTabButtonStyle = new GUIStyle(buttonStyle)
+            {
+                normal = { background = subTabNormalTex, textColor = Color.white },
+                hover = { background = subTabHoverTex, textColor = Color.white },
+                active = { background = subTabActiveTex, textColor = Color.white },
+            };
+
+            subTabButtonActiveStyle = new GUIStyle(subTabButtonStyle)
+            {
+                normal = { background = subTabActiveTex, textColor = Color.yellow },
+                hover = { background = subTabHoverTex, textColor = Color.yellow },
+                active = { background = subTabActiveTex, textColor = Color.yellow },
+            };
+
+            textFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                fontSize = 18,
+                normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
+            };
+
+            horizontalSliderStyle = new GUIStyle(GUI.skin.horizontalSlider);
+            horizontalSliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                normal = { background = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f)) }
+            };
+
+            toggleButtonStyle = new GUIStyle(GUI.skin.toggle)
+            {
+                normal = { background = toggleDisabledTex, textColor = Color.white },
+                onNormal = { background = toggleEnabledTex, textColor = Color.white },
+                hover = { background = toggleDisabledTex, textColor = Color.white },
+                onHover = { background = toggleEnabledTex, textColor = Color.white },
+                active = { background = toggleDisabledTex, textColor = Color.white },
+                onActive = { background = toggleEnabledTex, textColor = Color.white },
+                focused = { background = toggleDisabledTex, textColor = Color.white },
+                onFocused = { background = toggleEnabledTex, textColor = Color.white },
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(10, 10, 10, 10),
+                margin = new RectOffset(0, 0, 0, 0)
+            };
+
+            tooltipStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 18,
+                wordWrap = true,
+                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white },
+                fontStyle = FontStyle.Bold
+            };
         }
 
         private void Update()
@@ -95,10 +202,10 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             for (int i = 0; i < DefaultPluginVars.tabNames.Length; i++)
             {
-                GUIStyle currentStyle = customSkin.button;
+                GUIStyle currentStyle = PluginGUIHelper.buttonStyle;
                 if (DefaultPluginVars.selectedTabIndex == i)
                 {
-                    currentStyle = customSkin.customStyles[1];
+                    currentStyle = PluginGUIHelper.activeButtonStyle;
                 }
 
                 if (GUILayout.Button(DefaultPluginVars.tabNames[i], currentStyle))
@@ -137,7 +244,7 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            GUIStyle greenButtonStyle = new GUIStyle(GUI.skin.button)
+            GUIStyle greenButtonStyle = new GUIStyle(buttonStyle)
             {
                 normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 0.0f)), textColor = Color.white },
                 fontSize = 20,
@@ -230,133 +337,6 @@ namespace Donuts
             }
         }
 
-        private static void CreateCustomSkin()
-        {
-            var windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f));
-            var buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));
-            var buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));
-            var buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));
-            var subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));
-            var subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));
-            var subTabActiveTex = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f));
-
-            customSkin = ScriptableObject.CreateInstance<GUISkin>();
-
-            customSkin.window = new GUIStyle(GUI.skin.window)
-            {
-                normal = { background = windowBackgroundTex, textColor = Color.white },
-                focused = { background = windowBackgroundTex, textColor = Color.white },
-                active = { background = windowBackgroundTex, textColor = Color.white },
-                hover = { background = windowBackgroundTex, textColor = Color.white },
-                onNormal = { background = windowBackgroundTex, textColor = Color.white },
-                onFocused = { background = windowBackgroundTex, textColor = Color.white },
-                onActive = { background = windowBackgroundTex, textColor = Color.white },
-                onHover = { background = windowBackgroundTex, textColor = Color.white },
-            };
-
-            customSkin.label = new GUIStyle(GUI.skin.label)
-            {
-                normal = { textColor = Color.white },
-                fontSize = 20,
-                fontStyle = FontStyle.Bold,
-            };
-
-            customSkin.button = new GUIStyle(GUI.skin.button)
-            {
-                normal = { background = buttonNormalTex, textColor = Color.white },
-                hover = { background = buttonHoverTex, textColor = Color.white },
-                active = { background = buttonActiveTex, textColor = Color.white },
-                fontSize = 22,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-
-            var activeButtonStyle = new GUIStyle(customSkin.button)
-            {
-                normal = { background = buttonActiveTex, textColor = Color.yellow },
-                hover = { background = buttonHoverTex, textColor = Color.yellow },
-                active = { background = buttonActiveTex, textColor = Color.yellow },
-            };
-
-            var subTabButtonStyle = new GUIStyle(customSkin.button)
-            {
-                normal = { background = subTabNormalTex, textColor = Color.white },
-                hover = { background = subTabHoverTex, textColor = Color.white },
-                active = { background = subTabActiveTex, textColor = Color.white },
-            };
-
-            var subTabButtonActiveStyle = new GUIStyle(subTabButtonStyle)
-            {
-                normal = { background = subTabActiveTex, textColor = Color.yellow },
-                hover = { background = subTabHoverTex, textColor = Color.yellow },
-                active = { background = subTabActiveTex, textColor = Color.yellow },
-            };
-
-            customSkin.customStyles = new GUIStyle[]
-            {
-                customSkin.button,
-                activeButtonStyle,
-                subTabButtonStyle,
-                subTabButtonActiveStyle,
-                new GUIStyle(GUI.skin.box)
-                {
-                    fontSize = 18,
-                    wordWrap = true,
-                    normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white },
-                    fontStyle = FontStyle.Bold
-                },
-                new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fixedHeight = 25,
-                    fontSize = 18
-                },
-                new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fixedHeight = 25,
-                    fontSize = 18
-                },
-                new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 18,
-                    fontStyle = FontStyle.Bold,
-                    normal = { textColor = Color.white }
-                },
-                new GUIStyle(GUI.skin.button)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fixedHeight = 30,
-                    fontSize = 18,
-                    fontStyle = FontStyle.Bold
-                },
-                new GUIStyle(GUI.skin.textField)
-                {
-                    fontSize = 18,
-                    normal = { textColor = Color.white, background = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f)) }
-                },
-                new GUIStyle(GUI.skin.horizontalSlider),
-                new GUIStyle(GUI.skin.horizontalSliderThumb)
-                {
-                    normal = { background = MakeTex(1, 1, Color.blue) }
-                }
-            };
-
-            CreateToggleButtonTextures();
-        }
-
-        private static void CreateToggleButtonTextures()
-        {
-            customSkin.customStyles[7].normal.background = MakeTex(1, 1, Color.gray);
-            customSkin.customStyles[7].hover.background = MakeTex(1, 1, Color.gray);
-            customSkin.customStyles[7].active.background = MakeTex(1, 1, Color.gray);
-
-            customSkin.customStyles[7].onNormal.background = MakeTex(1, 1, Color.red);
-            customSkin.customStyles[7].onHover.background = MakeTex(1, 1, Color.red);
-            customSkin.customStyles[7].onActive.background = MakeTex(1, 1, Color.red);
-        }
-
         internal static Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];
@@ -368,14 +348,6 @@ namespace Donuts
             result.SetPixels(pix);
             result.Apply();
             return result;
-        }
-
-        public static void ApplyCustomSkin(System.Action drawAction)
-        {
-            var originalSkin = GUI.skin;
-            GUI.skin = customSkin;
-            drawAction();
-            GUI.skin = originalSkin;
         }
 
         public static void ExportConfig()

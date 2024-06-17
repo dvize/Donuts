@@ -29,49 +29,46 @@ namespace Donuts
 
         internal static void Enable()
         {
-            // Apply the custom skin to ensure consistency
-            PluginGUIHelper.ApplyCustomSkin(() =>
+
+            // Initialize the custom styles for the dropdown
+            GUILayout.Space(30);
+            GUILayout.BeginHorizontal();
+
+            // Left-hand navigation menu for sub-tabs
+            GUILayout.BeginVertical(GUILayout.Width(150));
+
+            GUILayout.Space(20);
+            DrawSubTabs();
+            GUILayout.EndVertical();
+
+            // Space between menu and subtab pages
+            GUILayout.Space(40);
+
+            // Right-hand content area for selected sub-tab
+            GUILayout.BeginVertical();
+
+            switch (selectedSpawnMakerSettingsIndex)
             {
-                // Initialize the custom styles for the dropdown
-                GUILayout.Space(30);
-                GUILayout.BeginHorizontal();
+                case 0:
+                    DrawKeybindsTab();
+                    break;
+                case 1:
+                    DrawSpawnSetupTab();
+                    break;
+            }
 
-                // Left-hand navigation menu for sub-tabs
-                GUILayout.BeginVertical(GUILayout.Width(150));
-
-                GUILayout.Space(20);
-                DrawSubTabs();
-                GUILayout.EndVertical();
-
-                // Space between menu and subtab pages
-                GUILayout.Space(40);
-
-                // Right-hand content area for selected sub-tab
-                GUILayout.BeginVertical();
-
-                switch (selectedSpawnMakerSettingsIndex)
-                {
-                    case 0:
-                        DrawKeybindsTab();
-                        break;
-                    case 1:
-                        DrawSpawnSetupTab();
-                        break;
-                }
-
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
-            });
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
         }
 
         private static void DrawSubTabs()
         {
             for (int i = 0; i < spawnMakerSettingsSubTabs.Length; i++)
             {
-                GUIStyle currentStyle = customSkin.customStyles[2]; // subTabButtonStyle
+                GUIStyle currentStyle = subTabButtonStyle; // subTabButtonStyle
                 if (selectedSpawnMakerSettingsIndex == i)
                 {
-                    currentStyle = customSkin.customStyles[3]; // subTabButtonActiveStyle
+                    currentStyle = subTabButtonActiveStyle; // subTabButtonActiveStyle
                 }
 
                 if (GUILayout.Button(spawnMakerSettingsSubTabs[i], currentStyle))
@@ -107,6 +104,7 @@ namespace Donuts
             // First column
             GUILayout.BeginVertical();
 
+            // Define the position and size for the spawnName text field
             spawnName.Value = TextField(spawnName.Name, spawnName.ToolTipText, spawnName.Value);
             GUILayout.Space(10);
 
