@@ -249,14 +249,14 @@ namespace Donuts
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
-            
-            if (botType == "PMC" && maxBots > DonutComponent.PMCBotLimit)
+
+            if (botType == "PMC" && maxBots > Initialization.PMCBotLimit)
             {
-                maxBots = DonutComponent.PMCBotLimit;
+                maxBots = Initialization.PMCBotLimit;
             }
-            else if (botType == "SCAV" && maxBots > DonutComponent.SCAVBotLimit)
+            else if (botType == "SCAV" && maxBots > Initialization.SCAVBotLimit)
             {
-                maxBots = DonutComponent.SCAVBotLimit;
+                maxBots = Initialization.SCAVBotLimit;
             }
 
             Logger.LogDebug($"{botType} maxBots: {maxBots}");

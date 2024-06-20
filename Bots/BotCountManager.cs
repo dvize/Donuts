@@ -57,7 +57,7 @@ namespace Donuts
 
         private static int GetBotLimit(string spawnType)
         {
-            return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
+            return spawnType.Contains("pmc") ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
         }
 
         public static UniTask<int> GetAlivePlayers(string spawnType)

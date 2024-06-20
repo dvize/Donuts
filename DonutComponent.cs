@@ -42,8 +42,6 @@ namespace Donuts
         internal static bool hasSpawnedStartingBots = false;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
-        internal static int PMCBotLimit = 0;
-        internal static int SCAVBotLimit = 0;
         internal static int currentInitialPMCs = 0;
         internal static int currentInitialSCAVs = 0;
 
@@ -164,8 +162,8 @@ namespace Donuts
                 Initialization.InitializeHotspotTimers();
             }
 
-            Logger.LogDebug("Setup PMC Bot limit: " + PMCBotLimit);
-            Logger.LogDebug("Setup SCAV Bot limit: " + SCAVBotLimit);
+            Logger.LogDebug("Setup PMC Bot limit: " + Initialization.PMCBotLimit);
+            Logger.LogDebug("Setup SCAV Bot limit: " + Initialization.SCAVBotLimit);
 
             spawnCheckTimer.Start();
 
@@ -385,15 +383,15 @@ namespace Donuts
             int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
             int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
 
-            if (wildSpawnType == "pmc" && activePMCs >= PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
+            if (wildSpawnType == "pmc" && activePMCs >= Initialization.PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
             {
-                Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {PMCBotLimit}");
+                Logger.LogDebug($"PMC spawn not allowed due to PMC bot limit - skipping this spawn. Active PMCs: {activePMCs}, PMC Bot Limit: {Initialization.PMCBotLimit}");
                 return false;
             }
 
-            if (wildSpawnType == "scav" && activeSCAVs >= SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
+            if (wildSpawnType == "scav" && activeSCAVs >= Initialization.SCAVBotLimit && !hotspotIgnoreHardCapSCAV.Value)
             {
-                Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {SCAVBotLimit}");
+                Logger.LogDebug($"SCAV spawn not allowed due to SCAV bot limit - skipping this spawn. Active SCAVs: {activeSCAVs}, SCAV Bot Limit: {Initialization.SCAVBotLimit}");
                 return false;
             }
 
@@ -560,7 +558,7 @@ namespace Donuts
 
         private async UniTask<bool> ShouldConsiderDespawning(string botType)
         {
-            int botLimit = botType == "pmc" ? PMCBotLimit : SCAVBotLimit;
+            int botLimit = botType == "pmc" ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
             int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
