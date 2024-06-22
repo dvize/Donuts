@@ -64,9 +64,9 @@ namespace Donuts
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
-
-            await SetupScenariosUI();
             ImportConfig();
+            await SetupScenariosUI();
+            
         }
 
         private async Task SetupScenariosUI()
@@ -85,11 +85,16 @@ namespace Donuts
             DefaultPluginVars.pmcScenarioCombinedArray = scenarioValuesList.ToArray();
             DefaultPluginVars.scavScenarioCombinedArray = scavScenarioValuesList.ToArray();
 
+#if DEBUG
+            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
+            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
+#endif
+
             // Dynamically initialize the scenario settings
             DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                DefaultPluginVars.pmcScenarioSelection?.Value ?? "live-like",
+                DefaultPluginVars.pmcScenarioSelectionValue ?? "live-like",
                 "live-like",
                 null,
                 null,
@@ -99,17 +104,12 @@ namespace Donuts
             DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                DefaultPluginVars.scavScenarioSelection?.Value ?? "live-like",
+                DefaultPluginVars.scavScenarioSelectionValue ?? "live-like",
                 "live-like",
                 null,
                 null,
                 DefaultPluginVars.scavScenarioCombinedArray
             );
-
-#if DEBUG
-            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
-            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
-#endif
 
             // Call InitializeDropdownIndices to ensure scenarios are loaded and indices are set
             DrawMainSettings.InitializeDropdownIndices();
@@ -184,7 +184,6 @@ namespace Donuts
             DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
 
             await PopulateScenarioValuesAsync();
-            DrawMainSettings.InitializeDropdownIndices();  // Re-initialize dropdown indices after loading scenarios
         }
 
         private async Task PopulateScenarioValuesAsync()
