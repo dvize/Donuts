@@ -31,6 +31,7 @@ namespace Donuts
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
         internal static new ManualLogSource Logger;
+        private bool isScenariosInitialized = false;
         DonutsPlugin()
         {
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
@@ -75,12 +76,6 @@ namespace Donuts
 
             var scenarioValuesList = DefaultPluginVars.pmcScenarioCombinedArray?.ToList() ?? new List<string>();
             var scavScenarioValuesList = DefaultPluginVars.scavScenarioCombinedArray?.ToList() ?? new List<string>();
-
-            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcScenarios, scenarioValuesList, folder => folder.Name);
-            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcRandomScenarios, scenarioValuesList, folder => folder.RandomScenarioConfig);
-
-            await AddScenarioNamesToListAsync(DefaultPluginVars.scavScenarios, scavScenarioValuesList, folder => folder.Name);
-            await AddScenarioNamesToListAsync(DefaultPluginVars.randomScavScenarios, scavScenarioValuesList, folder => folder.RandomScenarioConfig);
 
             DefaultPluginVars.pmcScenarioCombinedArray = scenarioValuesList.ToArray();
             DefaultPluginVars.scavScenarioCombinedArray = scavScenarioValuesList.ToArray();
@@ -189,7 +184,10 @@ namespace Donuts
         private async Task PopulateScenarioValuesAsync()
         {
             DefaultPluginVars.pmcScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.pmcScenarios, DefaultPluginVars.pmcRandomScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.pmcScenarioCombinedArray.Length} PMC Scenarios and Finished Generating");
+
             DefaultPluginVars.scavScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.scavScenarioCombinedArray.Length} SCAV Scenarios and Finished Generating");
         }
 
         private async Task<string[]> GenerateScenarioValuesAsync(List<Folder> scenarios, List<Folder> randomScenarios)
@@ -228,8 +226,7 @@ namespace Donuts
 
             if (folders == null || folders.Count == 0)
             {
-                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
-                Debug.Break();
+                Logger.LogError("No Donuts Folders found in Scenario Config file at: " + filePath);
                 return new List<Folder>();
             }
 
