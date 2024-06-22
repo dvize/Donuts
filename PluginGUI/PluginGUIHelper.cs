@@ -56,7 +56,7 @@ namespace Donuts
                         Event.current.Use();
                     }
                 }
-                
+
                 // Restore the original GUI skin
                 GUI.skin = originalSkin;
             }

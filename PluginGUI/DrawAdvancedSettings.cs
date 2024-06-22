@@ -12,8 +12,6 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
 
             GUILayout.Space(30);
             GUILayout.BeginHorizontal();
@@ -49,9 +47,9 @@ namespace Donuts
             GUILayout.Space(150);
 
             // Reset to Default Values button
-            GUIStyle redButtonStyle = new GUIStyle(GUI.skin.button)
+            GUIStyle redButtonStyle = new GUIStyle(buttonStyle)
             {
-                normal = { background = ImGUIToolkit.MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f)), textColor = Color.white },
+                normal = { background = MakeTex(1, 1, new Color(0.5f, 0.0f, 0.0f)), textColor = Color.white },
                 fontSize = 20,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
@@ -65,7 +63,9 @@ namespace Donuts
             }
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+
         }
+
         public static void ResetToDefaults()
         {
             foreach (var field in typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
@@ -87,6 +87,7 @@ namespace Donuts
             // Reset dropdown indices for spawn point maker settings
             DrawSpawnPointMaker.InitializeDropdownIndices();
         }
+
         private static void RestartPluginGUIHelper()
         {
             if (DonutsPlugin.pluginGUIHelper != null)
@@ -94,7 +95,6 @@ namespace Donuts
                 DonutsPlugin.pluginGUIHelper.enabled = false;
                 DonutsPlugin.pluginGUIHelper.enabled = true;
             }
-
         }
     }
 }
