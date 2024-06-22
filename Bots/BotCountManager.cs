@@ -67,13 +67,30 @@ namespace Donuts
                 int count = 0;
                 foreach (Player bot in gameWorld.AllAlivePlayersList)
                 {
-                    if (!bot.IsYourPlayer &&
-                        (IsSCAV(bot.Profile.Info.Settings.Role) ||
-                        (IsPMC(bot.Profile.Info.Settings.Role))))
+                    if (!bot.IsYourPlayer)
                     {
-                        count++;
+                        switch (spawnType)
+                        {
+                            case "scav":
+                                if (IsSCAV(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            case "pmc":
+                                if (IsPMC(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            default:
+                                throw new ArgumentException("Invalid spawnType", nameof(spawnType));
+                        }
                     }
                 }
+
                 return count;
             });
         }

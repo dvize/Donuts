@@ -20,6 +20,10 @@ namespace Donuts
 {
     internal class Initialization
     {
+
+        internal static int PMCBotLimit;
+        internal static int SCAVBotLimit;
+
         internal static void InitializeStaticVariables()
         {
             fightLocations = new FightLocations()
@@ -36,8 +40,6 @@ namespace Donuts
             groupedHotspotTimers = new Dictionary<int, List<HotspotTimer>>();
             groupedFightLocations = new List<List<Entry>>();
             hotspotTimers = new List<HotspotTimer>();
-            PMCBotLimit = 0;
-            SCAVBotLimit = 0;
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
 
