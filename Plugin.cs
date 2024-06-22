@@ -104,8 +104,8 @@ namespace Donuts
             DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                DefaultPluginVars.scavScenarioSelectionValue ?? "live-like",
-                "live-like",
+                DefaultPluginVars.scavScenarioSelectionValue ?? "scav-raids",
+                "scav-raids",
                 null,
                 null,
                 DefaultPluginVars.scavScenarioCombinedArray
