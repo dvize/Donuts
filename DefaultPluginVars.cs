@@ -182,6 +182,10 @@ namespace Donuts
         internal static string[] pmcScenarioCombinedArray;
         internal static string[] scavScenarioCombinedArray;
 
+        // Temporarily store the scenario selections to initialize them later
+        internal static string pmcScenarioSelectionValue = null;
+        internal static string scavScenarioSelectionValue = null;
+
         //Default Constructor
         static DefaultPluginVars()
         {
@@ -735,9 +739,6 @@ namespace Donuts
 
             var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
 
-            // Temporarily store the scenario selections to initialize them later
-            string pmcScenarioSelectionValue = null;
-            string scavScenarioSelectionValue = null;
 
             foreach (var field in fields)
             {
@@ -817,7 +818,7 @@ namespace Donuts
             DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                pmcScenarioSelectionValue ?? "live-like",
+                pmcScenarioSelectionValue,
                 "live-like",
                 null,
                 null,
@@ -827,7 +828,7 @@ namespace Donuts
             DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                scavScenarioSelectionValue ?? "live-like",
+                scavScenarioSelectionValue,
                 "live-like",
                 null,
                 null,

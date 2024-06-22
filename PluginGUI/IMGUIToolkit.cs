@@ -293,6 +293,12 @@ namespace Donuts
 
         internal static int FindIndex<T>(Setting<T> setting)
         {
+            if (setting == null)
+            {
+                DonutsPlugin.Logger.LogError("Setting is null.");
+                return -1;
+            }
+
             for (int i = 0; i < setting.Options.Length; i++)
             {
                 if (EqualityComparer<T>.Default.Equals(setting.Options[i], setting.Value))
@@ -300,7 +306,8 @@ namespace Donuts
                     return i;
                 }
             }
-            return 0;
+            DonutsPlugin.Logger.LogError($"Value '{setting.Value}' not found in Options for setting '{setting.Name}'");
+            return -1;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using EFT.Visual;
+﻿using Donuts.Models;
+using EFT.Visual;
 using UnityEngine;
 using static Donuts.ImGUIToolkit;
 using static Donuts.PluginGUIHelper;
@@ -29,7 +30,7 @@ namespace Donuts
         // Need this for dropdowns to show loaded values and also reset to default
         static DrawMainSettings()
         {
-            InitializeDropdownIndices();
+            //InitializeDropdownIndices();
         }
 
         internal static void InitializeDropdownIndices()
@@ -44,23 +45,39 @@ namespace Donuts
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
 
-            if (DefaultPluginVars.pmcScenarioSelection?.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
+            
+
+
+            if (DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
             {
                 pmcScenarioSelectionIndex = FindIndex(DefaultPluginVars.pmcScenarioSelection);
+
+                if (pmcScenarioSelectionIndex == -1)
+                {
+                    DonutsPlugin.Logger.LogError("Warning: pmcScenarioSelectionIndex not found, defaulting to 0");
+                    pmcScenarioSelectionIndex = 0;
+                }
             }
 
-            if (DefaultPluginVars.scavScenarioSelection?.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0)
+            if (DefaultPluginVars.scavScenarioSelection.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0)
             {
                 scavScenarioSelectionIndex = FindIndex(DefaultPluginVars.scavScenarioSelection);
+
+                if (scavScenarioSelectionIndex == -1)
+                {
+                    DonutsPlugin.Logger.LogError("Warning: scavScenarioSelectionIndex not found, defaulting to 0");
+                    scavScenarioSelectionIndex = 0;
+                }
             }
 
             scenariosLoaded = (DefaultPluginVars.pmcScenarioSelection?.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0) &&
                               (DefaultPluginVars.scavScenarioSelection?.Options != null && DefaultPluginVars.scavScenarioSelection.Options.Length > 0);
 
 #if DEBUG
-            //DonutsPlugin.Logger.LogError("scenariosLoaded:" + scenariosLoaded);
+            DonutsPlugin.Logger.LogWarning("scenariosLoaded:" + scenariosLoaded);
 #endif
         }
+
 
         internal static void Enable()
         {
