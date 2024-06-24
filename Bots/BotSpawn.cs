@@ -150,7 +150,7 @@ namespace Donuts
                 DonutComponent.Logger.LogWarning("Found grouped cached bots, spawning them.");
             }
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot.MinSpawnDistanceFromPlayer, hotspotTimer.Hotspot.MaxDistance, hotspotTimer.Hotspot.MinDistance, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
@@ -170,7 +170,7 @@ namespace Donuts
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, sptUsec, sptBear);
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot.MinSpawnDistanceFromPlayer, hotspotTimer.Hotspot.MaxDistance, hotspotTimer.Hotspot.MinDistance, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
