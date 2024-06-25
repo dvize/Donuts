@@ -117,6 +117,7 @@ namespace Donuts
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
+                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
                 OriginalBotSpawnTypes.Remove(bot.Profile.Id);
             };
 
@@ -518,14 +519,15 @@ namespace Donuts
             {
                 botSpawnerClass.OnBotRemoved -= (BotOwner bot) =>
                 {
+                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
                     OriginalBotSpawnTypes.Remove(bot.Profile.Id);
                 };
-            }
 
-            botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
-            {
-                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
-            };
+                botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
+                {
+                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
+                };
+            }
 
             if (mainplayer != null)
             {
