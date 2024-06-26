@@ -39,7 +39,7 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
-        internal static bool hasSpawnedStartingBots = false;
+        internal static bool hasSpawnedStartingBots;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
         internal static int currentInitialPMCs = 0;
@@ -161,6 +161,9 @@ namespace Donuts
             {
                 Initialization.InitializeHotspotTimers();
             }
+
+            // reset starting bots boolean
+            hasSpawnedStartingBots = false;
 
             Logger.LogDebug("Setup PMC Bot limit: " + Initialization.PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + Initialization.SCAVBotLimit);
