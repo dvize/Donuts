@@ -279,13 +279,10 @@ namespace Donuts
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
 
-                for (int i = 0; i < groupSize; i++)
+                if (spawnPoints.Any())
                 {
-                    if (spawnPoints.Any())
-                    {
-                        coordinates.Add(spawnPoints[0]);
-                        spawnPoints.RemoveAt(0);
-                    }
+                    coordinates.Add(spawnPoints[0]);
+                    spawnPoints.RemoveAt(0);
                 }
 
                 // Add data to bot cache, this is required

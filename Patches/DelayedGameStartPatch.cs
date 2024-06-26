@@ -27,10 +27,8 @@ namespace Donuts.Patches
             // Now also wait for all bots to be fully initialized
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             float lastLogTime = Time.time;
-            float startTime = Time.time;
-            float timeoutDuration = 10.0f; // 10 seconds timeout
 
-            while (!DonutsBotPrep.IsBotPreparationComplete && (Time.time - startTime) < timeoutDuration)
+            while (!DonutsBotPrep.IsBotPreparationComplete)
             {
                 yield return new WaitForSeconds(0.1f); // Check every 100ms
 
@@ -41,16 +39,8 @@ namespace Donuts.Patches
                 }
             }
 
-            if (!DonutsBotPrep.IsBotPreparationComplete)
-            {
-                Logger.LogWarning("Donuts is giving up waiting for bot preparation to complete after 10 seconds.");
-            }
-            else
-            {
-                Logger.LogWarning("Donuts bot preparation is complete...");
-            }
-
             // Continue with the original task
+            Logger.LogWarning("Donuts bot preparation is complete...");
             yield return originalTask;
         }
     }
