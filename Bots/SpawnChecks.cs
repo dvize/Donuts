@@ -145,7 +145,7 @@ namespace Donuts
             return !Physics.Raycast(ray, distance, LayerMaskClass.HighPolyWithTerrainMask);
         }
 
-        private static float GetMinDistanceFromPlayer(float hotspotMinDistFromPlayer)
+        private static float GetMinDistanceFromPlayer()
         {
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
@@ -171,7 +171,7 @@ namespace Donuts
             }
         }
 
-        private static float GetMinDistanceFromOtherBots(float hotspotMinDistFromPlayer)
+        private static float GetMinDistanceFromOtherBots()
         {
             switch (DonutsBotPrep.maplocation)
             {
@@ -190,9 +190,9 @@ namespace Donuts
             }
         }
 
-        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, float hotspotMinDistFromPlayer)
+        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position)
         {
-            float minDistanceFromPlayer = GetMinDistanceFromPlayer(hotspotMinDistFromPlayer);
+            float minDistanceFromPlayer = GetMinDistanceFromPlayer();
 
             var tasks = playerList
                 .Where(player => player != null && player.HealthController != null && player.HealthController.IsAlive)
@@ -210,9 +210,9 @@ namespace Donuts
             return results.Any(result => result);
         }
 
-        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position, float hotspotMinDistFromPlayer)
+        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position)
         {
-            float minDistanceFromOtherBots = GetMinDistanceFromOtherBots(hotspotMinDistFromPlayer);
+            float minDistanceFromOtherBots = GetMinDistanceFromOtherBots();
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
 
             var tasks = players
