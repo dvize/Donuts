@@ -340,17 +340,26 @@ namespace Donuts
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "StartingBots.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, "StartingBots.json");
 
             if (File.Exists(jsonFilePath))
             {
                 var jsonString = File.ReadAllText(jsonFilePath);
-                var startingBotsData = JsonConvert.DeserializeObject<List<StartingBotConfig>>(jsonString);
-                return startingBotsData.FirstOrDefault(config => config.Name == selectionName);
+                var startingBotsData = JsonConvert.DeserializeObject<StartingBotConfig>(jsonString);
+                if (startingBotsData != null)
+                {
+                    Logger.LogDebug($"Successfully loaded StartingBots.json for preset: {selectionName}");
+                    return startingBotsData;
+                }
+                else
+                {
+                    Logger.LogError($"Failed to deserialize StartingBots.json for preset: {selectionName}");
+                    return null;
+                }
             }
             else
             {
-                Logger.LogError("StartingBots.json file not found.");
+                Logger.LogError($"StartingBots.json file not found at path: {jsonFilePath}");
                 return null;
             }
         }

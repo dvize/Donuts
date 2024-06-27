@@ -49,55 +49,34 @@ namespace Donuts
 
         internal static void SetupBotLimit(string folderName)
         {
-            Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
-            switch (DonutsBotPrep.maplocation)
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var directoryPath = Path.GetDirectoryName(dllPath);
+            var jsonFilePath = Path.Combine(directoryPath, "patterns", folderName, "MaxBotCaps.json");
+
+            if (!File.Exists(jsonFilePath))
             {
-                case "factory4_day":
-                case "factory4_night":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.FactoryBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.FactoryBotLimit;
-                    break;
-                case "bigmap":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.CustomsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.CustomsBotLimit;
-                    break;
-                case "interchange":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.InterchangeBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.InterchangeBotLimit;
-                    break;
-                case "rezervbase":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ReserveBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ReserveBotLimit;
-                    break;
-                case "laboratory":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LaboratoryBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LaboratoryBotLimit;
-                    break;
-                case "lighthouse":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.LighthouseBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.LighthouseBotLimit;
-                    break;
-                case "shoreline":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.ShorelineBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.ShorelineBotLimit;
-                    break;
-                case "woods":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.WoodsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.WoodsBotLimit;
-                    break;
-                case "tarkovstreets":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.TarkovStreetsBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.TarkovStreetsBotLimit;
-                    break;
-                case "sandbox":
-                    PMCBotLimit = raidFolderSelected.PMCBotLimitPresets.GroundZeroBotLimit;
-                    SCAVBotLimit = raidFolderSelected.SCAVBotLimitPresets.GroundZeroBotLimit;
-                    break;
-                default:
-                    PMCBotLimit = 8;
-                    SCAVBotLimit = 5;
-                    break;
+                Logger.LogError($"MaxBotCaps.json file not found for folder: {folderName}");
+                PMCBotLimit = 8;
+                SCAVBotLimit = 5;
+                return;
             }
+
+            var jsonString = File.ReadAllText(jsonFilePath);
+            var maxBotCaps = JsonConvert.DeserializeObject<MaxBotCaps>(jsonString);
+
+            if (maxBotCaps == null || !maxBotCaps.MaxBotCaps.ContainsKey(DonutsBotPrep.maplocation))
+            {
+                Logger.LogError($"Bot caps not defined for map location: {DonutsBotPrep.maplocation}");
+                PMCBotLimit = 8;
+                SCAVBotLimit = 5;
+                return;
+            }
+
+            var botCaps = maxBotCaps.MaxBotCaps[DonutsBotPrep.maplocation];
+            PMCBotLimit = botCaps.PMC;
+            SCAVBotLimit = botCaps.SCAV;
+
+            Logger.LogInfo($"Bot limits set for {DonutsBotPrep.maplocation}: PMC = {PMCBotLimit}, SCAV = {SCAVBotLimit}");
         }
 
         internal static void InitializeHotspotTimers()
