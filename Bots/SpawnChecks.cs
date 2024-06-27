@@ -71,12 +71,12 @@ namespace Donuts
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspotMinDistFromPlayer));
+                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition));
             }
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
             {
-                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition, hotspotMinDistFromPlayer));
+                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition));
             }
 
             bool[] results = await UniTask.WhenAll(tasks);
@@ -145,7 +145,7 @@ namespace Donuts
             return !Physics.Raycast(ray, distance, LayerMaskClass.HighPolyWithTerrainMask);
         }
 
-        private static float GetMinDistanceFromPlayer()
+        internal static float GetMinDistanceFromPlayer()
         {
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
@@ -171,7 +171,7 @@ namespace Donuts
             }
         }
 
-        private static float GetMinDistanceFromOtherBots()
+        internal static float GetMinDistanceFromOtherBots()
         {
             switch (DonutsBotPrep.maplocation)
             {

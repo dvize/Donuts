@@ -58,15 +58,16 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
-            if (!spawnPosition.HasValue)
-            {
-                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                return;
-            }
 
             foreach (var coordinate in coordinates)
             {
+                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
+                if (!spawnPosition.HasValue)
+                {
+                    DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                    return;
+                }
+
                 await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize);
             }
         }
