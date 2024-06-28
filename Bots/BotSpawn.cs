@@ -95,24 +95,13 @@ namespace Donuts
             }
         }
 
-        internal static async UniTask SpawnBots(HotspotTimer hotspotTimer, Vector3 coordinate)
+        internal static async UniTask SpawnBots(BotWave botWave, Vector3 coordinate, string wildSpawnType)
         {
-            string hotspotSpawnType = hotspotTimer.Hotspot.WildSpawnType;
-            WildSpawnType wildSpawnType = DetermineWildSpawnType(hotspotTimer, hotspotSpawnType);
+            WildSpawnType wildSpawnType = DetermineWildSpawnType(spawnType);
 
-            int maxCount = DetermineMaxBotCount(hotspotSpawnType, hotspotTimer.Hotspot.MaxRandomNumBots);
-            if (hotspotTimer.Hotspot.BotTimerTrigger > 9999)
-            {
-                maxCount = BotCountManager.AllocateBots(hotspotSpawnType, maxCount);
-                if (maxCount == 0)
-                {
-                    DonutComponent.Logger.LogDebug("Starting bot cap reached - no bots can be spawned");
-                    return;
-                }
-            }
-
+            int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MaxGroupSize);
             bool isGroup = maxCount > 1;
-            await SetupSpawn(hotspotTimer, maxCount, isGroup, wildSpawnType, coordinate);
+            await SetupSpawn(botWave, maxCount, isGroup, wildSpawnType, coordinate);
         }
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
@@ -121,20 +110,20 @@ namespace Donuts
             return getActualBotCount(groupChance, defaultMaxCount);
         }
 
-        private static async UniTask SetupSpawn(HotspotTimer hotspotTimer, int maxCount, bool isGroup, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SetupSpawn(BotWave botWave, int maxCount, bool isGroup, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
             DonutComponent.Logger.LogDebug($"Attempting to spawn {(isGroup ? "group" : "solo")} with bot count {maxCount}");
             if (isGroup)
             {
-                await SpawnGroupBots(hotspotTimer, maxCount, wildSpawnType, coordinate);
+                await SpawnGroupBots(botWave, maxCount, wildSpawnType, coordinate);
             }
             else
             {
-                await SpawnSingleBot(hotspotTimer, wildSpawnType, coordinate);
+                await SpawnSingleBot(botWave, wildSpawnType, coordinate);
             }
         }
 
-        private static async UniTask SpawnGroupBots(HotspotTimer hotspotTimer, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnGroupBots(BotWave botWave, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
 #if DEBUG
             DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots.");
@@ -149,7 +138,7 @@ namespace Donuts
             if (cachedBotGroup == null)
             {
 #if DEBUG
-                DonutComponent.Logger.LogWarning($"No grouped cached bots found, generating on the fly for: {hotspotTimer.Hotspot.Name} for {count} grouped number of bots.");
+                DonutComponent.Logger.LogWarning($"No grouped cached bots found, generating on the fly for {count} grouped number of bots.");
 #endif
                 var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, true, count);
                 await DonutsBotPrep.CreateBot(botInfo, true, count);
@@ -162,17 +151,17 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, hotspotTimer.Hotspot.MaxDistance, hotspotTimer.Hotspot.MinDistance, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
                 return;
             }
 
-            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, hotspotTimer);
+            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave);
         }
 
-        private static async UniTask SpawnSingleBot(HotspotTimer hotspotTimer, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnSingleBot(BotWave botWave, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
             DonutComponent.Logger.LogDebug($"Spawning a single bot.");
             WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
@@ -183,24 +172,24 @@ namespace Donuts
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, hotspotTimer.Hotspot.MaxDistance, hotspotTimer.Hotspot.MinDistance, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
                 return;
             }
 
-            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, hotspotTimer);
+            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave);
         }
 
-        private static WildSpawnType DetermineWildSpawnType(HotspotTimer hotspotTimer, string hotspotSpawnType)
+        private static WildSpawnType DetermineWildSpawnType(string wildSpawnType)
         {
             WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
             WildSpawnType wildSpawnType = GetWildSpawnType(
                 forceAllBotType.Value == "PMC" ? "pmc" :
                 forceAllBotType.Value == "SCAV" ? "assault" :
-                hotspotTimer.Hotspot.WildSpawnType, sptUsec, sptBear);
+                wildSpawnType, sptUsec, sptBear);
 
             return wildSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : wildSpawnType;
         }
@@ -294,7 +283,7 @@ namespace Donuts
         #endregion
 
         internal static async UniTask SpawnBotFromCacheOrCreateNew(List<BotCacheClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, HotspotTimer hotspotTimer)
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, BotWave botWave)
         {
 #if DEBUG
             DonutComponent.Logger.LogDebug("Finding Cached Bot");
@@ -303,7 +292,7 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, hotspotTimer);
+                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, botWave);
             }
             else
             {
@@ -314,7 +303,7 @@ namespace Donuts
             }
         }
 
-        private static async UniTask ActivateBotFromCache(BotCacheClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, HotspotTimer hotspotTimer)
+        private static async UniTask ActivateBotFromCache(BotCacheClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotWave botWave)
         {
             var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
             var closestCorePoint = GetClosestCorePoint(spawnPosition);
@@ -322,13 +311,13 @@ namespace Donuts
 
 #if DEBUG
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                                             $"of side: {botCacheElement.Side} for hotspot {hotspotTimer.Hotspot.Name} ");
+                                             $"of side: {botCacheElement.Side}");
 #endif
             await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
         }
 
         internal static async UniTask SpawnBotForGroup(BotCacheClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, HotspotTimer hotspotTimer)
+            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, int maxCount, BotWave botWave)
         {
             if (botCacheElement != null)
             {
@@ -338,7 +327,7 @@ namespace Donuts
 
 #if DEBUG
                 DonutComponent.Logger.LogWarning($"Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
-                                                 $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} at hotspot: {hotspotTimer.Hotspot.Name}");
+                                                 $"of side: {botCacheElement.Side} and difficulty: {botDifficulty}");
 #endif
 
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
@@ -395,7 +384,7 @@ namespace Donuts
             return UniTask.CompletedTask;
         }
 
-        internal static bool IsWithinBotActivationDistance(Entry hotspot, Vector3 position)
+        internal static bool IsWithinBotActivationDistance(BotWave botWave, Vector3 position)
         {
             try
             {
@@ -404,7 +393,7 @@ namespace Donuts
                     if (player?.HealthController == null || !player.HealthController.IsAlive) continue;
 
                     float distanceSquared = (player.Position - position).sqrMagnitude;
-                    float activationDistanceSquared = hotspot.BotTriggerDistance * hotspot.BotTriggerDistance;
+                    float activationDistanceSquared = botWave.TriggerDistance * botWave.TriggerDistance;
 
                     if (distanceSquared <= activationDistanceSquared)
                     {

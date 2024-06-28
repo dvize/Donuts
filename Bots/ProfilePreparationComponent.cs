@@ -136,7 +136,7 @@ namespace Donuts
             selectionName = DonutsPlugin.RunWeightedScenarioSelection();
             Initialization.SetupBotLimit(selectionName);
 
-            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName, maplocation);
             if (startingBotConfig != null)
             {
                 Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));

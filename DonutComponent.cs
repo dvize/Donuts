@@ -39,6 +39,21 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
+        internal Dictionary<string, string> mapLocationDict = new Dictionary<string, string>
+            {
+                {"customs", "bigmap"},
+                {"factory", "factory4_day"},
+                {"factory_night", "factory4_night"},
+                {"streets", "tarkovstreets"},
+                {"reserve", "rezervbase"},
+                {"interchange", "interchange"},
+                {"woods", "woods"},
+                {"groundzero", "sandbox"},
+                {"laboratory", "laboratory"},
+                {"lighthouse", "lighthouse"},
+                {"shoreline", "shoreline"}
+            };
+
         internal static bool hasSpawnedStartingBots;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
@@ -157,12 +172,10 @@ namespace Donuts
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
             Initialization.LoadFightLocations();
-            if (PluginEnabled.Value && fileLoaded)
-            {
-                Initialization.InitializeHotspotTimers();
-            }
 
-            // reset starting bots boolean
+            var botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName, DonutsBotPrep.maplocation);
+
+            // reset starting bots boolean each raid
             hasSpawnedStartingBots = false;
 
             Logger.LogDebug("Setup PMC Bot limit: " + Initialization.PMCBotLimit);
@@ -198,9 +211,16 @@ namespace Donuts
 
             timeSinceLastHit += Time.deltaTime;
 
-            foreach (var hotspotTimer in hotspotTimers)
+            var botWaves = botWaveConfig.Maps[DonutsBotPrep.maplocation];
+
+            foreach (var pmcWave in botWaves.PMC)
             {
-                hotspotTimer.UpdateTimer();
+                pmcWave.UpdateTimer(Time.deltaTime, DefaultPluginVars.coolDownTimer.Value);
+            }
+
+            foreach (var scavWave in botWaves.SCAV)
+            {
+                scavWave.UpdateTimer(Time.deltaTime, DefaultPluginVars.coolDownTimer.Value);
             }
 
             if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
@@ -237,86 +257,81 @@ namespace Donuts
                 await DespawnFurthestBot("scav");
             }
 
-            if (groupedHotspotTimers.Count > 0)
+            // Spawn PMC and SCAV bot waves
+            await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC, "pmc");
+            await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV, "scav");
+        }
+
+        private async UniTask SpawnBotWaves(List<BotWave> botWaves, string wildSpawnType)
+        {
+            bool spawnTriggered = false;
+            var randomIndex = UnityEngine.Random.Range(0, botWaves.Count());
+
+            for (int i = 0; i < botWaves.Count(); i++)
             {
-                foreach (var groupHotspotTimers in groupedHotspotTimers.Values)
+                var index = (randomIndex + i) % botWaves.Count();
+                var botWave = botWaves.ElementAt(index);
+
+                if (botWave.ShouldSpawn())
                 {
-                    if (groupHotspotTimers.Count == 0)
+                    if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                     {
-                        continue;
+                        break;
                     }
 
-                    bool spawnTriggered = false;
-                    var randomIndex = UnityEngine.Random.Range(0, groupHotspotTimers.Count);
+                    // Get coordinates
+                    var spawnPoints = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
 
-                    for (int i = 0; i < groupHotspotTimers.Count; i++)
+                    if (spawnPoints.Any())
                     {
-                        var index = (randomIndex + i) % groupHotspotTimers.Count;
-                        var hotspotTimer = groupHotspotTimers[index];
+                        var coordinate = spawnPoints[0];
 
-                        if (hotspotTimer.ShouldSpawn())
+                        if (CanSpawn(botWave, coordinate, wildSpawnType))
                         {
-                            Vector3 coordinate = new Vector3(hotspotTimer.Hotspot.Position.x, hotspotTimer.Hotspot.Position.y, hotspotTimer.Hotspot.Position.z);
-
-                            if (isInBattle)
-                            {
-                                if (timeSinceLastHit < battleStateCoolDown.Value)
-                                {
-                                    break;
-                                }
-                                else
-                                {
-                                    isInBattle = false;
-                                }
-                            }
-
-                            if (CanSpawn(hotspotTimer, coordinate))
-                            {
-                                await TriggerSpawn(hotspotTimer, coordinate);
-                                spawnTriggered = true;
-                                break;
-                            }
+                            await TriggerSpawn(botWave, coordinate, wildSpawnType);
+                            spawnTriggered = true;
+                            break;
                         }
-                    }
-
-                    if (spawnTriggered)
-                    {
-                        ResetGroupTimers(groupHotspotTimers[0].Hotspot.GroupNum);
                     }
                 }
             }
+
+            if (spawnTriggered)
+            {
+                ResetGroupTimers(botWaves.First().GroupNum, wildSpawnType);
+            }
         }
 
-        private bool CanSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private bool CanSpawn(BotWave botWave, Vector3 coordinate, string wildSpawnType)
         {
-            if (BotSpawn.IsWithinBotActivationDistance(hotspotTimer.Hotspot, coordinate) && DonutsBotPrep.maplocation == hotspotTimer.Hotspot.MapName)
+            if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate) && DonutsBotPrep.maplocation == DonutsBotPrep.maplocation)
             {
-                if ((hotspotTimer.Hotspot.WildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
-                    (hotspotTimer.Hotspot.WildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                if ((wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                    (wildSpawnType == "scav" && hotspotBoostSCAV.Value))
                 {
-                    hotspotTimer.Hotspot.SpawnChance = 100;
+                    botWave.SpawnChance = 100;
                 }
 
-                return UnityEngine.Random.Range(0, 100) < hotspotTimer.Hotspot.SpawnChance;
+                return UnityEngine.Random.Range(0, 100) < botWave.SpawnChance;
             }
             return false;
         }
 
-        private async UniTask TriggerSpawn(HotspotTimer hotspotTimer, Vector3 coordinate)
+        private async UniTask TriggerSpawn(BotWave botWave, Vector3 coordinate, string wildSpawnType)
         {
             if (forceAllBotType.Value != "Disabled")
             {
-                hotspotTimer.Hotspot.WildSpawnType = forceAllBotType.Value.ToLower();
+                wildSpawnType = forceAllBotType.Value.ToLower();
             }
 
             var tasks = new List<UniTask<bool>>();
 
             if (HardCapEnabled.Value)
             {
-                tasks.Add(CheckHardCap(hotspotTimer.Hotspot.WildSpawnType));
+                tasks.Add(CheckHardCap(wildSpawnType));
             }
 
-            tasks.Add(CheckRaidTime(hotspotTimer.Hotspot.WildSpawnType));
+            tasks.Add(CheckRaidTime(wildSpawnType));
 
             bool[] results = await UniTask.WhenAll(tasks);
 
@@ -325,22 +340,66 @@ namespace Donuts
                 return;
             }
 
-            await BotSpawn.SpawnBots(hotspotTimer, coordinate);
-            hotspotTimer.timesSpawned++;
+            await BotSpawn.SpawnBots(botWave, coordinate, wildSpawnType);
+            botWave.TimesSpawned++;
 
-            if (hotspotTimer.timesSpawned >= hotspotTimer.Hotspot.MaxSpawnsBeforeCoolDown)
+            if (botWave.TimesSpawned >= botWave.MaxTriggersBeforeCooldown)
             {
-                hotspotTimer.inCooldown = true;
+                botWave.InCooldown = true;
             }
 
-            ResetGroupTimers(hotspotTimer.Hotspot.GroupNum);
+            ResetGroupTimers(botWave.GroupNum, wildSpawnType);
         }
 
-        public static StartingBotConfig GetStartingBotConfig(string selectionName)
+        public static BotWavesConfig GetBotWavesConfig(string selectionName, string maplocation)
         {
+            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == maplocation).Key;
+
+            if (mapKey == null)
+            {
+                Logger.LogError($"Map location {maplocation} not found in dictionary.");
+                return null;
+            }
+
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, "StartingBots.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapKey}_waves.json");
+
+            if (File.Exists(jsonFilePath))
+            {
+                var jsonString = File.ReadAllText(jsonFilePath);
+                var botWavesData = JsonConvert.DeserializeObject<BotWavesConfig>(jsonString);
+                if (botWavesData != null)
+                {
+                    Logger.LogDebug($"Successfully loaded {mapKey}_waves.json for preset: {selectionName}");
+                    return botWavesData;
+                }
+                else
+                {
+                    Logger.LogError($"Failed to deserialize {mapKey}_waves.json for preset: {selectionName}");
+                    return null;
+                }
+            }
+            else
+            {
+                Logger.LogError($"{mapKey}_waves.json file not found at path: {jsonFilePath}");
+                return null;
+            }
+        }
+
+        public static StartingBotConfig GetStartingBotConfig(string selectionName, string maplocation)
+        {
+            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == maplocation).Key;
+
+            if (mapKey == null)
+            {
+                Logger.LogError($"Map location {maplocation} not found in dictionary.");
+                return null;
+            }
+
+            string dllPath = Assembly.GetExecutingAssembly().Location;
+            string directoryPath = Path.GetDirectoryName(dllPath);
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapKey}_start.json");
 
             if (File.Exists(jsonFilePath))
             {
@@ -348,18 +407,18 @@ namespace Donuts
                 var startingBotsData = JsonConvert.DeserializeObject<StartingBotConfig>(jsonString);
                 if (startingBotsData != null)
                 {
-                    Logger.LogDebug($"Successfully loaded StartingBots.json for preset: {selectionName}");
+                    Logger.LogDebug($"Successfully loaded {mapKey}_start.json for preset: {selectionName}");
                     return startingBotsData;
                 }
                 else
                 {
-                    Logger.LogError($"Failed to deserialize StartingBots.json for preset: {selectionName}");
+                    Logger.LogError($"Failed to deserialize {mapKey}_start.json for preset: {selectionName}");
                     return null;
                 }
             }
             else
             {
-                Logger.LogError($"StartingBots.json file not found at path: {jsonFilePath}");
+                Logger.LogError($"{mapKey}_start.json file not found at path: {jsonFilePath}");
                 return null;
             }
         }
@@ -454,15 +513,37 @@ namespace Donuts
             Logger.LogWarning("RaidTimeLeftTime: " + raidTimeLeftTime + " RaidTimeLeftPercent: " + raidTimeLeftPercent + " HardStopTime: " + hardStopTime + " HardStopPercent: " + hardStopPercent);
             return useTimeBasedHardStop.Value ? raidTimeLeftTime >= hardStopTime : raidTimeLeftPercent >= hardStopPercent;
         }
-        private void ResetGroupTimers(int groupNum)
+
+        private void ResetGroupTimers(int groupNum, string wildSpawnType)
         {
-            foreach (var timer in groupedHotspotTimers[groupNum])
+            IEnumerable<BotWave> waves;
+
+            if (wildSpawnType.Equals("pmc"))
             {
-                timer.ResetTimer();
-                if (timer.Hotspot.IgnoreTimerFirstSpawn)
-                    timer.Hotspot.IgnoreTimerFirstSpawn = false;
+                waves = botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC;
+            }
+            else if (wildSpawnType.Equals("scav"))
+            {
+                waves = botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV;
+            }
+            else
+            {
+                return;
+            }
+
+            foreach (var wave in waves)
+            {
+                if (wave.GroupNum == groupNum)
+                {
+                    wave.TriggerTimer = 0;
+                    if (wave.IgnoreTimerFirstSpawn)
+                    {
+                        wave.IgnoreTimerFirstSpawn = false;
+                    }
+                }
             }
         }
+
         private UniTask<Player> UpdateDistancesAndFindFurthestBot()
         {
             return UniTask.Create(async () =>
