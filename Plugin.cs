@@ -67,7 +67,6 @@ namespace Donuts
             new DelayedGameStartPatch().Enable();
             ImportConfig();
             await SetupScenariosUI();
-            
         }
 
         private async Task SetupScenariosUI()
@@ -123,7 +122,7 @@ namespace Donuts
             {
                 if (IsKeyPressed(escapeKey))
                 {
-                    //check if the config window is open    
+                    //check if the config window is open
                     if (DefaultPluginVars.showGUI)
                     {
                         DefaultPluginVars.showGUI = false;
@@ -173,9 +172,9 @@ namespace Donuts
             var dllPath = Assembly.GetExecutingAssembly().Location;
             var directoryPath = Path.GetDirectoryName(dllPath);
 
-            DefaultPluginVars.pmcScenarios = await LoadFolderNamesAsync(Path.Combine(directoryPath, "patterns"));
+            DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
             DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
-            DefaultPluginVars.scavScenarios = await LoadFolderNamesAsync(Path.Combine(directoryPath, "patterns"));
+            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
             DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
 
             await PopulateScenarioValuesAsync();
@@ -190,26 +189,14 @@ namespace Donuts
             Logger.LogWarning($"Loaded {DefaultPluginVars.scavScenarioCombinedArray.Length} SCAV Scenarios and Finished Generating");
         }
 
-        private async Task<string[]> GenerateScenarioValuesAsync(List<string> scenarios, List<Folder> randomScenarios)
+        private async Task<string[]> GenerateScenarioValuesAsync(List<Folder> scenarios, List<Folder> randomScenarios)
         {
             var valuesList = new List<string>();
 
-            AddScenarioNamesToList(scenarios, valuesList);
+            await AddScenarioNamesToListAsync(scenarios, valuesList, folder => folder.Name);
             await AddScenarioNamesToListAsync(randomScenarios, valuesList, folder => folder.RandomScenarioConfig);
 
             return valuesList.ToArray();
-        }
-
-        private void AddScenarioNamesToList(IEnumerable<string> folders, List<string> valuesList)
-        {
-            if (folders != null)
-            {
-                foreach (var folder in folders)
-                {
-                    Logger.LogWarning($"Adding scenario: {folder}");
-                    valuesList.Add(folder);
-                }
-            }
         }
 
         private async Task AddScenarioNamesToListAsync(IEnumerable<Folder> folders, List<string> valuesList, Func<Folder, string> getNameFunc)
@@ -223,26 +210,6 @@ namespace Donuts
                     valuesList.Add(name);
                 }
             }
-        }
-
-        private static async Task<List<string>> LoadFolderNamesAsync(string directoryPath)
-        {
-            if (!Directory.Exists(directoryPath))
-            {
-                Logger.LogWarning($"Directory not found: {directoryPath}");
-                return new List<string>();
-            }
-
-            var folderNames = await Task.Run(() => Directory.GetDirectories(directoryPath).Select(Path.GetFileName).ToList());
-
-            if (folderNames == null || folderNames.Count == 0)
-            {
-                Logger.LogError("No Donuts Folders found in the patterns directory at: " + directoryPath);
-                return new List<string>();
-            }
-
-            Logger.LogWarning($"Loaded {folderNames.Count} Donuts Scenario Folders");
-            return folderNames;
         }
 
         private static async Task<List<Folder>> LoadFoldersAsync(string filePath)
@@ -266,6 +233,7 @@ namespace Donuts
             return folders;
         }
 
+
         #endregion
 
         #region Donuts Raid Related Scenario Selection Methods
@@ -285,24 +253,14 @@ namespace Donuts
                 {
                     Logger.LogWarning("This is a SCAV raid, using SCAV raid preset selector");
                     scenarioSelection = DefaultPluginVars.scavScenarioSelection.Value;
-
-                    var selectedFolder = DefaultPluginVars.scavScenarios.FirstOrDefault(folder => folder == scenarioSelection)
-                                         ?? DefaultPluginVars.randomScavScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
-
-                    if (selectedFolder != null)
-                    {
-                        return SelectPreset(selectedFolder);
-                    }
                 }
-                else
-                {
-                    var selectedFolder = DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder == scenarioSelection)
-                                         ?? DefaultPluginVars.pmcRandomScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
 
-                    if (selectedFolder != null)
-                    {
-                        return SelectPreset(selectedFolder);
-                    }
+                var selectedFolder = DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == scenarioSelection)
+                                     ?? DefaultPluginVars.pmcRandomScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
+
+                if (selectedFolder != null)
+                {
+                    return SelectPreset(selectedFolder);
                 }
 
                 return null;
@@ -316,7 +274,7 @@ namespace Donuts
 
         private static string SelectPreset(Folder folder)
         {
-            if (folder.presets == null || folder.presets.Count == 0) return folder.RandomScenarioConfig;
+            if (folder.presets == null || folder.presets.Count == 0) return folder.Name;
 
             var totalWeight = folder.presets.Sum(preset => preset.Weight);
             var randomWeight = UnityEngine.Random.Range(0, totalWeight);
@@ -329,7 +287,6 @@ namespace Donuts
 
             return selectedPreset.Name;
         }
-
         private static void LogSelectedPreset(string selectedPreset)
         {
             Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");
@@ -368,4 +325,15 @@ namespace Donuts
         [PatchPrefix]
         public static void PatchPrefix() => DonutComponent.Enable();
     }
+
+
+
+
+
+
+
+
+
+
+
 }
