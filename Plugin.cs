@@ -334,7 +334,7 @@ namespace Donuts
         {
             Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");
 
-            if (DefaultPluginVars.ShowRandomFolderChoice.Value && methodCache.TryGetValue("DisplayMessageNotification", out var displayMessageNotificationMethod))
+            if (DefaultPluginVars.ShowRandomFolderChoice.Value && DonutComponent.methodCache.TryGetValue("DisplayMessageNotification", out var displayMessageNotificationMethod))
             {
                 var txt = $"Donuts Random Selected Preset: {selectedPreset}";
                 EFT.UI.ConsoleScreen.Log(txt);

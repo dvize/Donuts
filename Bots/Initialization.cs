@@ -64,7 +64,7 @@ namespace Donuts
             var jsonString = File.ReadAllText(jsonFilePath);
             var maxBotCaps = JsonConvert.DeserializeObject<MaxBotCaps>(jsonString);
 
-            if (maxBotCaps == null || !maxBotCaps.MaxBotCaps.ContainsKey(DonutsBotPrep.maplocation))
+            if (maxBotCaps == null || !maxBotCaps.MaxBotCapsConfig.ContainsKey(DonutsBotPrep.maplocation))
             {
                 Logger.LogError($"Bot caps not defined for map location: {DonutsBotPrep.maplocation}");
                 PMCBotLimit = 8;
@@ -72,7 +72,7 @@ namespace Donuts
                 return;
             }
 
-            var botCaps = maxBotCaps.MaxBotCaps[DonutsBotPrep.maplocation];
+            var botCaps = maxBotCaps.MaxBotCapsConfig[DonutsBotPrep.maplocation];
             PMCBotLimit = botCaps.PMC;
             SCAVBotLimit = botCaps.SCAV;
 

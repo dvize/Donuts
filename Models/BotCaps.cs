@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Donuts.Models
 {
     public class BotCaps
@@ -8,6 +10,6 @@ namespace Donuts.Models
 
     public class MaxBotCaps
     {
-        public Dictionary<string, BotCaps> MaxBotCaps { get; set; }
+        public Dictionary<string, BotCaps> MaxBotCapsConfig { get; set; }
     }
 }
