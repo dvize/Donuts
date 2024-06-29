@@ -18,8 +18,8 @@ namespace Donuts.Models
 
         // Timer properties
         private float timer;
-        public bool InCooldown { get; private set; }
-        public int TimesSpawned { get; private set; }
+        public bool InCooldown { get; set; }
+        public int TimesSpawned { get; set; }
         private float cooldownTimer;
 
         public BotWave()

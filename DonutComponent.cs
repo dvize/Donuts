@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,7 @@ namespace Donuts
         internal static FightLocations sessionLocations;
 
         internal static List<List<Entry>> groupedFightLocations;
+        internal static BotWavesConfig botWaveConfig;
         internal static Dictionary<int, List<HotspotTimer>> groupedHotspotTimers;
 
         internal List<WildSpawnType> validDespawnListPMC = new List<WildSpawnType>()
@@ -39,7 +41,7 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
-        internal Dictionary<string, string> mapLocationDict = new Dictionary<string, string>
+        internal static Dictionary<string, string> mapLocationDict = new Dictionary<string, string>
             {
                 {"customs", "bigmap"},
                 {"factory", "factory4_day"},
@@ -173,7 +175,7 @@ namespace Donuts
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
             Initialization.LoadFightLocations();
 
-            var botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName, DonutsBotPrep.maplocation);
+            botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName, DonutsBotPrep.maplocation);
 
             // reset starting bots boolean each raid
             hasSpawnedStartingBots = false;
@@ -387,38 +389,21 @@ namespace Donuts
             }
         }
 
-        public static StartingBotConfig GetStartingBotConfig(string selectionName, string maplocation)
+        public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
-            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == maplocation).Key;
-
-            if (mapKey == null)
-            {
-                Logger.LogError($"Map location {maplocation} not found in dictionary.");
-                return null;
-            }
-
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapKey}_start.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, "factory_start.json");
 
             if (File.Exists(jsonFilePath))
             {
                 var jsonString = File.ReadAllText(jsonFilePath);
                 var startingBotsData = JsonConvert.DeserializeObject<StartingBotConfig>(jsonString);
-                if (startingBotsData != null)
-                {
-                    Logger.LogDebug($"Successfully loaded {mapKey}_start.json for preset: {selectionName}");
-                    return startingBotsData;
-                }
-                else
-                {
-                    Logger.LogError($"Failed to deserialize {mapKey}_start.json for preset: {selectionName}");
-                    return null;
-                }
+                return startingBotsData;
             }
             else
             {
-                Logger.LogError($"{mapKey}_start.json file not found at path: {jsonFilePath}");
+                Logger.LogError("StartingBots.json file not found.");
                 return null;
             }
         }

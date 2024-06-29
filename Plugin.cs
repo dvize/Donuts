@@ -174,8 +174,8 @@ namespace Donuts
 
             DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
             DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
-            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
-            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
+            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
 
             await PopulateScenarioValuesAsync();
         }
@@ -287,6 +287,7 @@ namespace Donuts
 
             return selectedPreset.Name;
         }
+
         private static void LogSelectedPreset(string selectedPreset)
         {
             Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");

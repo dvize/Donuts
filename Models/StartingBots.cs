@@ -18,7 +18,6 @@ namespace Donuts.Models
 
     public class StartingBotConfig
     {
-        public string Name { get; set; }
         public Dictionary<string, MapBotConfig> Maps { get; set; }
     }
 }

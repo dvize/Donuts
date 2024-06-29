@@ -97,16 +97,16 @@ namespace Donuts
 
         internal static async UniTask SpawnBots(BotWave botWave, Vector3 coordinate, string wildSpawnType)
         {
-            WildSpawnType wildSpawnType = DetermineWildSpawnType(spawnType);
+            WildSpawnType actualWildSpawnType = DetermineWildSpawnType(wildSpawnType);
 
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MaxGroupSize);
             bool isGroup = maxCount > 1;
-            await SetupSpawn(botWave, maxCount, isGroup, wildSpawnType, coordinate);
+            await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate);
         }
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMaxCount)
         {
-            string groupChance = spawnType == "assault" ? scavGroupChance.Value : pmcGroupChance.Value;
+            string groupChance = spawnType == "scav" ? scavGroupChance.Value : pmcGroupChance.Value;
             return getActualBotCount(groupChance, defaultMaxCount);
         }
 
@@ -181,17 +181,16 @@ namespace Donuts
 
             await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave);
         }
-
-        private static WildSpawnType DetermineWildSpawnType(string wildSpawnType)
+        private static WildSpawnType DetermineWildSpawnType(string spawnType)
         {
             WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            WildSpawnType wildSpawnType = GetWildSpawnType(
+            WildSpawnType determinedSpawnType = GetWildSpawnType(
                 forceAllBotType.Value == "PMC" ? "pmc" :
                 forceAllBotType.Value == "SCAV" ? "assault" :
-                wildSpawnType, sptUsec, sptBear);
+                spawnType, sptUsec, sptBear);
 
-            return wildSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : wildSpawnType;
+            return determinedSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : determinedSpawnType;
         }
 
         public static WildSpawnType DeterminePMCFactionBasedOnRatio(WildSpawnType sptUsec, WildSpawnType sptBear)

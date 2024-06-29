@@ -40,7 +40,7 @@ namespace Donuts
             get; set;
         }
 
-        private AllMapsZoneConfig allMapsZoneConfig;
+        public static AllMapsZoneConfig allMapsZoneConfig;
 
         internal static float timeSinceLastReplenish = 0f;
 
@@ -136,7 +136,7 @@ namespace Donuts
             selectionName = DonutsPlugin.RunWeightedScenarioSelection();
             Initialization.SetupBotLimit(selectionName);
 
-            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName, maplocation);
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
             if (startingBotConfig != null)
             {
                 Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));
@@ -166,7 +166,6 @@ namespace Donuts
 
             IsBotPreparationComplete = true;
         }
-
 
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
         {
