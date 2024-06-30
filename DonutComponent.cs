@@ -282,7 +282,7 @@ namespace Donuts
                         var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
                         var coordinate = spawnPointsDict[randomZone];
 
-                        if (CanSpawn(botWave, coordinate, wildSpawnType))
+                        if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
                         {
                             await TriggerSpawn(botWave, coordinate, wildSpawnType);
                             spawnTriggered = true;
@@ -298,12 +298,14 @@ namespace Donuts
             }
         }
 
-        private bool CanSpawn(BotWave botWave, Vector3 coordinate, string wildSpawnType)
+        private bool CanSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
         {
             if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate) && DonutsBotPrep.maplocation == DonutsBotPrep.maplocation)
             {
-                if ((wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
-                    (wildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                bool isHotspotZone = zone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                    (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
                 {
                     botWave.SpawnChance = 100;
                 }
