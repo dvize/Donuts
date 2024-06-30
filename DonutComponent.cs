@@ -263,27 +263,24 @@ namespace Donuts
         private async UniTask SpawnBotWaves(List<BotWave> botWaves, string wildSpawnType)
         {
             bool spawnTriggered = false;
-            var randomIndex = UnityEngine.Random.Range(0, botWaves.Count());
 
-            for (int i = 0; i < botWaves.Count(); i++)
+            foreach (var botWave in botWaves)
             {
-                var index = (randomIndex + i) % botWaves.Count();
-                var botWave = botWaves.ElementAt(index);
-
                 if (botWave.ShouldSpawn())
                 {
-                    Logger.LogDebug("shouldspawn is true");
                     if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                     {
                         break;
                     }
 
                     // Get coordinates
-                    var spawnPoints = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
+                    var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
 
-                    if (spawnPoints.Any())
+                    if (spawnPointsDict.Any())
                     {
-                        var coordinate = spawnPoints[0];
+                        // Select a random coordinate from any zone
+                        var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
+                        var coordinate = spawnPointsDict[randomZone];
 
                         if (CanSpawn(botWave, coordinate, wildSpawnType))
                         {
@@ -405,16 +402,20 @@ namespace Donuts
             }
         }
 
-        public static List<Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
+        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
         {
             var mapConfig = allMapsZoneConfig.Maps[maplocation];
-            var spawnPoints = new List<Vector3>();
+            var spawnPointsDict = new Dictionary<string, Vector3>();
 
             if (zones.Contains("all"))
             {
-                foreach (var zone in mapConfig.Zones.Values)
+                foreach (var zone in mapConfig.Zones)
                 {
-                    spawnPoints.AddRange(zone.Select(coord => new Vector3(coord.x, coord.y, coord.z)));
+                    var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
+                    if (randomCoord != null)
+                    {
+                        spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                    }
                 }
             }
             else
@@ -423,12 +424,16 @@ namespace Donuts
                 {
                     if (mapConfig.Zones.TryGetValue(zoneName, out var zonePoints))
                     {
-                        spawnPoints.AddRange(zonePoints.Select(coord => new Vector3(coord.x, coord.y, coord.z)));
+                        var randomCoord = zonePoints.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
+                        if (randomCoord != null)
+                        {
+                            spawnPointsDict[zoneName] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                        }
                     }
                 }
             }
 
-            return spawnPoints.OrderBy(_ => UnityEngine.Random.value).ToList();
+            return spawnPointsDict;
         }
 
         private async UniTask<bool> CheckHardCap(string wildSpawnType)

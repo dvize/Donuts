@@ -219,31 +219,6 @@ namespace Donuts
             }
         }
 
-        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
-        {
-            WildSpawnType wildSpawnType;
-            EPlayerSide side;
-            string difficultySetting;
-
-            if (DefaultPluginVars.forceAllBotType.Value == "PMC")
-            {
-                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-
-                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
-                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
-                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
-            }
-            else
-            {
-                wildSpawnType = WildSpawnType.assault;
-                side = EPlayerSide.Savage;
-                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
-            }
-
-            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
-        }
-
         private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
         {
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
@@ -264,7 +239,7 @@ namespace Donuts
             int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MaxGroupSize);
 
             // gets random spawn points, depending on StartingBots cfg, for all starting bots
-            var spawnPoints = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
+            var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
             int totalBots = 0;
 
@@ -278,10 +253,20 @@ namespace Donuts
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
 
-                if (spawnPoints.Any())
+                foreach (var zone in spawnPointsDict.Keys.ToList())
                 {
-                    coordinates.Add(spawnPoints[0]);
-                    spawnPoints.RemoveAt(0);
+                    if (spawnPointsDict.TryGetValue(zone, out var coord))
+                    {
+                        coordinates.Add(coord);
+                        spawnPointsDict.Remove(zone); // Ensure the point is not reused
+                        break; // Remove break if multiple zones needed for each bot spawn
+                    }
+                }
+
+                if (!coordinates.Any())
+                {
+                    Logger.LogError("No spawn points available for bot spawn.");
+                    break;
                 }
 
                 // Add data to bot cache, this is required
