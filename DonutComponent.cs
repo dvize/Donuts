@@ -243,10 +243,6 @@ namespace Donuts
                     await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos);
                     hasSpawnedStartingBots = true;
                 }
-                else
-                {
-                    Logger.LogError("botSpawnInfos is not defined or empty. Cannot call SpawnBotsFromInfo.");
-                }
             }
 
             if (DespawnEnabledPMC.Value)
@@ -276,6 +272,7 @@ namespace Donuts
 
                 if (botWave.ShouldSpawn())
                 {
+                    Logger.LogDebug("shouldspawn is true");
                     if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                     {
                         break;
