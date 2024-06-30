@@ -27,9 +27,6 @@ namespace Donuts
                 {
                     spawnPosition = navHit.position;
 
-                    DonutComponent.Logger.LogDebug(spawnPosition);
-                    DonutComponent.Logger.LogDebug(hotspotMinDistFromPlayer);
-
                     if (await IsValidSpawnPosition(spawnPosition, hotspotMinDistFromPlayer))
                     {
 #if DEBUG
