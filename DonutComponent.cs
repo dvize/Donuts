@@ -341,7 +341,7 @@ namespace Donuts
 
             if (botWave.TimesSpawned >= botWave.MaxTriggersBeforeCooldown)
             {
-                botWave.InCooldown = true;
+                botWave.TriggerCooldown();
             }
 
             ResetGroupTimers(botWave.GroupNum, wildSpawnType);
@@ -383,11 +383,11 @@ namespace Donuts
             }
         }
 
-        public static StartingBotConfig GetStartingBotConfig(string selectionName)
+        public static StartingBotConfig GetStartingBotConfig(string selectionName, string mapName)
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, "factory_start.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_start.json");
 
             if (File.Exists(jsonFilePath))
             {
@@ -503,30 +503,17 @@ namespace Donuts
 
         private void ResetGroupTimers(int groupNum, string wildSpawnType)
         {
-            IEnumerable<BotWave> waves;
-
-            if (wildSpawnType.Equals("pmc"))
-            {
-                waves = botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC;
-            }
-            else if (wildSpawnType.Equals("scav"))
-            {
-                waves = botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV;
-            }
-            else
-            {
-                return;
-            }
+            var waves = wildSpawnType == "pmc" ? botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC : botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV;
 
             foreach (var wave in waves)
             {
                 if (wave.GroupNum == groupNum)
                 {
-                    wave.TriggerTimer = 0;
+                    wave.ResetTimer();
+                    wave.TimesSpawned = 0;
+
                     if (wave.IgnoreTimerFirstSpawn)
-                    {
                         wave.IgnoreTimerFirstSpawn = false;
-                    }
                 }
             }
         }

@@ -136,7 +136,12 @@ namespace Donuts
             selectionName = DonutsPlugin.RunWeightedScenarioSelection();
             Initialization.SetupBotLimit(selectionName);
 
-            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
+            if (maplocation == "factory4_day")
+            {
+                var mapName = "factory4_day";
+            }
+
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName, mapName);
             if (startingBotConfig != null)
             {
                 Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));
