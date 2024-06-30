@@ -136,12 +136,7 @@ namespace Donuts
             selectionName = DonutsPlugin.RunWeightedScenarioSelection();
             Initialization.SetupBotLimit(selectionName);
 
-            if (maplocation == "factory4_day")
-            {
-                var mapName = "factory4_day";
-            }
-
-            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName, mapName);
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
             if (startingBotConfig != null)
             {
                 Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));
@@ -222,6 +217,31 @@ namespace Donuts
 
                 await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
             }
+        }
+
+        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        {
+            WildSpawnType wildSpawnType;
+            EPlayerSide side;
+            string difficultySetting;
+
+            if (DefaultPluginVars.forceAllBotType.Value == "PMC")
+            {
+                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+
+                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
+            }
+            else
+            {
+                wildSpawnType = WildSpawnType.assault;
+                side = EPlayerSide.Savage;
+                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
+            }
+
+            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
         }
 
         private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)

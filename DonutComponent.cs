@@ -175,7 +175,7 @@ namespace Donuts
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
             Initialization.LoadFightLocations();
 
-            botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName, DonutsBotPrep.maplocation);
+            botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName);
 
             // reset starting bots boolean each raid
             hasSpawnedStartingBots = false;
@@ -349,13 +349,13 @@ namespace Donuts
             ResetGroupTimers(botWave.GroupNum, wildSpawnType);
         }
 
-        public static BotWavesConfig GetBotWavesConfig(string selectionName, string maplocation)
+        public static BotWavesConfig GetBotWavesConfig(string selectionName)
         {
-            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == maplocation).Key;
+            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == DonutsBotPrep.maplocation).Key;
 
             if (mapKey == null)
             {
-                Logger.LogError($"Map location {maplocation} not found in dictionary.");
+                Logger.LogError($"Map location {DonutsBotPrep.maplocation} not found in dictionary.");
                 return null;
             }
 
@@ -385,11 +385,11 @@ namespace Donuts
             }
         }
 
-        public static StartingBotConfig GetStartingBotConfig(string selectionName, string mapName)
+        public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_start.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{DonutsBotPrep.maplocation}_start.json");
 
             if (File.Exists(jsonFilePath))
             {
