@@ -50,11 +50,13 @@ namespace Donuts
 
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, groupSize);
 
-            // if it is null, we need to gen on the fly like usual
             if (cachedBotGroup == null)
             {
-                DonutComponent.Logger.LogError("Cached bot group not found, which should not happen. Check bot initialization logic.");
-                return;
+                DonutComponent.Logger.LogDebug("No starting bots found in cache for this spawn, need to generate data on the fly, this may take some time.");
+                var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, groupSize > 1, groupSize);
+                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                DonutsBotPrep.BotInfos.Add(botInfo);
+                cachedBotGroup = botInfo.Bots;
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
