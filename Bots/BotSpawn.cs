@@ -47,7 +47,7 @@ namespace Donuts
             var groupSize = botSpawnInfo.GroupSize;
             var coordinates = botSpawnInfo.Coordinates;
             var botDifficulty = botSpawnInfo.Difficulty;
-            var zone = botSpawnInfo.selectedZone;
+            var zone = botSpawnInfo.Zone;
 
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, groupSize);
 
@@ -55,7 +55,7 @@ namespace Donuts
             {
                 DonutComponent.Logger.LogDebug("No starting bots found in cache for this spawn, need to generate data on the fly, this may take some time.");
                 var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, groupSize > 1, groupSize);
-                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                await DonutsBotPrep.CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
                 DonutsBotPrep.BotInfos.Add(botInfo);
                 cachedBotGroup = botInfo.Bots;
             }
@@ -126,7 +126,7 @@ namespace Donuts
             }
         }
 
-        private static async UniTask SpawnGroupBots(BotWave botWave, int count, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnGroupBots(BotWave botWave, int count, WildSpawnType wildSpawnType, Vector3 coordinate, string zone)
         {
 #if DEBUG
             DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots.");
@@ -164,7 +164,7 @@ namespace Donuts
             await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave, zone);
         }
 
-        private static async UniTask SpawnSingleBot(BotWave botWave, WildSpawnType wildSpawnType, Vector3 coordinate)
+        private static async UniTask SpawnSingleBot(BotWave botWave, WildSpawnType wildSpawnType, Vector3 coordinate, string zone)
         {
             WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;

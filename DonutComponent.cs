@@ -412,13 +412,44 @@ namespace Donuts
             }
         }
 
-        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones, string selectionName)
+        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
         {
-            var mapConfig = allMapsZoneConfig.Maps[maplocation];
             var spawnPointsDict = new Dictionary<string, Vector3>();
 
-            if (zones.Contains("all"))
+            // Check if allMapsZoneConfig is null
+            if (allMapsZoneConfig == null)
             {
+                Logger.LogError("allMapsZoneConfig is null.");
+                return spawnPointsDict;
+            }
+
+            // Handle "start" zones case
+            if (zones.Contains("start"))
+            {
+                if (!allMapsZoneConfig.StartZones.TryGetValue(maplocation, out var startZoneConfig))
+                {
+                    Logger.LogError($"Start zones for map location '{maplocation}' not found in allMapsZoneConfig.");
+                    return spawnPointsDict;
+                }
+
+                foreach (var zone in startZoneConfig)
+                {
+                    var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
+                    if (randomCoord != null)
+                    {
+                        spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                    }
+                }
+            }
+            // Handle "all" zones case
+            else if (zones.Contains("all"))
+            {
+                if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapConfig))
+                {
+                    Logger.LogError($"Map location '{maplocation}' not found in allMapsZoneConfig.");
+                    return spawnPointsDict;
+                }
+
                 foreach (var zone in mapConfig.Zones)
                 {
                     var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
@@ -428,26 +459,15 @@ namespace Donuts
                     }
                 }
             }
-
-            else if (zones.Contains("start"))
-            {
-                var startFiles = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "patterns", selectionName), "*_start.json");
-                foreach (var file in startFiles)
-                {
-                    var jsonString = File.ReadAllText(file);
-                    var startConfig = JsonConvert.DeserializeObject<MapZoneConfig>(jsonString);
-                    foreach (var zone in startConfig.Zones)
-                    {
-                        var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
-                        if (randomCoord != null)
-                        {
-                            spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
-                        }
-                    }
-                }
-            }
+            // Handle specific zones case
             else
             {
+                if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapConfig))
+                {
+                    Logger.LogError($"Map location '{maplocation}' not found in allMapsZoneConfig.");
+                    return spawnPointsDict;
+                }
+
                 foreach (var zoneName in zones)
                 {
                     if (mapConfig.Zones.TryGetValue(zoneName, out var zonePoints))
