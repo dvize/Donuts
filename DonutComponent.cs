@@ -407,12 +407,12 @@ namespace Donuts
             }
             else
             {
-                Logger.LogError("StartingBots.json file not found.");
+                Logger.LogError($"{mapName}_start.json file not found.");
                 return null;
             }
         }
 
-        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
+        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones, string selectionName)
         {
             var mapConfig = allMapsZoneConfig.Maps[maplocation];
             var spawnPointsDict = new Dictionary<string, Vector3>();
@@ -425,6 +425,24 @@ namespace Donuts
                     if (randomCoord != null)
                     {
                         spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                    }
+                }
+            }
+
+            else if (zones.Contains("start"))
+            {
+                var startFiles = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "patterns", selectionName), "*_start.json");
+                foreach (var file in startFiles)
+                {
+                    var jsonString = File.ReadAllText(file);
+                    var startConfig = JsonConvert.DeserializeObject<MapZoneConfig>(jsonString);
+                    foreach (var zone in startConfig.Zones)
+                    {
+                        var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
+                        if (randomCoord != null)
+                        {
+                            spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                        }
                     }
                 }
             }

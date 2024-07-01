@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace Donuts.Models
 {
@@ -21,6 +20,7 @@ namespace Donuts.Models
     public class AllMapsZoneConfig
     {
         public Dictionary<string, MapZoneConfig> Maps { get; set; } = new Dictionary<string, MapZoneConfig>();
+        public Dictionary<string, Dictionary<string, List<Coordinate>>> StartZones { get; set; } = new Dictionary<string, Dictionary<string, List<Coordinate>>>();
 
         public static AllMapsZoneConfig LoadFromDirectory(string directoryPath)
         {
@@ -34,23 +34,44 @@ namespace Donuts.Models
 
                 if (mapConfig != null)
                 {
-                    if (!allMapsConfig.Maps.ContainsKey(mapConfig.MapName))
+                    if (file.EndsWith("_start.json"))
                     {
-                        allMapsConfig.Maps[mapConfig.MapName] = new MapZoneConfig
+                        var mapName = mapConfig.MapName;
+                        if (!allMapsConfig.StartZones.ContainsKey(mapName))
                         {
-                            MapName = mapConfig.MapName,
-                            Zones = new Dictionary<string, List<Coordinate>>()
-                        };
-                    }
-
-                    foreach (var zone in mapConfig.Zones)
-                    {
-                        if (!allMapsConfig.Maps[mapConfig.MapName].Zones.ContainsKey(zone.Key))
-                        {
-                            allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key] = new List<Coordinate>();
+                            allMapsConfig.StartZones[mapName] = new Dictionary<string, List<Coordinate>>();
                         }
 
-                        allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key].AddRange(zone.Value);
+                        foreach (var zone in mapConfig.Zones)
+                        {
+                            if (!allMapsConfig.StartZones[mapName].ContainsKey(zone.Key))
+                            {
+                                allMapsConfig.StartZones[mapName][zone.Key] = new List<Coordinate>();
+                            }
+
+                            allMapsConfig.StartZones[mapName][zone.Key].AddRange(zone.Value);
+                        }
+                    }
+                    else
+                    {
+                        if (!allMapsConfig.Maps.ContainsKey(mapConfig.MapName))
+                        {
+                            allMapsConfig.Maps[mapConfig.MapName] = new MapZoneConfig
+                            {
+                                MapName = mapConfig.MapName,
+                                Zones = new Dictionary<string, List<Coordinate>>()
+                            };
+                        }
+
+                        foreach (var zone in mapConfig.Zones)
+                        {
+                            if (!allMapsConfig.Maps[mapConfig.MapName].Zones.ContainsKey(zone.Key))
+                            {
+                                allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key] = new List<Coordinate>();
+                            }
+
+                            allMapsConfig.Maps[mapConfig.MapName].Zones[zone.Key].AddRange(zone.Value);
+                        }
                     }
                 }
             }
