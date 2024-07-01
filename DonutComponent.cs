@@ -387,7 +387,14 @@ namespace Donuts
 
         public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
-            string mapName = gameWorld.MainPlayer.Location.ToLower();
+
+            var mapName = "";
+
+            if (DonutsBotPrep.maplocation == "factory4_day")
+            {
+                mapName = "factory";
+            }
+
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
             string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_start.json");
