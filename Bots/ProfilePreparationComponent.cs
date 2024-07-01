@@ -277,14 +277,16 @@ namespace Donuts
 
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
+                string selectedZone = null;
 
                 foreach (var zone in spawnPointsDict.Keys.ToList())
                 {
                     if (spawnPointsDict.TryGetValue(zone, out var coord))
                     {
                         coordinates.Add(coord);
-                        spawnPointsDict.Remove(zone); // Ensure the point is not reused
-                        break; // Remove break if multiple zones needed for each bot spawn
+                        selectedZone = zone;
+                        spawnPointsDict.Remove(zone);
+                        break;
                     }
                 }
 
@@ -300,7 +302,7 @@ namespace Donuts
                 BotInfos.Add(botInfo);
 
                 // Starting Bots data for actually spawning them into raids
-                var botSpawnInfo = new BotSpawnInfo(wildSpawnType, groupSize, coordinates, difficulty, side);
+                var botSpawnInfo = new BotSpawnInfo(wildSpawnType, groupSize, coordinates, difficulty, side, selectedZone);
                 botSpawnInfos.Add(botSpawnInfo);
 
                 totalBots += groupSize;

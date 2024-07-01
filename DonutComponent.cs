@@ -284,7 +284,7 @@ namespace Donuts
 
                         if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
                         {
-                            await TriggerSpawn(botWave, coordinate, wildSpawnType);
+                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType);
                             spawnTriggered = true;
                             break;
                         }
@@ -315,7 +315,7 @@ namespace Donuts
             return false;
         }
 
-        private async UniTask TriggerSpawn(BotWave botWave, Vector3 coordinate, string wildSpawnType)
+        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
         {
             if (forceAllBotType.Value != "Disabled")
             {
@@ -338,7 +338,7 @@ namespace Donuts
                 return;
             }
 
-            await BotSpawn.SpawnBots(botWave, coordinate, wildSpawnType);
+            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType);
             botWave.TimesSpawned++;
 
             if (botWave.TimesSpawned >= botWave.MaxTriggersBeforeCooldown)
