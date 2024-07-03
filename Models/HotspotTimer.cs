@@ -26,7 +26,7 @@ namespace Donuts.Models
             if (inCooldown)
             {
                 cooldownTimer += Time.deltaTime;
-                if (cooldownTimer >= DonutsPlugin.coolDownTimer.Value)
+                if (cooldownTimer >= DefaultPluginVars.coolDownTimer.Value)
                 {
                     inCooldown = false;
                     cooldownTimer = 0f;
@@ -36,15 +36,29 @@ namespace Donuts.Models
         }
 
         public float GetTimer() => timer;
+
         public bool ShouldSpawn()
         {
-            if (hotspot.IgnoreTimerFirstSpawn == true)
+            if (inCooldown)
             {
+                return false;
+            }
+
+            if (hotspot.IgnoreTimerFirstSpawn)
+            {
+                hotspot.IgnoreTimerFirstSpawn = false; // Ensure this is only true for the first spawn
                 return true;
             }
+
             return timer >= hotspot.BotTimerTrigger;
         }
 
         public void ResetTimer() => timer = 0f;
+
+        public void TriggerCooldown()
+        {
+            inCooldown = true;
+            cooldownTimer = 0f;
+        }
     }
 }

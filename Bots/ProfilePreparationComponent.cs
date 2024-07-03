@@ -1,46 +1,59 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
 using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
+using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
 using HarmonyLib;
+using Newtonsoft.Json;
 using UnityEngine;
-
-//custom usings
 using BotCacheClass = GClass591;
 using IProfileData = GClass592;
 
 #pragma warning disable IDE0007, CS4014
 
-
 namespace Donuts
 {
     internal class DonutsBotPrep : MonoBehaviour
     {
+        internal static string selectionName;
+        internal static string maplocation;
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
         private static Player mainplayer;
 
-        //use dictionary of profile.id and wildspawntype
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
+
+        internal static List<BotSpawnInfo> botSpawnInfos
+        {
+            get; set;
+        }
 
         private static WildSpawnType sptUsec;
         private static WildSpawnType sptBear;
 
-        public static List<PrepBotInfo> BotInfos { get; set; }
+        private HashSet<string> usedZonesPMC = new HashSet<string>();
+        private HashSet<string> usedZonesSCAV = new HashSet<string>();
+
+        public static List<PrepBotInfo> BotInfos
+        {
+            get; set;
+        }
+
+        public static AllMapsZoneConfig allMapsZoneConfig;
 
         internal static float timeSinceLastReplenish = 0f;
 
         private bool isReplenishing = false;
         public static bool IsBotPreparationComplete { get; private set; } = false;
 
-        private Dictionary<WildSpawnType, EPlayerSide> spawnTypeToSideMapping = new Dictionary<WildSpawnType, EPlayerSide>
+        private readonly Dictionary<WildSpawnType, EPlayerSide> spawnTypeToSideMapping = new Dictionary<WildSpawnType, EPlayerSide>
         {
             { WildSpawnType.arenaFighterEvent, EPlayerSide.Savage },
             { WildSpawnType.assault, EPlayerSide.Savage },
@@ -75,6 +88,7 @@ namespace Donuts
             { WildSpawnType.followerBirdEye, EPlayerSide.Savage },
             { WildSpawnType.bossKnight, EPlayerSide.Savage },
         };
+
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -82,10 +96,7 @@ namespace Donuts
 
         public DonutsBotPrep()
         {
-            if (Logger == null)
-            {
-                Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsBotPrep));
-            }
+            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsBotPrep));
         }
 
         public static void Enable()
@@ -98,11 +109,13 @@ namespace Donuts
 
         public async void Awake()
         {
+            maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
-            mainplayer = gameWorld.MainPlayer;
+            mainplayer = gameWorld?.MainPlayer;
             OriginalBotSpawnTypes = new Dictionary<string, WildSpawnType>();
             BotInfos = new List<PrepBotInfo>();
+            botSpawnInfos = new List<BotSpawnInfo>();
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
 
@@ -111,47 +124,68 @@ namespace Donuts
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
-                // Remove bot from OriginalBotSpawnTypes dictionary
+                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
                 OriginalBotSpawnTypes.Remove(bot.Profile.Id);
             };
 
             botSpawnerClass.OnBotCreated += (BotOwner bot) =>
             {
-                //attach to see if goalenemy is mainplayer, meaning they see us and probably in combat
                 bot.Memory.OnGoalEnemyChanged += Memory_OnGoalEnemyChanged;
             };
 
-            //nullcheck mainplayer, might be too early
             if (mainplayer != null)
             {
                 Logger.LogDebug("Mainplayer is not null, attaching event handlers");
                 mainplayer.BeingHitAction += Mainplayer_BeingHitAction;
             }
 
-            await InitializeAllBotInfos();
+            // Get selected preset and setup bot limits now
+            selectionName = DonutsPlugin.RunWeightedScenarioSelection();
+            Initialization.SetupBotLimit(selectionName);
+
+            var startingBotConfig = DonutComponent.GetStartingBotConfig(selectionName);
+            if (startingBotConfig != null)
+            {
+                Logger.LogDebug("startingBotConfig is not null: " + JsonConvert.SerializeObject(startingBotConfig));
+
+                allMapsZoneConfig = AllMapsZoneConfig.LoadFromDirectory(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "zoneSpawnPoints"));
+
+                if (allMapsZoneConfig == null)
+                {
+                    Logger.LogError("Failed to load AllMapsZoneConfig.");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(maplocation))
+                {
+                    Logger.LogError("Map location is null or empty.");
+                    return;
+                }
+
+                await InitializeAllBotInfos(startingBotConfig, maplocation);
+            }
+            else
+            {
+                Logger.LogError("startingBotConfig is null for selectionName: " + selectionName);
+            }
+
             IsBotPreparationComplete = true;
         }
 
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
         {
-            // null checks for dying bots
             if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null && owner.Memory.HaveEnemy)
             {
-                if (owner.Memory.GoalEnemy.HaveSeenPersonal && owner.Memory.GoalEnemy.IsVisible)
+
+                if (owner.Memory.GoalEnemy.Person == (IPlayer)gameWorld.MainPlayer.InteractablePlayer && owner.Memory.GoalEnemy.HaveSeenPersonal && owner.Memory.GoalEnemy.IsVisible)
                 {
-                    // Stop Replenishing bots when player in combat (when you can be shot at)
-#if DEBUG
-                    Logger.LogWarning("Bot set goal enemy as you, resetting replenishment timer.");
-#endif
                     timeSinceLastReplenish = 0f;
                 }
             }
-
         }
 
         private void Mainplayer_BeingHitAction(DamageInfo arg1, EBodyPart arg2, float arg3)
         {
-            // Stop Replenishing bots when player in combat (when shot at)
             switch (arg1.DamageType)
             {
                 case EDamageType.Btr:
@@ -160,9 +194,6 @@ namespace Donuts
                 case EDamageType.Explosion:
                 case EDamageType.GrenadeFragment:
                 case EDamageType.Sniper:
-#if DEBUG
-                    Logger.LogWarning("You were hit and in active combat, resetting replenishment timer.");
-#endif
                     timeSinceLastReplenish = 0f;
                     break;
                 default:
@@ -170,121 +201,176 @@ namespace Donuts
             }
         }
 
-        private async Task InitializeAllBotInfos()
+        private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation)
         {
-            await Task.WhenAll(InitializeBotInfos(), InitializeScavBotInfos());
+            await UniTask.WhenAll(InitializeBotInfos(startingBotConfig, maplocation), InitializeScavBotInfos(startingBotConfig, maplocation));
         }
 
-        private async Task InitializeBotInfos()
+        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation)
         {
-            string difficultySetting = DonutsPlugin.botDifficultiesPMC.Value.ToLower();
-            string pmcGroupChance = DonutsPlugin.pmcGroupChance.Value;  // Added the group chance retrieval
+            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
-            // Define difficulties that might be configured for each setting
-            List<BotDifficulty> difficultiesForSetting;
+            if (DefaultPluginVars.forceAllBotType.Value == "SCAV")
+            {
+                await InitializeBotType(startingBotConfig, maplocation, WildSpawnType.assault, EPlayerSide.Savage, DefaultPluginVars.botDifficultiesSCAV.Value.ToLower(), "SCAV");
+            }
+            else
+            {
+                WildSpawnType wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                EPlayerSide side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
 
+                await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
+            }
+        }
+
+        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        {
+            WildSpawnType wildSpawnType;
+            EPlayerSide side;
+            string difficultySetting;
+
+            if (DefaultPluginVars.forceAllBotType.Value == "PMC")
+            {
+                WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+                WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+
+                wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
+                side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+                difficultySetting = DefaultPluginVars.botDifficultiesPMC.Value.ToLower();
+            }
+            else
+            {
+                wildSpawnType = WildSpawnType.assault;
+                side = EPlayerSide.Savage;
+                difficultySetting = DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
+            }
+
+            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, difficultySetting, "SCAV");
+        }
+
+        private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
+        {
+            var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
+            var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
+            int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
+
+            if (botType == "PMC" && maxBots > Initialization.PMCBotLimit)
+            {
+                maxBots = Initialization.PMCBotLimit;
+            }
+            else if (botType == "SCAV" && maxBots > Initialization.SCAVBotLimit)
+            {
+                maxBots = Initialization.SCAVBotLimit;
+            }
+
+            int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
+
+            // Get random spawn points, depending on StartingBots cfg, for all starting bots
+            var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
+
+            int totalBots = 0;
+            var usedZones = botType == "PMC" ? usedZonesPMC : usedZonesSCAV;
+
+            while (totalBots < maxBots)
+            {
+                if ((totalBots + groupSize) > maxBots)
+                {
+                    groupSize = maxBots - totalBots;
+                }
+
+                var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
+                var coordinates = new List<Vector3>();
+                string selectedZone = null;
+
+                // Check if all zones are exhausted
+                if (usedZones.Count >= spawnPointsDict.Count)
+                {
+                    // If all zones are exhausted, select a random zone
+                    var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
+                    coordinates.Add(spawnPointsDict[randomZone]);
+                    selectedZone = randomZone;
+                }
+                else
+                {
+                    foreach (var zone in spawnPointsDict.Keys.ToList())
+                    {
+                        if (!usedZones.Contains(zone) && spawnPointsDict.TryGetValue(zone, out var coord))
+                        {
+                            coordinates.Add(coord);
+                            selectedZone = zone;
+                            usedZones.Add(zone); // Mark the zone as used
+                            break;
+                        }
+                    }
+                }
+
+                if (!coordinates.Any())
+                {
+                    Logger.LogError("No spawn points available for bot spawn.");
+                    break;
+                }
+
+                // Add data to bot cache, this is required
+                var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
+                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                BotInfos.Add(botInfo);
+
+                // Starting Bots data for actually spawning them into raids
+                var botSpawnInfo = new BotSpawnInfo(wildSpawnType, groupSize, coordinates, difficulty, side, selectedZone);
+                botSpawnInfos.Add(botSpawnInfo);
+
+                totalBots += groupSize;
+            }
+        }
+
+        private WildSpawnType GetPMCWildSpawnType(WildSpawnType sptUsec, WildSpawnType sptBear)
+        {
+            if (DefaultPluginVars.pmcFaction.Value == "Default")
+            {
+                return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
+            }
+            else if (DefaultPluginVars.pmcFaction.Value == "USEC")
+            {
+                return sptUsec;
+            }
+            else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
+            {
+                return sptBear;
+            }
+            return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear); // Default fallback
+        }
+
+        private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        {
+            if (wildSpawnType == sptUsec)
+            {
+                return EPlayerSide.Usec;
+            }
+            else if (wildSpawnType == sptBear)
+            {
+                return EPlayerSide.Bear;
+            }
+            return EPlayerSide.Usec; // Default fallback
+        }
+
+        private List<BotDifficulty> GetDifficultiesForSetting(string difficultySetting)
+        {
             switch (difficultySetting)
             {
                 case "asonline":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
-                    break;
+                    return new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
                 case "easy":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
-                    break;
+                    return new List<BotDifficulty> { BotDifficulty.easy };
                 case "normal":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
-                    break;
+                    return new List<BotDifficulty> { BotDifficulty.normal };
                 case "hard":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
-                    break;
+                    return new List<BotDifficulty> { BotDifficulty.hard };
                 case "impossible":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
-                    break;
+                    return new List<BotDifficulty> { BotDifficulty.impossible };
                 default:
                     Logger.LogError("Unsupported difficulty setting: " + difficultySetting);
-                    return;
-            }
-
-            int[] groupSizes = DetermineGroupSizes(pmcGroupChance, "PMC");
-
-            foreach (var difficulty in difficultiesForSetting)
-            {
-                if (groupSizes.Length == 0)
-                {
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var botInfoUsec = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, false, 1);
-                        await CreateBot(botInfoUsec, botInfoUsec.IsGroup, botInfoUsec.GroupSize);
-                        BotInfos.Add(botInfoUsec);
-
-                        var botInfoBear = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, false, 1);
-                        await CreateBot(botInfoBear, botInfoBear.IsGroup, botInfoBear.GroupSize);
-                        BotInfos.Add(botInfoBear);
-                    }
-                }
-
-                foreach (int groupSize in groupSizes)
-                {
-                    var botInfoUsecGroup = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, true, groupSize);
-                    await CreateBot(botInfoUsecGroup, botInfoUsecGroup.IsGroup, botInfoUsecGroup.GroupSize);
-                    BotInfos.Add(botInfoUsecGroup);
-
-                    var botInfoBearGroup = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, true, groupSize);
-                    await CreateBot(botInfoBearGroup, botInfoBearGroup.IsGroup, botInfoBearGroup.GroupSize);
-                    BotInfos.Add(botInfoBearGroup);
-                }
-            }
-        }
-
-        private async Task InitializeScavBotInfos()
-        {
-            string difficultySetting = DonutsPlugin.botDifficultiesSCAV.Value.ToLower();
-            string scavGroupChance = DonutsPlugin.scavGroupChance.Value;  // Retrieve the group chance value for SCAV
-
-            List<BotDifficulty> difficultiesForSetting;
-
-            switch (difficultySetting)
-            {
-                case "asonline":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy, BotDifficulty.normal, BotDifficulty.hard };
-                    break;
-                case "easy":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.easy };
-                    break;
-                case "normal":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.normal };
-                    break;
-                case "hard":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.hard };
-                    break;
-                case "impossible":
-                    difficultiesForSetting = new List<BotDifficulty> { BotDifficulty.impossible };
-                    break;
-                default:
-                    Logger.LogWarning("Unsupported difficulty setting for SCAV bots: " + difficultySetting);
-                    return;
-            }
-
-            int[] groupSizes = DetermineGroupSizes(scavGroupChance, "SCAV");
-
-            foreach (var difficulty in difficultiesForSetting)
-            {
-                if (groupSizes.Length == 0)
-                {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, false, 1);
-                        await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
-                        BotInfos.Add(botInfo);
-                    }
-                }
-
-                foreach (int groupSize in groupSizes)
-                {
-                    var botInfo = new PrepBotInfo(WildSpawnType.assault, difficulty, EPlayerSide.Savage, true, groupSize);
-                    await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
-                    BotInfos.Add(botInfo);
-                }
+                    return new List<BotDifficulty>();
             }
         }
 
@@ -293,33 +379,23 @@ namespace Donuts
             switch (botType.ToLower())
             {
                 case "pmc":
-                    switch (groupChance.ToLower())
+                    return groupChance.ToLower() switch
                     {
-                        case "none":
-                            return Array.Empty<int>();
-                        case "low":
-                            return new int[] { 1, 1, 2 };
-                        case "max":
-                            return new int[] { 5, 5 };
-                        case "high":
-                            return new int[] { 3, 4, 5 };
-                        default:
-                            return new int[] { 1, 2, 3 };
-                    }
+                        "none" => Array.Empty<int>(),
+                        "low" => new int[] { 1, 1, 2 },
+                        "max" => new int[] { 5, 5 },
+                        "high" => new int[] { 3, 4, 5 },
+                        _ => new int[] { 1, 2, 3 },
+                    };
                 case "scav":
-                    switch (groupChance.ToLower())
+                    return groupChance.ToLower() switch
                     {
-                        case "none":
-                            return Array.Empty<int>();
-                        case "low":
-                            return new int[] { 1, 2 };
-                        case "max":
-                            return new int[] { 3, 4 };
-                        case "high":
-                            return new int[] { 2, 3 };
-                        default:
-                            return new int[] { 1, 1, 2 };
-                    }
+                        "none" => Array.Empty<int>(),
+                        "low" => new int[] { 1, 2 },
+                        "max" => new int[] { 3, 4 },
+                        "high" => new int[] { 2, 3 },
+                        _ => new int[] { 1, 1, 2 },
+                    };
                 default:
                     throw new ArgumentException("Invalid bot type provided.");
             }
@@ -328,33 +404,32 @@ namespace Donuts
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
-            if (timeSinceLastReplenish >= DonutsPlugin.replenishInterval.Value && !isReplenishing)
+            if (timeSinceLastReplenish >= DefaultPluginVars.replenishInterval.Value && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
-                StartCoroutine(ReplenishAllBots());
+                ReplenishAllBots().Forget();
             }
         }
-        private IEnumerator ReplenishAllBots()
+
+        private async UniTask ReplenishAllBots()
         {
             isReplenishing = true;
             int singleBotsCount = 0;
             int groupBotsCount = 0;
 
-            // Create a copy of BotInfos for safe iteration
             var safeBotInfos = new List<PrepBotInfo>(BotInfos);
+            var tasks = new List<UniTask>();
 
             foreach (var botInfo in safeBotInfos)
             {
                 if (NeedReplenishment(botInfo))
                 {
-                    Task creationTask;
-
                     if (botInfo.IsGroup && groupBotsCount < 1)
                     {
 #if DEBUG
                         Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-                        creationTask = CreateBot(botInfo, true, botInfo.GroupSize);
+                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize));
                         groupBotsCount++;
                     }
                     else if (!botInfo.IsGroup && singleBotsCount < 3)
@@ -362,19 +437,8 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
-                        creationTask = CreateBot(botInfo, false, 1);
+                        tasks.Add(CreateBot(botInfo, false, 1));
                         singleBotsCount++;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    yield return new WaitUntil(() => creationTask.IsCompleted);
-
-                    if (creationTask.Status == TaskStatus.Faulted)
-                    {
-                        Logger.LogError("Bot creation failed: " + creationTask.Exception.ToString());
                     }
 
                     if (singleBotsCount >= 3 && groupBotsCount >= 1)
@@ -382,22 +446,20 @@ namespace Donuts
                 }
             }
 
+            if (tasks.Count > 0)
+            {
+                await UniTask.WhenAll(tasks);
+            }
+
             isReplenishing = false;
         }
 
         private static bool NeedReplenishment(PrepBotInfo botInfo)
         {
-            // Assuming that botInfo.Bots is null or its count is zero when it needs replenishment
             return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
         }
 
-        private async void ReplenishBots(PrepBotInfo botInfo)
-        {
-            // Logic to create bots using await directly here
-            await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
-        }
-
-        internal static async Task CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
+        internal static async UniTask CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
         {
             var botData = new IProfileData(botInfo.Side, botInfo.SpawnType, botInfo.Difficulty, 0f, null);
 #if DEBUG
@@ -420,41 +482,43 @@ namespace Donuts
 
         public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
-#if DEBUG
-            /*Logger.LogDebug("Dumping BotInfos contents:");
-            foreach (var info in BotInfos)
+            if (DonutsBotPrep.BotInfos == null)
             {
-                Logger.LogDebug($"Type: {info.SpawnType}, Difficulty: {info.Difficulty}, Profiles Count: {info.Bots?.Profiles.Count ?? 0}");
-            }*/
-#endif
-
-            // Find the bot info that matches the spawn type and difficulty
-            var botInfo = BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots.Profiles.Count == targetCount);
-
-            if (botInfo != null)
-            {
-                return botInfo.Bots;
+                Logger.LogError("BotInfos is null");
+                return null;
             }
 
-            return null;
+            try
+            {
+                // Find the bot info that matches the spawn type and difficulty
+                var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.SpawnType == spawnType && b.Difficulty == difficulty && b.Bots != null && b.Bots.Profiles.Count == targetCount);
+
+                if (botInfo != null)
+                {
+                    return botInfo.Bots;
+                }
+
+                Logger.LogWarning($"No cached bots found for spawn type {spawnType}, difficulty {difficulty}, and target count {targetCount}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Exception in FindCachedBots: {ex.Message}\n{ex.StackTrace}");
+                return null;
+            }
         }
 
         public static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
-            // Filter the BotInfos list for entries matching the given spawn type and difficulty
             return BotInfos
                 .Where(b => b.SpawnType == spawnType && b.Difficulty == botDifficulty)
-                .Select(b => b.Bots) // Assuming Bots is a BotCacheClass instance.
+                .Select(b => b.Bots)
                 .ToList();
         }
 
-        //return the original wildspawntype of a bot that was converted to a group
         internal static WildSpawnType? GetOriginalSpawnTypeForBot(BotOwner bot)
         {
-            //search originalspawntype dictionary for the bot's profile.id
             var originalProfile = OriginalBotSpawnTypes.First(profile => profile.Key == bot.Profile.Id);
-
-            //if we found the original profile, return the original role
 
             if (originalProfile.Key != null)
             {
@@ -471,45 +535,43 @@ namespace Donuts
                 return null;
             }
         }
-        void OnDestroy()
+
+        private void OnDestroy()
         {
-            // Unsubscribe from the OnBotRemoved event
             if (botSpawnerClass != null)
             {
                 botSpawnerClass.OnBotRemoved -= (BotOwner bot) =>
                 {
+                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
                     OriginalBotSpawnTypes.Remove(bot.Profile.Id);
+                };
+
+                botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
+                {
+                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
                 };
             }
 
-            // Unsubscribe from the OnBotCreated event
-            botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
-            {
-                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
-            };
-
-            // Detach event handler from main player
             if (mainplayer != null)
             {
                 mainplayer.BeingHitAction -= Mainplayer_BeingHitAction;
             }
 
-            StopAllCoroutines();
+            isReplenishing = false;
+            timeSinceLastReplenish = 0;
+            IsBotPreparationComplete = false;
 
-            // Nullify static references to ensure they can be garbage collected
             gameWorld = null;
             botCreator = null;
             botSpawnerClass = null;
             mainplayer = null;
             OriginalBotSpawnTypes = null;
             BotInfos = null;
-            timeSinceLastReplenish = 0;
-            IsBotPreparationComplete = false;
+            botSpawnInfos = null;
+
 #if DEBUG
             Logger.LogWarning("DonutsBotPrep component cleaned up and disabled.");
 #endif
         }
     }
-
 }
-

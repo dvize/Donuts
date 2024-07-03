@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
+using BepInEx.Logging;
 using Donuts.Models;
 using Donuts.Patches;
 using EFT;
+using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -18,737 +21,40 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.4.5")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.5.0")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("com.Arys.UnityToolkit")]
     public class DonutsPlugin : BaseUnityPlugin
     {
-        public static ConfigEntry<bool> PluginEnabled;
-        public static ConfigEntry<float> botTimerTrigger;
-        public static ConfigEntry<float> coolDownTimer;
-        public static ConfigEntry<bool> DespawnEnabledPMC;
-        public static ConfigEntry<bool> DespawnEnabledSCAV;
-        public static ConfigEntry<bool> HardCapEnabled;
-        public static ConfigEntry<bool> hardStopOptionPMC;
-        public static ConfigEntry<bool> hardStopOptionSCAV;
-        public static ConfigEntry<bool> hotspotBoostPMC;
-        public static ConfigEntry<bool> hotspotBoostSCAV;
-        public static ConfigEntry<bool> hotspotIgnoreHardCapPMC;
-        public static ConfigEntry<bool> hotspotIgnoreHardCapSCAV;
-        public static ConfigEntry<int> hardStopTimePMC;
-        public static ConfigEntry<int> hardStopTimeSCAV;
-        public static ConfigEntry<string> forceAllBotType;
-        public static ConfigEntry<float> despawnInterval;
-        public static ConfigEntry<int> pmcFactionRatio;
-        public static ConfigEntry<float> replenishInterval;
-
-        // Global Min Distance From Player
-        public static ConfigEntry<bool> globalMinSpawnDistanceFromPlayerBool;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerFactory;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerCustoms;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerGroundZero;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerInterchange;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerLaboratory;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerLighthouse;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerReserve;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerStreets;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerWoods;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromPlayerShoreline;
-
-        // Global Min Distance From Other Bots
-        public static ConfigEntry<bool> globalMinSpawnDistanceFromOtherBotsBool;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsFactory;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsCustoms;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsGroundZero;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsInterchange;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsLaboratory;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsLighthouse;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsReserve;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsStreets;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsWoods;
-        public static ConfigEntry<float> globalMinSpawnDistanceFromOtherBotsShoreline;
-
-        public static ConfigEntry<bool> DebugGizmos;
-        public static ConfigEntry<bool> gizmoRealSize;
-        public static ConfigEntry<float> battleStateCoolDown;
-        public static ConfigEntry<int> maxSpawnTriesPerBot;
-        public static ConfigEntry<bool> ShowRandomFolderChoice;
-
-        //Add folder scenarios
-        internal static List<Folder> scenarios = new List<Folder>();
-        internal static List<Folder> randomScenarios = new List<Folder>();
-        public static ConfigEntry<string> scenarioSelection;
-        public static ConfigEntry<string> scavScenarioSelection;
-        public string[] scenarioValues = new string[] { };
-
-        public static ConfigEntry<string> pmcGroupChance;
-        public static ConfigEntry<string> scavGroupChance;
-
-        public static ConfigEntry<string> pmcFaction;
-
-        public static ConfigEntry<string> groupWeightDistroLow;
-        public static ConfigEntry<string> groupWeightDistroDefault;
-        public static ConfigEntry<string> groupWeightDistroHigh;
-
-        //bot difficulty
-        public static ConfigEntry<string> botDifficultiesPMC;
-        public static ConfigEntry<string> botDifficultiesSCAV;
-        public static ConfigEntry<string> botDifficultiesOther;
-        public string[] botDiffList = new string[] { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
-
-        // Bot Groups
-        public string[] pmcGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
-        public string[] scavGroupChanceList = new string[] { "None", "Default", "Low", "High", "Max", "Random" };
-
-        public string[] pmcFactionList = new string[] { "Default", "USEC", "BEAR" };
-
-        public string[] forceAllBotTypeList = new string[] { "Disabled", "SCAV", "PMC" };
-
-        public static Dictionary<string, int[]> groupChanceWeights = new Dictionary<string, int[]>
+        internal static PluginGUIHelper pluginGUIHelper;
+        internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
+        internal static KeyCode escapeKey;
+        internal static new ManualLogSource Logger;
+        private bool isScenariosInitialized = false;
+        DonutsPlugin()
         {
-            { "Low", new int[] { 400, 90, 9, 0, 0 } },
-            { "Default", new int[] { 210, 210, 45, 25, 10 } },
-            { "High", new int[] { 0, 75, 175, 175, 75 } }
-        };
-
-        public string ConvertIntArrayToString(int[] array)
-        {
-            return string.Join(",", array);
+            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
         }
-
-        //menu vars
-        public static ConfigEntry<string> spawnName;
-        public static ConfigEntry<int> groupNum;
-        //make groupList of numbers 1-100
-        public static int[] groupList = Enumerable.Range(1, 100).ToArray();
-        public static ConfigEntry<string> wildSpawns;
-
-        public string[] wildDropValues = new string[]
+        private async void Awake()
         {
-            "arenafighterevent",
-            "assault",
-            "assaultgroup",
-            "bossboar",
-            "bossboarsniper",
-            "bossbully",
-            "bossgluhar",
-            "bosskilla",
-            "bossknight",
-            "bosskojaniy",
-            "bosssanitar",
-            "bosstagilla",
-            "bosszryachiy",
-            "crazyassaultevent",
-            "cursedassault",
-            "exusec-rogues",
-            "raiders",
-            "followerbigpipe",
-            "followerbirdeye",
-            "followerboar",
-            "followerbully",
-            "followergluharassault",
-            "followergluharscout",
-            "followergluharsecurity",
-            "followergluharsnipe",
-            "followerkojaniy",
-            "followersanitar",
-            "followertagilla",
-            "followerzryachiy",
-            "gifter",
-            "marksman",
-            "pmc",
-            "sectantpriest",
-            "sectantwarrior",
-            "sptusec",
-            "sptbear"
-        };
-        public static ConfigEntry<float> minSpawnDist;
-        public static ConfigEntry<float> maxSpawnDist;
-        public static ConfigEntry<float> botTriggerDistance;
-        public static ConfigEntry<int> maxRandNumBots;
-        public static ConfigEntry<int> spawnChance;
-        public static ConfigEntry<int> maxSpawnsBeforeCooldown;
-        public static ConfigEntry<bool> ignoreTimerFirstSpawn;
-        public static ConfigEntry<float> minSpawnDistanceFromPlayer;
-
-        public static ConfigEntry<bool> saveNewFileOnly;
-        public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> CreateSpawnMarkerKey;
-
-        public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> WriteToFileKey;
-
-        public static ConfigEntry<BepInEx.Configuration.KeyboardShortcut> DeleteSpawnMarkerKey;
-
-        private void Awake()
-        {
-            //run dependency checker
-
+            // Run dependency checker
             if (!DependencyChecker.ValidateDependencies(Logger, Info, this.GetType(), Config))
             {
                 throw new Exception($"Missing Dependencies");
             }
 
-            string defaultWeightsString = ConvertIntArrayToString(groupChanceWeights["Default"]);
-            string lowWeightsString = ConvertIntArrayToString(groupChanceWeights["Low"]);
-            string highWeightsString = ConvertIntArrayToString(groupChanceWeights["High"]);
+            pluginGUIHelper = gameObject.AddComponent<PluginGUIHelper>();
 
-            //Main Settings
-            PluginEnabled = Config.Bind(
-                "1. Main Settings",
-                "Donuts On/Off",
-                true,
-                new ConfigDescription("Enable/Disable Spawning from Donuts Points",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 16 }));
+            toggleGUIKey = Config.Bind(
+                "Config Settings",
+                "Key To Enable/Disable Config Interface",
+                new KeyboardShortcut(KeyCode.F8),
+                "Key to Enable/Disable Donuts Configuration Menu");
 
-            DespawnEnabledPMC = Config.Bind(
-                "1. Main Settings",
-                "Despawn PMCs",
-                true,
-                new ConfigDescription("When enabled, removes furthest PMC bots from player for each new dynamic spawn bot that is over your Donuts bot caps (ScenarioConfig.json).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
+            escapeKey = KeyCode.Escape;
 
-            DespawnEnabledSCAV = Config.Bind(
-                "1. Main Settings",
-                "Despawn SCAVs",
-                true,
-                new ConfigDescription("When enabled, removes furthest SCAV bots from player for each new dynamic spawn bot that is over your Donuts bot caps (ScenarioConfig.json).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 15 }));
-
-            HardCapEnabled = Config.Bind(
-                "1. Main Settings",
-                "Bot Hard Cap Option",
-                false,
-                new ConfigDescription("When enabled, all bot spawns will be hard capped by your preset caps. In other words, if your bot count is at the total Donuts cap then no more bots will spawn until one dies (vanilla SPT behavior).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 14 }));
-
-            coolDownTimer = Config.Bind(
-                "1. Main Settings",
-                "Cool Down Timer",
-                300f,
-                new ConfigDescription("Cool Down Timer for after a spawn has successfully spawned a bot the spawn marker's MaxSpawnsBeforeCoolDown",
-                new AcceptableValueRange<float>(0f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 13 }));
-
-            pmcGroupChance = Config.Bind(
-                "1. Main Settings",
-                "Donuts PMC Group Chance",
-                "Default",
-                new ConfigDescription("Setting to determine the odds of PMC groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details.",
-                new AcceptableValueList<string>(pmcGroupChanceList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 12 }));
-
-            scavGroupChance = Config.Bind(
-                "1. Main Settings",
-                "Donuts SCAV Group Chance",
-                "Default",
-                new ConfigDescription("Setting to determine the odds of SCAV groups and group size. All odds are configurable, check Advanced Settings above. See mod page for more details. See mod page for more details.",
-                new AcceptableValueList<string>(scavGroupChanceList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 11 }));
-
-            botDifficultiesPMC = Config.Bind(
-                "1. Main Settings",
-                "Donuts PMC Spawn Difficulty",
-                "Normal",
-                new ConfigDescription("Difficulty Setting for All PMC Donuts Related Spawns",
-                new AcceptableValueList<string>(botDiffList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 10 }));
-
-            botDifficultiesSCAV = Config.Bind(
-                "1. Main Settings",
-                "Donuts SCAV Spawn Difficulty",
-                "Normal",
-                new ConfigDescription("Difficulty Setting for All SCAV Donuts Related Spawns",
-                new AcceptableValueList<string>(botDiffList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 9 }));
-
-            botDifficultiesOther = Config.Bind(
-                "1. Main Settings",
-                "Other Bot Type Spawn Difficulty",
-                "Normal",
-                new ConfigDescription("Difficulty Setting for all other bot types spawned with Donuts, such as bosses, Rogues, Raiders, etc.",
-                new AcceptableValueList<string>(botDiffList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, ShowRangeAsPercent = false, Order = 8 }));
-
-            ShowRandomFolderChoice = Config.Bind(
-                "1. Main Settings",
-                "Show Random Spawn Preset Selection",
-                true,
-                new ConfigDescription("Shows the Random Spawn Preset Selected on Raid Start in bottom right",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            pmcFaction = Config.Bind(
-                "2. Additional Spawn Settings",
-                "Force PMC Faction",
-                "Default",
-                new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
-                new AcceptableValueList<string>(pmcFactionList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 14 }));
-
-            forceAllBotType = Config.Bind(
-                "2. Additional Spawn Settings",
-                "Force Bot Type for All Spawns",
-                "Disabled",
-                new ConfigDescription("Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
-                new AcceptableValueList<string>(forceAllBotTypeList),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 13 }));
-
-            hardStopOptionPMC = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Spawn Hard Stop",
-                false,
-                new ConfigDescription("If enabled, all PMC spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 12 }));
-
-            hardStopTimePMC = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Spawn Hard Stop: Time Left in Raid",
-                300,
-                new ConfigDescription("The time (in seconds) left in your raid that will stop any further PMC spawns (if option is enabled). Default is 300 (5 minutes).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 11 }));
-
-            hardStopOptionSCAV = Config.Bind(
-                "2. Additional Spawn Settings",
-                "SCAV Spawn Hard Stop",
-                false,
-                new ConfigDescription("If enabled, all SCAV spawns stop completely once there is n time left in your raid. This is configurable in seconds (see below).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 10 }));
-
-            hardStopTimeSCAV = Config.Bind(
-                "2. Additional Spawn Settings",
-                "SCAV Spawn Hard Stop: Time Left in Raid",
-                300,
-                new ConfigDescription("The time (in seconds) left in your raid that will stop any further SCAV spawns (if option is enabled). Default is 300 (5 minutes).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 9 }));
-
-            hotspotBoostPMC = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Hot Spot Spawn Boost",
-                false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more PMCs.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 8 }));
-
-            hotspotBoostSCAV = Config.Bind(
-                "2. Additional Spawn Settings",
-                "SCAV Hot Spot Spawn Boost",
-                false,
-                new ConfigDescription("If enabled, all hotspot points have a much higher chance of spawning more SCAVs.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 7 }));
-
-            hotspotIgnoreHardCapPMC = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Hot Spot Ignore Hard Cap",
-                false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 6 }));
-
-            hotspotIgnoreHardCapSCAV = Config.Bind(
-                "2. Additional Spawn Settings",
-                "SCAV Hot Spot Ignore Hard Cap",
-                false,
-                new ConfigDescription("If enabled, all hotspot spawn points will ignore the hard cap (if enabled). This applies to any spawn points labeled with 'Hotspot'. I recommended using this option with Despawn + Hardcap + Boost for the best experience with more action in hot spot areas.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 5 }));
-
-            pmcFactionRatio = Config.Bind(
-                "2. Additional Spawn Settings",
-                "PMC Faction Ratio",
-                50,
-                new ConfigDescription("USEC/Bear Default Ratio. Default is 50%. Lower value = lower USEC chance, so: 20 would be 20% USEC, 80% Bear, etc.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
-
-            battleStateCoolDown = Config.Bind(
-                "2. Additional Spawn Settings",
-                "Battlestate Spawn CoolDown",
-                20f,
-                new ConfigDescription("It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 3 }));
-
-            globalMinSpawnDistanceFromPlayerBool = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Use Global Min Distance From Player",
-                false,
-                new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
-
-            globalMinSpawnDistanceFromPlayerFactory = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Factory",
-                35f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerCustoms = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Customs",
-                60f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerReserve = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Reserve",
-                80f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerStreets = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Streets",
-                80f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerWoods = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Woods",
-                125f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerLaboratory = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Laboratory",
-                40f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerShoreline = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Shoreline",
-                100f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerGroundZero = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Ground Zero",
-                65f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerInterchange = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Interchange",
-                85f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromPlayerLighthouse = Config.Bind(
-                "3. Global Minimum Spawn Distance From Player",
-                "Lighthouse",
-                70f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from the player (you).",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsBool = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Use Global Min Distance From Other Bots",
-                false,
-                new ConfigDescription("If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
-
-            globalMinSpawnDistanceFromOtherBotsFactory = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Factory",
-                20f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsCustoms = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Customs",
-                50f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsReserve = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Reserve",
-                50f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsStreets = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Streets",
-                80f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsWoods = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Woods",
-                100f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsLaboratory = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Laboratory",
-                40f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsShoreline = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Shoreline",
-                80f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsGroundZero = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Ground Zero",
-                65f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsInterchange = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Interchange",
-                80f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            globalMinSpawnDistanceFromOtherBotsLighthouse = Config.Bind(
-                "4. Global Minimum Spawn Distance From Other Bots",
-                "Lighthouse",
-                60f,
-                new ConfigDescription("Distance (in meters) that bots should spawn away from other alive bots.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 1 }));
-
-            // advanced settings
-            replenishInterval = Config.Bind(
-                "5. Advanced Spawn Settings",
-                "Bot Cache Replenish Interval",
-                30.0f,
-                new ConfigDescription("The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 6 }));
-
-            maxSpawnTriesPerBot = Config.Bind(
-                "5. Advanced Spawn Settings",
-                "Max Spawn Tries Per Bot",
-                5,
-                new ConfigDescription("It will stop trying to spawn one of the bots after this many attempts to find a good spawn point",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
-
-            despawnInterval = Config.Bind(
-                "5. Advanced Spawn Settings",
-                "Despawn Bot Interval",
-                30f,
-                new ConfigDescription("This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
-
-            groupWeightDistroLow = Config.Bind(
-                "6. Group Chance Weight Distribution",
-                "Low",
-                lowWeightsString,
-                new ConfigDescription("Weight Distribution for Group Chance 'Low'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 3 }));
-
-            groupWeightDistroDefault = Config.Bind(
-                "6. Group Chance Weight Distribution",
-                "Default",
-                defaultWeightsString,
-                new ConfigDescription("Weight Distribution for Group Chance 'Default'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
-
-            groupWeightDistroHigh = Config.Bind(
-                "6. Group Chance Weight Distribution",
-                "High",
-                highWeightsString,
-                new ConfigDescription("Weight Distribution for Group Chance 'High'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
-
-            //Debugging
-            DebugGizmos = Config.Bind(
-                "7. Debugging",
-                "Enable Debug Markers",
-                false,
-                new ConfigDescription("When enabled, draws debug spheres on set spawn from json",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
-
-            gizmoRealSize = Config.Bind(
-                "7. Debugging",
-                "Debug Sphere Real Size",
-                false,
-                new ConfigDescription("When enabled, debug spheres will be the real size of the spawn radius",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
-
-            // Spawn Point Maker
-            spawnName = Config.Bind(
-                "8. Spawn Point Maker",
-                "Name",
-                "Spawn Name Here",
-                new ConfigDescription("Name used to identify the spawn marker",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 14 }));
-
-            groupNum = Config.Bind(
-                "8. Spawn Point Maker",
-                "Group Number",
-                1,
-                new ConfigDescription("Group Number used to identify the spawn marker",
-                new AcceptableValueList<int>(groupList),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 13 }));
-
-            wildSpawns = Config.Bind(
-                "8. Spawn Point Maker",
-                "Wild Spawn Type",
-                "pmc",
-                new ConfigDescription("Select an option.",
-                new AcceptableValueList<string>(wildDropValues),
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 12 }));
-
-            minSpawnDist = Config.Bind(
-                "8. Spawn Point Maker",
-                "Min Spawn Distance",
-                1f,
-                new ConfigDescription("Min Distance Bots will Spawn From Marker You Set.",
-                new AcceptableValueRange<float>(0f, 500f),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 11 }));
-
-            maxSpawnDist = Config.Bind(
-                "8. Spawn Point Maker",
-                "Max Spawn Distance",
-                20f,
-                new ConfigDescription("Max Distance Bots will Spawn From Marker You Set.",
-                new AcceptableValueRange<float>(1f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 10 }));
-
-            botTriggerDistance = Config.Bind(
-                "8. Spawn Point Maker",
-                "Bot Spawn Trigger Distance",
-                100f,
-                new ConfigDescription("Distance in which the player is away from the fight location point that it triggers bot spawn",
-                new AcceptableValueRange<float>(0.1f, 1000f),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 9 }));
-
-            botTimerTrigger = Config.Bind(
-                "8. Spawn Point Maker",
-                "Bot Spawn Timer Trigger",
-                180f,
-                new ConfigDescription("In seconds before it spawns next wave while player in the fight zone area",
-                new AcceptableValueRange<float>(0f, 10000f),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 8 }));
-
-            maxRandNumBots = Config.Bind(
-                "8. Spawn Point Maker",
-                "Max Random Bots",
-                2,
-                new ConfigDescription("Maximum number of bots of Wild Spawn Type that can spawn on this marker",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 7 }));
-
-            spawnChance = Config.Bind(
-                "8. Spawn Point Maker",
-                "Spawn Chance for Marker",
-                50,
-                new ConfigDescription("Chance bot will be spawn here after timer is reached",
-                new AcceptableValueRange<int>(0, 100),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 6 }));
-
-            maxSpawnsBeforeCooldown = Config.Bind(
-                "8. Spawn Point Maker",
-                "Max Spawns Before Cooldown",
-                5,
-                new ConfigDescription("Number of successful spawns before this marker goes in cooldown",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 5 }));
-
-            ignoreTimerFirstSpawn = Config.Bind(
-                "8. Spawn Point Maker",
-                "Ignore Timer for First Spawn",
-                false,
-                new ConfigDescription("When enabled for this point, it will still spawn even if timer is not ready for first spawn only",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 4 }));
-
-            minSpawnDistanceFromPlayer = Config.Bind(
-                "8. Spawn Point Maker",
-                "Min Spawn Distance From Player",
-                40f,
-                new ConfigDescription("How far the random selected spawn near the spawn marker needs to be from player",
-                new AcceptableValueRange<float>(0f, 500f),
-                new ConfigurationManagerAttributes { IsAdvanced = true, ShowRangeAsPercent = false, Order = 3 }));
-
-            CreateSpawnMarkerKey = Config.Bind(
-                "8. Spawn Point Maker",
-                "Create Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(),
-                new ConfigDescription("Press this key to create a spawn marker at your current location",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
-
-            DeleteSpawnMarkerKey = Config.Bind(
-                "8. Spawn Point Maker",
-                "Delete Spawn Marker Key",
-                new BepInEx.Configuration.KeyboardShortcut(),
-                new ConfigDescription("Press this key to delete closest spawn marker within 5m of your player location",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
-
-            //Save Settings
-            saveNewFileOnly = Config.Bind(
-                "9. Save Settings",
-                "Save New Locations Only",
-                false,
-                new ConfigDescription("If enabled saves the raid session changes to a new file. Disabled saves all locations you can see to a new file.",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 2 }));
-
-            WriteToFileKey = Config.Bind(
-                "9. Save Settings",
-                "Create Temp Json File",
-                new BepInEx.Configuration.KeyboardShortcut(UnityEngine.KeyCode.KeypadMinus),
-                new ConfigDescription("Press this key to write the json file with all entries so far",
-                null,
-                new ConfigurationManagerAttributes { IsAdvanced = true, Order = 1 }));
-
-            //Patches
+            // Patches
             new NewGameDonutsPatch().Enable();
             new BotGroupAddEnemyPatch().Enable();
             new BotMemoryAddEnemyPatch().Enable();
@@ -759,102 +65,255 @@ namespace Donuts
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
-            SetupScenariosUI();
+            ImportConfig();
+            await SetupScenariosUI();
         }
 
-        private void SetupScenariosUI()
+        private async Task SetupScenariosUI()
         {
-            // populate the list of scenarios
-            LoadDonutsFolders();
+            await LoadDonutsFoldersAsync();
 
-            List<string> scenarioValuesList = new List<string>(scenarioValues);
-            // scenarioValuesList.Add("Random");
+            var scenarioValuesList = DefaultPluginVars.pmcScenarioCombinedArray?.ToList() ?? new List<string>();
+            var scavScenarioValuesList = DefaultPluginVars.scavScenarioCombinedArray?.ToList() ?? new List<string>();
 
-            // Add folder.Name to the scenarioValuesList
-            foreach (Folder folder in scenarios)
-            {
-                Logger.LogWarning("Adding scenario: " + folder.Name);
-                scenarioValuesList.Add(folder.Name);
-            }
+            DefaultPluginVars.pmcScenarioCombinedArray = scenarioValuesList.ToArray();
+            DefaultPluginVars.scavScenarioCombinedArray = scavScenarioValuesList.ToArray();
 
-            foreach (Folder folder in randomScenarios)
-            {
-                Logger.LogWarning("Adding random scenario: " + folder.RandomScenarioConfig);
-                scenarioValuesList.Add(folder.RandomScenarioConfig);
-            }
+#if DEBUG
+            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
+            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
+#endif
 
-            scenarioValues = scenarioValuesList.ToArray();
-
-            scenarioSelection = Config.Bind(
-                "1. Main Settings",
+            // Dynamically initialize the scenario settings
+            DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
-                "Live Like (Random)",
-                new ConfigDescription("Select a preset to use when spawning as PMC",
-                new AcceptableValueList<string>(scenarioValues),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                "Select a preset to use when spawning as PMC",
+                DefaultPluginVars.pmcScenarioSelectionValue ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.pmcScenarioCombinedArray
+            );
 
-            scavScenarioSelection = Config.Bind(
-                "1. Main Settings",
+            DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
-                "scav-raids",
-                new ConfigDescription("Select a preset to use when spawning as SCAV",
-                new AcceptableValueList<string>(scenarioValues),
-                new ConfigurationManagerAttributes { IsAdvanced = false, Order = 2 }));
+                "Select a preset to use when spawning as SCAV",
+                DefaultPluginVars.scavScenarioSelectionValue ?? "live-like",
+                "live-like",
+                null,
+                null,
+                DefaultPluginVars.scavScenarioCombinedArray
+            );
+
+            // Call InitializeDropdownIndices to ensure scenarios are loaded and indices are set
+            DrawMainSettings.InitializeDropdownIndices();
         }
+
 
         private void Update()
         {
-            if (IsKeyPressed(CreateSpawnMarkerKey.Value))
+            if (ImGUIToolkit.IsSettingKeybind())
+            {
+                // If setting a keybind, do not trigger functionality
+                return;
+            }
+
+            if (IsKeyPressed(toggleGUIKey.Value) || IsKeyPressed(escapeKey))
+            {
+                if (IsKeyPressed(escapeKey))
+                {
+                    //check if the config window is open
+                    if (DefaultPluginVars.showGUI)
+                    {
+                        DefaultPluginVars.showGUI = false;
+                    }
+                }
+                else
+                {
+                    DefaultPluginVars.showGUI = !DefaultPluginVars.showGUI;
+                }
+            }
+
+            if (IsKeyPressed(DefaultPluginVars.CreateSpawnMarkerKey.Value))
             {
                 EditorFunctions.CreateSpawnMarker();
             }
-            if (IsKeyPressed(WriteToFileKey.Value))
+            if (IsKeyPressed(DefaultPluginVars.WriteToFileKey.Value))
             {
                 EditorFunctions.WriteToJsonFile();
             }
-            if (IsKeyPressed(DeleteSpawnMarkerKey.Value))
+            if (IsKeyPressed(DefaultPluginVars.DeleteSpawnMarkerKey.Value))
             {
                 EditorFunctions.DeleteSpawnMarker();
             }
         }
-
-        internal void LoadDonutsFolders()
+        public static void ImportConfig()
         {
-            string dllPath = Assembly.GetExecutingAssembly().Location;
-            string directoryPath = Path.GetDirectoryName(dllPath);
+            // Get the path of the currently executing assembly
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var configDirectory = Path.Combine(Path.GetDirectoryName(dllPath), "Config");
+            var configFilePath = Path.Combine(configDirectory, "DefaultPluginVars.json");
 
-            string filePath = Path.Combine(directoryPath, "ScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + filePath);
-
-            string file = File.ReadAllText(filePath);
-            scenarios = JsonConvert.DeserializeObject<List<Folder>>(file);
-
-            if (scenarios.Count == 0)
+            if (!File.Exists(configFilePath))
             {
-                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
-                Debug.Break();
+                Logger.LogError($"Config file not found: {configFilePath}, creating a new one");
+                PluginGUIHelper.ExportConfig();
+                return;
+
             }
 
-            Logger.LogDebug("Loaded " + scenarios.Count + " Donuts Scenario Folders");
-
-            string randFilePath = Path.Combine(directoryPath, "RandomScenarioConfig.json");
-
-            Logger.LogWarning("Found file at: " + randFilePath);
-
-            string randFile = File.ReadAllText(randFilePath);
-            randomScenarios = JsonConvert.DeserializeObject<List<Folder>>(randFile);
+            string json = File.ReadAllText(configFilePath);
+            DefaultPluginVars.ImportFromJson(json);
         }
+
+        #region Donuts Non-Raid Related Methods
+        private async Task LoadDonutsFoldersAsync()
+        {
+            var dllPath = Assembly.GetExecutingAssembly().Location;
+            var directoryPath = Path.GetDirectoryName(dllPath);
+
+            DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
+            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
+
+            await PopulateScenarioValuesAsync();
+        }
+
+        private async Task PopulateScenarioValuesAsync()
+        {
+            DefaultPluginVars.pmcScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.pmcScenarios, DefaultPluginVars.pmcRandomScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.pmcScenarioCombinedArray.Length} PMC Scenarios and Finished Generating");
+
+            DefaultPluginVars.scavScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.scavScenarioCombinedArray.Length} SCAV Scenarios and Finished Generating");
+        }
+
+        private async Task<string[]> GenerateScenarioValuesAsync(List<Folder> scenarios, List<Folder> randomScenarios)
+        {
+            var valuesList = new List<string>();
+
+            await AddScenarioNamesToListAsync(scenarios, valuesList, folder => folder.Name);
+            await AddScenarioNamesToListAsync(randomScenarios, valuesList, folder => folder.RandomScenarioConfig);
+
+            return valuesList.ToArray();
+        }
+
+        private async Task AddScenarioNamesToListAsync(IEnumerable<Folder> folders, List<string> valuesList, Func<Folder, string> getNameFunc)
+        {
+            if (folders != null)
+            {
+                foreach (var folder in folders)
+                {
+                    var name = getNameFunc(folder);
+                    Logger.LogWarning($"Adding scenario: {name}");
+                    valuesList.Add(name);
+                }
+            }
+        }
+
+        private static async Task<List<Folder>> LoadFoldersAsync(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                Logger.LogWarning($"File not found: {filePath}");
+                return new List<Folder>();
+            }
+
+            var fileContent = await Task.Run(() => File.ReadAllText(filePath));
+            var folders = JsonConvert.DeserializeObject<List<Folder>>(fileContent);
+
+            if (folders == null || folders.Count == 0)
+            {
+                Logger.LogError("No Donuts Folders found in Scenario Config file at: " + filePath);
+                return new List<Folder>();
+            }
+
+            Logger.LogWarning($"Loaded {folders.Count} Donuts Scenario Folders");
+            return folders;
+        }
+
+
+        #endregion
+
+        #region Donuts Raid Related Scenario Selection Methods
 
         internal static Folder GrabDonutsFolder(string folderName)
         {
-            return scenarios.FirstOrDefault(temp => temp.Name == folderName);
+            return DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == folderName);
         }
-        bool IsKeyPressed(KeyboardShortcut key)
+
+        internal static string RunWeightedScenarioSelection()
+        {
+            try
+            {
+                var scenarioSelection = DefaultPluginVars.pmcScenarioSelection.Value;
+
+                if (Aki.SinglePlayer.Utils.InRaid.RaidChangesUtil.IsScavRaid)
+                {
+                    Logger.LogWarning("This is a SCAV raid, using SCAV raid preset selector");
+                    scenarioSelection = DefaultPluginVars.scavScenarioSelection.Value;
+                }
+
+                var selectedFolder = DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == scenarioSelection)
+                                     ?? DefaultPluginVars.pmcRandomScenarios.FirstOrDefault(folder => folder.RandomScenarioConfig == scenarioSelection);
+
+                if (selectedFolder != null)
+                {
+                    return SelectPreset(selectedFolder);
+                }
+
+                return null;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("Error in RunWeightedScenarioSelection: " + e);
+                return null;
+            }
+        }
+
+        private static string SelectPreset(Folder folder)
+        {
+            if (folder.presets == null || folder.presets.Count == 0) return folder.Name;
+
+            var totalWeight = folder.presets.Sum(preset => preset.Weight);
+            var randomWeight = UnityEngine.Random.Range(0, totalWeight);
+
+            var selectedPreset = folder.presets
+                .Aggregate((currentPreset, nextPreset) =>
+                    randomWeight < (currentPreset.Weight += nextPreset.Weight) ? currentPreset : nextPreset);
+
+            LogSelectedPreset(selectedPreset.Name);
+
+            return selectedPreset.Name;
+        }
+
+        private static void LogSelectedPreset(string selectedPreset)
+        {
+            Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");
+
+            if (DefaultPluginVars.ShowRandomFolderChoice.Value && DonutComponent.methodCache.TryGetValue("DisplayMessageNotification", out var displayMessageNotificationMethod))
+            {
+                var txt = $"Donuts Random Selected Preset: {selectedPreset}";
+                EFT.UI.ConsoleScreen.Log(txt);
+                displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
+            }
+        }
+
+        #endregion
+
+        internal static bool IsKeyPressed(KeyboardShortcut key)
         {
             if (!UnityInput.Current.GetKeyDown(key.MainKey)) return false;
 
             return key.Modifiers.All(modifier => UnityInput.Current.GetKey(modifier));
+        }
+
+        internal static bool IsKeyPressed(KeyCode key)
+        {
+            if (!UnityInput.Current.GetKeyDown(key)) return false;
+
+            return true;
         }
 
     }
