@@ -1,9 +1,8 @@
-﻿using UnityEngine;
-using static Donuts.PluginGUIHelper;
-using static Donuts.DefaultPluginVars;
-using Donuts.Models;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using Donuts.Models;
+using UnityEngine;
+using static Donuts.DefaultPluginVars;
 
 namespace Donuts
 {
@@ -11,8 +10,7 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
+
 
             GUILayout.Space(30);
             GUILayout.BeginHorizontal();
@@ -30,16 +28,16 @@ namespace Donuts
                 // List of float settings
                 var floatSettings = new List<Setting<float>>
                 {
-                    globalMinSpawnDistanceFromPlayerFactory,
-                    globalMinSpawnDistanceFromPlayerCustoms,
-                    globalMinSpawnDistanceFromPlayerReserve,
-                    globalMinSpawnDistanceFromPlayerStreets,
-                    globalMinSpawnDistanceFromPlayerWoods,
-                    globalMinSpawnDistanceFromPlayerLaboratory,
-                    globalMinSpawnDistanceFromPlayerShoreline,
-                    globalMinSpawnDistanceFromPlayerGroundZero,
-                    globalMinSpawnDistanceFromPlayerInterchange,
-                    globalMinSpawnDistanceFromPlayerLighthouse
+                globalMinSpawnDistanceFromPlayerFactory,
+                globalMinSpawnDistanceFromPlayerCustoms,
+                globalMinSpawnDistanceFromPlayerReserve,
+                globalMinSpawnDistanceFromPlayerStreets,
+                globalMinSpawnDistanceFromPlayerWoods,
+                globalMinSpawnDistanceFromPlayerLaboratory,
+                globalMinSpawnDistanceFromPlayerShoreline,
+                globalMinSpawnDistanceFromPlayerGroundZero,
+                globalMinSpawnDistanceFromPlayerInterchange,
+                globalMinSpawnDistanceFromPlayerLighthouse
                 };
 
                 // Sort the settings by name in ascending order
@@ -57,6 +55,7 @@ namespace Donuts
                     );
                 }
             });
+
 
             ImGUIToolkit.Accordion("Global Min Distance To Other Bots Settings", "Click to expand/collapse", () =>
             {
@@ -103,8 +102,8 @@ namespace Donuts
             GUILayout.EndHorizontal();
         }
 
-        
 
-        
+
+
     }
 }

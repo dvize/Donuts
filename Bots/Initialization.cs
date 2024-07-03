@@ -9,6 +9,7 @@ using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
+using Cysharp.Threading.Tasks;
 using static Donuts.DonutComponent;
 using static Donuts.DefaultPluginVars;
 using static Donuts.Gizmos;
@@ -19,6 +20,10 @@ namespace Donuts
 {
     internal class Initialization
     {
+
+        internal static int PMCBotLimit;
+        internal static int SCAVBotLimit;
+
         internal static void InitializeStaticVariables()
         {
             fightLocations = new FightLocations()
@@ -35,21 +40,17 @@ namespace Donuts
             groupedHotspotTimers = new Dictionary<int, List<HotspotTimer>>();
             groupedFightLocations = new List<List<Entry>>();
             hotspotTimers = new List<HotspotTimer>();
-            PMCBotLimit = 0;
-            SCAVBotLimit = 0;
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
-
-        Gizmos.drawnCoordinates = new HashSet<Vector3>();
-            gizmoSpheres = new List<GameObject>();
 
             sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
             sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
+
         internal static void SetupBotLimit(string folderName)
         {
             Folder raidFolderSelected = DonutsPlugin.GrabDonutsFolder(folderName);
-            switch (maplocation)
+            switch (DonutsBotPrep.maplocation)
             {
                 case "factory4_day":
                 case "factory4_night":
@@ -99,145 +100,59 @@ namespace Donuts
             }
         }
 
-        internal static void InitializeHotspotTimers()
-        {
-            // Group the fight locations by groupNum
-            foreach (var listHotspots in groupedFightLocations)
-            {
-                foreach (var hotspot in listHotspots)
-                {
-                    var hotspotTimer = new HotspotTimer(hotspot);
-
-                    int groupNum = hotspot.GroupNum;
-
-                    if (!groupedHotspotTimers.ContainsKey(groupNum))
-                    {
-                        groupedHotspotTimers[groupNum] = new List<HotspotTimer>();
-                    }
-
-                    groupedHotspotTimers[groupNum].Add(hotspotTimer);
-                }
-            }
-
-            // Assign the groupedHotspotTimers dictionary back to hotspotTimers
-            hotspotTimers = groupedHotspotTimers.SelectMany(kv => kv.Value).ToList();
-        }
-
-        internal static void LoadFightLocations()
+        internal static async UniTask LoadFightLocations()
         {
             if (!fileLoaded)
             {
-                MethodInfo displayMessageNotificationMethod;
-                methodCache.TryGetValue("DisplayMessageNotification", out displayMessageNotificationMethod);
+                methodCache.TryGetValue("DisplayMessageNotification", out MethodInfo displayMessageNotificationMethod);
 
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
-
                 string jsonFolderPath = Path.Combine(directoryPath, "patterns");
 
-                //in SelectedPatternFolderPath, grab the folder name from DonutsPlugin.scenarioSelection.Value
-
-                var selectionName = DonutsPlugin.RunWeightedScenarioSelection();
-
-                SetupBotLimit(selectionName);
-
-                if (selectionName == null)
+                if (DonutsBotPrep.selectionName == null)
                 {
                     var txt = "Donuts Plugin: No valid Scenario Selection found for map";
                     DonutComponent.Logger.LogError(txt);
                     EFT.UI.ConsoleScreen.LogError(txt);
-                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    displayMessageNotificationMethod?.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
                     return;
                 }
 
-                string PatternFolderPath = Path.Combine(jsonFolderPath, selectionName);
+                string patternFolderPath = Path.Combine(jsonFolderPath, DonutsBotPrep.selectionName);
 
-                // Check if the folder exists
-                if (!Directory.Exists(PatternFolderPath))
+                if (!Directory.Exists(patternFolderPath))
                 {
-                    var txt = ("Donuts Plugin: Folder from ScenarioConfig.json does not actually exist: " + PatternFolderPath + "\nDisabling the donuts plugin for this raid.");
+                    var txt = $"Donuts Plugin: Folder from ScenarioConfig.json does not actually exist: {patternFolderPath}\nDisabling the donuts plugin for this raid.";
                     DonutComponent.Logger.LogError(txt);
                     EFT.UI.ConsoleScreen.LogError(txt);
-                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    displayMessageNotificationMethod?.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
                     fileLoaded = false;
                     return;
                 }
 
-                string[] jsonFiles = Directory.GetFiles(PatternFolderPath, "*.json");
+                string[] jsonFiles = Directory.GetFiles(patternFolderPath, "*.json");
 
                 if (jsonFiles.Length == 0)
                 {
-                    var txt = ("Donuts Plugin: No JSON Pattern files found in folder: " + PatternFolderPath + "\nDisabling the donuts plugin for this raid.");
+                    var txt = $"Donuts Plugin: No JSON Pattern files found in folder: {patternFolderPath}\nDisabling the donuts plugin for this raid.";
                     DonutComponent.Logger.LogError(txt);
                     EFT.UI.ConsoleScreen.LogError(txt);
-                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
+                    displayMessageNotificationMethod?.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
                     fileLoaded = false;
                     return;
                 }
 
-                List<Entry> combinedLocations = new List<Entry>();
+                // You can add any additional logic here if you need to process the JSON files.
+                // For now, we just log the existence of the files.
 
-                foreach (string file in jsonFiles)
-                {
-                    FightLocations fightfile = JsonConvert.DeserializeObject<FightLocations>(File.ReadAllText(file));
-                    combinedLocations.AddRange(fightfile.Locations);
-                }
-
-                if (combinedLocations.Count == 0)
-                {
-                    var txt = "Donuts Plugin: No Entries found in JSON files, disabling plugin for raid.";
-                    DonutComponent.Logger.LogError(txt);
-                    EFT.UI.ConsoleScreen.LogError(txt);
-                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
-                    fileLoaded = false;
-                    return;
-                }
-
-                DonutComponent.Logger.LogDebug("Loaded " + combinedLocations.Count + " Bot Fight Entries");
-
-                // Assign the combined fight locations to the fightLocations variable.
-                fightLocations = new FightLocations { Locations = combinedLocations };
-
-                //filter fightLocations for maplocation
-                fightLocations.Locations.RemoveAll(x => x.MapName != maplocation);
-
-                if (fightLocations.Locations.Count == 0)
-                {
-                    //show error message so user knows why donuts is not working
-                    var txt = "Donuts Plugin: There are no valid Spawn Marker Entries for the current map. Disabling the plugin for this raid.";
-                    DonutComponent.Logger.LogError(txt);
-                    EFT.UI.ConsoleScreen.LogError(txt);
-                    displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.yellow });
-                    fileLoaded = false;
-                    return;
-                }
-
-                DonutComponent.Logger.LogDebug("Valid Bot Fight Entries For Current Map: " + fightLocations.Locations.Count);
+                var txtFilesFound = $"Donuts Plugin: Found {jsonFiles.Length} JSON Pattern files in folder: {patternFolderPath}.";
+                DonutComponent.Logger.LogDebug(txtFilesFound);
+                EFT.UI.ConsoleScreen.Log(txtFilesFound);
+                displayMessageNotificationMethod?.Invoke(null, new object[] { txtFilesFound, ENotificationDurationType.Long, ENotificationIconType.Default, Color.green });
 
                 fileLoaded = true;
             }
-
-            //group fightLocations by groupnum
-            foreach (Entry entry in fightLocations.Locations)
-            {
-                bool groupExists = false;
-                foreach (List<Entry> group in groupedFightLocations)
-                {
-                    if (group.Count > 0 && group.First().GroupNum == entry.GroupNum)
-                    {
-                        group.Add(entry);
-                        groupExists = true;
-                        break;
-                    }
-                }
-
-                if (!groupExists)
-                {
-                    groupedFightLocations.Add(new List<Entry> { entry });
-                }
-            }
         }
-
-        
     }
 }

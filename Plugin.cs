@@ -8,7 +8,6 @@ using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using Cysharp.Threading.Tasks.CompilerServices;
 using Donuts.Models;
 using Donuts.Patches;
 using EFT;
@@ -32,6 +31,7 @@ namespace Donuts
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
         internal static new ManualLogSource Logger;
+        private bool isScenariosInitialized = false;
         DonutsPlugin()
         {
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));
@@ -65,9 +65,8 @@ namespace Donuts
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
-
-            await SetupScenariosUI();
             ImportConfig();
+            await SetupScenariosUI();
         }
 
         private async Task SetupScenariosUI()
@@ -77,20 +76,19 @@ namespace Donuts
             var scenarioValuesList = DefaultPluginVars.pmcScenarioCombinedArray?.ToList() ?? new List<string>();
             var scavScenarioValuesList = DefaultPluginVars.scavScenarioCombinedArray?.ToList() ?? new List<string>();
 
-            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcScenarios, scenarioValuesList, folder => folder.Name);
-            await AddScenarioNamesToListAsync(DefaultPluginVars.pmcRandomScenarios, scenarioValuesList, folder => folder.RandomScenarioConfig);
-
-            await AddScenarioNamesToListAsync(DefaultPluginVars.scavScenarios, scavScenarioValuesList, folder => folder.Name);
-            await AddScenarioNamesToListAsync(DefaultPluginVars.randomScavScenarios, scavScenarioValuesList, folder => folder.RandomScenarioConfig);
-
             DefaultPluginVars.pmcScenarioCombinedArray = scenarioValuesList.ToArray();
             DefaultPluginVars.scavScenarioCombinedArray = scavScenarioValuesList.ToArray();
+
+#if DEBUG
+            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
+            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
+#endif
 
             // Dynamically initialize the scenario settings
             DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                DefaultPluginVars.pmcScenarioSelection?.Value ?? "live-like",
+                DefaultPluginVars.pmcScenarioSelectionValue ?? "live-like",
                 "live-like",
                 null,
                 null,
@@ -100,17 +98,12 @@ namespace Donuts
             DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                DefaultPluginVars.scavScenarioSelection?.Value ?? "live-like",
-                "live-like",
+                DefaultPluginVars.scavScenarioSelectionValue ?? "scav-raids",
+                "scav-raids",
                 null,
                 null,
                 DefaultPluginVars.scavScenarioCombinedArray
             );
-
-#if DEBUG
-            Logger.LogWarning($"Loaded PMC Scenarios: {string.Join(", ", DefaultPluginVars.pmcScenarioCombinedArray)}");
-            Logger.LogWarning($"Loaded Scav Scenarios: {string.Join(", ", DefaultPluginVars.scavScenarioCombinedArray)}");
-#endif
 
             // Call InitializeDropdownIndices to ensure scenarios are loaded and indices are set
             DrawMainSettings.InitializeDropdownIndices();
@@ -129,7 +122,7 @@ namespace Donuts
             {
                 if (IsKeyPressed(escapeKey))
                 {
-                    //check if the config window is open    
+                    //check if the config window is open
                     if (DefaultPluginVars.showGUI)
                     {
                         DefaultPluginVars.showGUI = false;
@@ -181,17 +174,19 @@ namespace Donuts
 
             DefaultPluginVars.pmcScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
             DefaultPluginVars.pmcRandomScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
-            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScavScenarioConfig.json"));
-            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScavScenarioConfig.json"));
+            DefaultPluginVars.scavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "ScenarioConfig.json"));
+            DefaultPluginVars.randomScavScenarios = await LoadFoldersAsync(Path.Combine(directoryPath, "RandomScenarioConfig.json"));
 
             await PopulateScenarioValuesAsync();
-            DrawMainSettings.InitializeDropdownIndices();  // Re-initialize dropdown indices after loading scenarios
         }
 
         private async Task PopulateScenarioValuesAsync()
         {
             DefaultPluginVars.pmcScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.pmcScenarios, DefaultPluginVars.pmcRandomScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.pmcScenarioCombinedArray.Length} PMC Scenarios and Finished Generating");
+
             DefaultPluginVars.scavScenarioCombinedArray = await GenerateScenarioValuesAsync(DefaultPluginVars.scavScenarios, DefaultPluginVars.randomScavScenarios);
+            Logger.LogWarning($"Loaded {DefaultPluginVars.scavScenarioCombinedArray.Length} SCAV Scenarios and Finished Generating");
         }
 
         private async Task<string[]> GenerateScenarioValuesAsync(List<Folder> scenarios, List<Folder> randomScenarios)
@@ -230,8 +225,7 @@ namespace Donuts
 
             if (folders == null || folders.Count == 0)
             {
-                Logger.LogError("No Donuts Folders found in Scenario Config file, disabling plugin");
-                Debug.Break();
+                Logger.LogError("No Donuts Folders found in Scenario Config file at: " + filePath);
                 return new List<Folder>();
             }
 
@@ -293,6 +287,7 @@ namespace Donuts
 
             return selectedPreset.Name;
         }
+
         private static void LogSelectedPreset(string selectedPreset)
         {
             Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");

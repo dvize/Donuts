@@ -1,8 +1,7 @@
 using System;
-using System.Linq;
 using Aki.PrePatch;
-using EFT;
 using Cysharp.Threading.Tasks;
+using EFT;
 using static Donuts.DonutComponent;
 
 #pragma warning disable IDE0007, IDE0044
@@ -58,7 +57,7 @@ namespace Donuts
 
         private static int GetBotLimit(string spawnType)
         {
-            return spawnType.Contains("pmc") ? PMCBotLimit : SCAVBotLimit;
+            return spawnType.Contains("pmc") ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
         }
 
         public static UniTask<int> GetAlivePlayers(string spawnType)
@@ -68,13 +67,30 @@ namespace Donuts
                 int count = 0;
                 foreach (Player bot in gameWorld.AllAlivePlayersList)
                 {
-                    if (!bot.IsYourPlayer &&
-                        ((IsSCAV(bot.Profile.Info.Settings.Role) && spawnType == "assault") ||
-                        (IsPMC(bot.Profile.Info.Settings.Role) && spawnType != "assault")))
+                    if (!bot.IsYourPlayer)
                     {
-                        count++;
+                        switch (spawnType)
+                        {
+                            case "scav":
+                                if (IsSCAV(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            case "pmc":
+                                if (IsPMC(bot.Profile.Info.Settings.Role))
+                                {
+                                    count++;
+                                }
+                                break;
+
+                            default:
+                                throw new ArgumentException("Invalid spawnType", nameof(spawnType));
+                        }
                     }
                 }
+
                 return count;
             });
         }

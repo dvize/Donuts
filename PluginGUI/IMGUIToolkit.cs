@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
 using Donuts.Models;
+using EFT.Visual;
+using HarmonyLib;
 using UnityEngine;
 
 #pragma warning disable IDE0007, IDE0044
@@ -10,111 +13,30 @@ namespace Donuts
     {
         private static Dictionary<int, bool> dropdownStates = new Dictionary<int, bool>();
         private static Dictionary<int, bool> accordionStates = new Dictionary<int, bool>();
-        private static Dictionary<int, bool> keybindStates = new Dictionary<int, bool>();
         private static Dictionary<int, KeyCode> newKeybinds = new Dictionary<int, KeyCode>();
+        private static Dictionary<int, bool> keybindStates = new Dictionary<int, bool>();
         private static bool isSettingKeybind = false; // Flag to indicate if setting a keybind
 
-        private static GUIStyle dropdownStyle;
-        private static GUIStyle dropdownButtonStyle;
-        private static GUIStyle toggleStyle;
-        private static GUIStyle accordionButtonStyle;
-        private static GUIStyle tooltipStyle;
-        private static GUIStyle textFieldStyle;
-        private static GUIStyle expandedDropdownStyle;
-        private static GUIStyle keybindFieldStyle;
-        public static void InitializeStyles()
+        private static bool stylesInitialized = false;
+
+        private static void EnsureStylesInitialized()
         {
-            dropdownStyle = new GUIStyle(GUI.skin.button)
+            if (!stylesInitialized)
             {
-                alignment = TextAnchor.MiddleLeft,
-                fixedHeight = 25,
-                fontSize = 18
-            };
-
-            dropdownButtonStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fixedHeight = 25,
-                fontSize = 18
-            };
-
-            toggleStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 18,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white }
-            };
-
-            accordionButtonStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fixedHeight = 30,
-                fontSize = 18,
-                fontStyle = FontStyle.Bold
-            };
-
-            textFieldStyle = new GUIStyle(GUI.skin.textField)
-            {
-                fontSize = 18
-            };
-
-            tooltipStyle = new GUIStyle(GUI.skin.box)
-            {
-                fontSize = 18,
-                wordWrap = true
-            };
-
-            expandedDropdownStyle = new GUIStyle(dropdownStyle)
-            {
-                normal = { background = MakeTex(1, 1, Color.blue) }
-            };
-
-            keybindFieldStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fixedHeight = 25,
-                fontSize = 18,
-                normal = { textColor = Color.white }
-            };
-
-            // Create textures for the toggle button states
-            CreateToggleButtonTextures();
-        }
-
-        internal static Texture2D MakeTex(int width, int height, Color col)
-        {
-            Color[] pix = new Color[width * height];
-            for (int i = 0; i < pix.Length; i++)
-            {
-                pix[i] = col;
+                PluginGUIHelper.InitializeStyles();
+                stylesInitialized = true;
             }
-            Texture2D result = new Texture2D(width, height);
-            result.SetPixels(pix);
-            result.Apply();
-            return result;
-        }
-
-        private static void CreateToggleButtonTextures()
-        {
-            toggleStyle.normal.background = MakeTex(1, 1, Color.gray);
-            toggleStyle.hover.background = MakeTex(1, 1, Color.gray);
-            toggleStyle.active.background = MakeTex(1, 1, Color.gray);
-
-            toggleStyle.onNormal.background = MakeTex(1, 1, Color.red);
-            toggleStyle.onHover.background = MakeTex(1, 1, Color.red);
-            toggleStyle.onActive.background = MakeTex(1, 1, Color.red);
         }
 
         internal static int Dropdown<T>(Setting<T> setting, int selectedIndex)
         {
-            // Check if the Options list is properly initialized and log error if needed
+            EnsureStylesInitialized();
+
             if (setting.LogErrorOnceIfOptionsInvalid())
             {
-                return selectedIndex; // Return the current index without drawing the button
+                return selectedIndex;
             }
 
-            // Ensure selectedIndex is within bounds
             if (selectedIndex >= setting.Options.Length)
             {
                 selectedIndex = 0;
@@ -129,14 +51,11 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
 
-            // Draw label with tooltip
             GUIContent labelContent = new GUIContent(setting.Name, setting.ToolTipText);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
 
-            // Choose style based on dropdown state
-            GUIStyle currentDropdownStyle = dropdownStates[dropdownId] ? expandedDropdownStyle : dropdownStyle;
+            GUIStyle currentDropdownStyle = dropdownStates[dropdownId] ? PluginGUIHelper.subTabButtonActiveStyle : PluginGUIHelper.subTabButtonStyle;
 
-            // Draw button with tooltip
             GUIContent buttonContent = new GUIContent(setting.Options[selectedIndex]?.ToString(), setting.ToolTipText);
             if (GUILayout.Button(buttonContent, currentDropdownStyle, GUILayout.Width(300)))
             {
@@ -147,15 +66,15 @@ namespace Donuts
 
             if (dropdownStates[dropdownId])
             {
-                GUILayout.BeginHorizontal(); // Begin a new horizontal group to align buttons
-                GUILayout.Space(209); // Adjust the space to match the label width
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(209);
 
-                GUILayout.BeginVertical(); // Begin a vertical group to stack buttons
+                GUILayout.BeginVertical();
 
                 for (int i = 0; i < setting.Options.Length; i++)
                 {
                     GUIContent optionContent = new GUIContent(setting.Options[i]?.ToString(), setting.ToolTipText);
-                    if (GUILayout.Button(optionContent, dropdownButtonStyle, GUILayout.Width(300)))
+                    if (GUILayout.Button(optionContent, PluginGUIHelper.subTabButtonStyle, GUILayout.Width(300)))
                     {
                         selectedIndex = i;
                         setting.Value = setting.Options[i];
@@ -167,7 +86,6 @@ namespace Donuts
                 GUILayout.EndHorizontal();
             }
 
-            // Use the centralized ShowTooltip method
             ShowTooltip();
 
             return selectedIndex;
@@ -175,22 +93,22 @@ namespace Donuts
 
         public static float Slider(string label, string toolTip, float value, float min, float max)
         {
+            EnsureStylesInitialized();
+
             GUILayout.BeginHorizontal();
+
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300));
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
 
-            string valueStr = value.ToString("F2");
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            value = GUILayout.HorizontalSlider(value, min, max, PluginGUIHelper.horizontalSliderStyle, PluginGUIHelper.horizontalSliderThumbStyle, GUILayout.Width(300));
 
-            if (float.TryParse(valueStr, out float parsedValue))
+            string textFieldValue = GUILayout.TextField(value.ToString("F2"), PluginGUIHelper.textFieldStyle, GUILayout.Width(100));
+            if (float.TryParse(textFieldValue, out float newValue))
             {
-                value = Mathf.Clamp(parsedValue, min, max);
+                value = Mathf.Clamp(newValue, min, max);
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;
@@ -198,51 +116,58 @@ namespace Donuts
 
         public static int Slider(string label, string toolTip, int value, int min, int max)
         {
+            EnsureStylesInitialized();
+
             GUILayout.BeginHorizontal();
+
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            value = Mathf.RoundToInt(GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300)));
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
 
-            string valueStr = value.ToString();
-            valueStr = GUILayout.TextField(valueStr, textFieldStyle, GUILayout.Width(100));
+            value = (int)GUILayout.HorizontalSlider(value, min, max, PluginGUIHelper.horizontalSliderStyle, PluginGUIHelper.horizontalSliderThumbStyle, GUILayout.Width(300));
 
-            if (int.TryParse(valueStr, out int parsedValue))
+            string textFieldValue = GUILayout.TextField(value.ToString(), PluginGUIHelper.textFieldStyle, GUILayout.Width(100));
+            if (int.TryParse(textFieldValue, out int newValue))
             {
-                value = Mathf.Clamp(parsedValue, min, max);
+                value = Mathf.Clamp(newValue, min, max);
             }
 
             GUILayout.EndHorizontal();
-
             ShowTooltip();
 
             return value;
         }
 
-        public static string TextField(string label, string toolTip, string text)
+        public static string TextField(string label, string toolTip, string text, int maxLength = 50)
         {
-            GUILayout.BeginHorizontal();
+            // Create GUIContent for the label with tooltip
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
-            GUILayout.Space(10);
-            text = GUILayout.TextField(text, textFieldStyle, GUILayout.Width(300));
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
+            string newText = GUILayout.TextField(text, maxLength, PluginGUIHelper.textFieldStyle, GUILayout.Width(300));
+
+            // Ensure the text does not exceed the maximum length
+            if (newText.Length > maxLength)
+            {
+                newText = newText.Substring(0, maxLength);
+            }
+
             GUILayout.EndHorizontal();
 
-            ShowTooltip();
-
-            return text;
+            return newText;
         }
 
         public static bool Toggle(string label, string toolTip, bool value)
         {
+            EnsureStylesInitialized();
+
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
             GUILayout.Space(10);
 
-            // Apply the custom toggle style
             GUIContent toggleContent = new GUIContent(value ? "YES" : "NO", toolTip);
-            bool newValue = GUILayout.Toggle(value, toggleContent, toggleStyle, GUILayout.Width(150), GUILayout.Height(35));
+            bool newValue = GUILayout.Toggle(value, toggleContent, PluginGUIHelper.toggleButtonStyle, GUILayout.Width(150), GUILayout.Height(35));
 
             GUILayout.EndHorizontal();
 
@@ -253,7 +178,9 @@ namespace Donuts
 
         public static bool Button(string label, string toolTip, GUIStyle style = null)
         {
-            style ??= GUI.skin.button;
+            EnsureStylesInitialized();
+
+            style ??= PluginGUIHelper.buttonStyle;
 
             GUIContent buttonContent = new GUIContent(label, toolTip);
             bool result = GUILayout.Button(buttonContent, style, GUILayout.Width(200));
@@ -265,6 +192,8 @@ namespace Donuts
 
         public static void Accordion(string label, string toolTip, System.Action drawContents)
         {
+            EnsureStylesInitialized();
+
             int accordionId = GUIUtility.GetControlID(FocusType.Passive);
 
             if (!accordionStates.ContainsKey(accordionId))
@@ -273,7 +202,7 @@ namespace Donuts
             }
 
             GUIContent buttonContent = new GUIContent(label, toolTip);
-            if (GUILayout.Button(buttonContent, accordionButtonStyle))
+            if (GUILayout.Button(buttonContent, PluginGUIHelper.buttonStyle))
             {
                 accordionStates[accordionId] = !accordionStates[accordionId];
             }
@@ -290,6 +219,8 @@ namespace Donuts
 
         public static KeyCode KeybindField(string label, string toolTip, KeyCode currentKey)
         {
+            EnsureStylesInitialized();
+
             int keybindId = GUIUtility.GetControlID(FocusType.Passive);
 
             if (!keybindStates.ContainsKey(keybindId))
@@ -300,26 +231,25 @@ namespace Donuts
 
             GUILayout.BeginHorizontal();
             GUIContent labelContent = new GUIContent(label, toolTip);
-            GUILayout.Label(labelContent, GUILayout.Width(200));
+            GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
             GUILayout.Space(10);
 
             if (keybindStates[keybindId])
             {
                 GUIContent waitingContent = new GUIContent("Press any key...", toolTip);
-                GUILayout.Button(waitingContent, keybindFieldStyle, GUILayout.Width(200));
-                isSettingKeybind = true; // Indicate that we are setting a keybind
+                GUILayout.Button(waitingContent, PluginGUIHelper.buttonStyle, GUILayout.Width(200));
+                isSettingKeybind = true;
             }
             else
             {
                 GUIContent keyContent = new GUIContent(currentKey.ToString(), toolTip);
-                if (GUILayout.Button(keyContent, keybindFieldStyle, GUILayout.Width(200)))
+                if (GUILayout.Button(keyContent, PluginGUIHelper.buttonStyle, GUILayout.Width(200)))
                 {
                     keybindStates[keybindId] = true;
-                    isSettingKeybind = true; // Indicate that we are setting a keybind
+                    isSettingKeybind = true;
                 }
             }
 
-            // Add a "Clear" button
             if (GUILayout.Button("Clear", GUILayout.Width(90)))
             {
                 currentKey = KeyCode.None;
@@ -334,16 +264,14 @@ namespace Donuts
                 {
                     newKeybinds[keybindId] = e.keyCode;
                     keybindStates[keybindId] = false;
-                    currentKey = e.keyCode; // Update the current key
-
-                    //delay 1 second non blocking
+                    currentKey = e.keyCode;
                     System.Threading.Tasks.Task.Delay(1000).ContinueWith(t => isSettingKeybind = false);
                 }
             }
 
             ShowTooltip();
 
-            return currentKey; // Return the updated keybind
+            return currentKey;
         }
 
         public static bool IsSettingKeybind()
@@ -356,16 +284,21 @@ namespace Donuts
             if (!string.IsNullOrEmpty(GUI.tooltip))
             {
                 Vector2 mousePosition = Event.current.mousePosition;
-                Vector2 size = tooltipStyle.CalcSize(new GUIContent(GUI.tooltip));
-                size.y = tooltipStyle.CalcHeight(new GUIContent(GUI.tooltip), size.x);
+                Vector2 size = PluginGUIHelper.tooltipStyle.CalcSize(new GUIContent(GUI.tooltip));
+                size.y = PluginGUIHelper.tooltipStyle.CalcHeight(new GUIContent(GUI.tooltip), size.x);
                 Rect tooltipRect = new Rect(mousePosition.x, mousePosition.y - size.y, size.x, size.y);
-                GUI.Box(tooltipRect, GUI.tooltip, tooltipStyle);
+                GUI.Box(tooltipRect, GUI.tooltip, PluginGUIHelper.tooltipStyle);
             }
         }
 
-        //used for finding the correct selection on dropdowns
         internal static int FindIndex<T>(Setting<T> setting)
         {
+            if (setting == null)
+            {
+                DonutsPlugin.Logger.LogError("Setting is null.");
+                return -1;
+            }
+
             for (int i = 0; i < setting.Options.Length; i++)
             {
                 if (EqualityComparer<T>.Default.Equals(setting.Options[i], setting.Value))
@@ -373,7 +306,8 @@ namespace Donuts
                     return i;
                 }
             }
-            return 0;
+            DonutsPlugin.Logger.LogError($"Value '{setting.Value}' not found in Options for setting '{setting.Name}'");
+            return -1;
         }
     }
 }

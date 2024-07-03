@@ -43,7 +43,5 @@ namespace Donuts.Patches
             Logger.LogWarning("Donuts bot preparation is complete...");
             yield return originalTask;
         }
-
-        
     }
 }

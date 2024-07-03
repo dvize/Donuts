@@ -8,19 +8,16 @@ namespace Donuts
     {
         internal static void Enable()
         {
-            // Apply the cached styles to ensure consistency
-            PluginGUIHelper.ApplyCachedStyles();
-
             GUILayout.Space(30);
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
             // Add toggles for DebugGizmos and gizmoRealSize
             DebugGizmos.Value = ImGUIToolkit.Toggle(DebugGizmos.Name, DebugGizmos.ToolTipText, DebugGizmos.Value);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             gizmoRealSize.Value = ImGUIToolkit.Toggle(gizmoRealSize.Name, gizmoRealSize.ToolTipText, gizmoRealSize.Value);
-            GUILayout.Space(10); 
+            GUILayout.Space(10);
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();

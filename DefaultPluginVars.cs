@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using BepInEx.Configuration;
-using DG.Tweening.Plugins;
 using Donuts.Models;
 using Newtonsoft.Json;
 using UnityEngine;
-using static GClass1738;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -98,7 +95,7 @@ namespace Donuts
         internal static Setting<KeyCode> CreateSpawnMarkerKey;
         internal static Setting<KeyCode> DeleteSpawnMarkerKey;
 
-        internal static string[] wildSpawnTypes = 
+        internal static string[] wildSpawnTypes =
         {
             "arenafighterevent",
             "assault",
@@ -184,6 +181,10 @@ namespace Donuts
         internal static Setting<string> scavScenarioSelection;
         internal static string[] pmcScenarioCombinedArray;
         internal static string[] scavScenarioCombinedArray;
+
+        // Temporarily store the scenario selections to initialize them later
+        internal static string pmcScenarioSelectionValue = null;
+        internal static string scavScenarioSelectionValue = null;
 
         //Default Constructor
         static DefaultPluginVars()
@@ -525,7 +526,7 @@ namespace Donuts
                 "Bot Cache Replenish Interval",
                 "The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
                 10f,
-                10f, 
+                10f,
                 0f,
                 300f);
 
@@ -596,7 +597,7 @@ namespace Donuts
                 "Wild Spawn Type",
                 "Select an option.",
                 "pmc",
-                "pmc", 
+                "pmc",
                 null,
                 null,
                 wildSpawnTypes);
@@ -738,9 +739,6 @@ namespace Donuts
 
             var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
 
-            // Temporarily store the scenario selections to initialize them later
-            string pmcScenarioSelectionValue = null;
-            string scavScenarioSelectionValue = null;
 
             foreach (var field in fields)
             {
@@ -820,7 +818,7 @@ namespace Donuts
             DefaultPluginVars.pmcScenarioSelection = new Setting<string>(
                 "PMC Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as PMC",
-                pmcScenarioSelectionValue ?? "live-like",
+                pmcScenarioSelectionValue,
                 "live-like",
                 null,
                 null,
@@ -830,7 +828,7 @@ namespace Donuts
             DefaultPluginVars.scavScenarioSelection = new Setting<string>(
                 "SCAV Raid Spawn Preset Selection",
                 "Select a preset to use when spawning as SCAV",
-                scavScenarioSelectionValue ?? "live-like",
+                scavScenarioSelectionValue,
                 "live-like",
                 null,
                 null,
@@ -840,4 +838,4 @@ namespace Donuts
 
     }
 }
-       
+

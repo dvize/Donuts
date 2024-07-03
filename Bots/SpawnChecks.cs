@@ -17,17 +17,17 @@ namespace Donuts
     {
         #region spawnchecks
 
-        internal static async Task<Vector3?> GetValidSpawnPosition(Entry hotspot, Vector3 coordinate, int maxSpawnAttempts)
+        internal static async Task<Vector3?> GetValidSpawnPosition(float hotspotMinDistFromPlayer, float hotspotMaxDist, float hotspotMinDist, Vector3 coordinate, int maxSpawnAttempts)
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
-                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspot, coordinate);
+                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspotMaxDist, hotspotMinDist, coordinate);
 
                 if (NavMesh.SamplePosition(spawnPosition, out var navHit, 2f, NavMesh.AllAreas))
                 {
                     spawnPosition = navHit.position;
 
-                    if (await IsValidSpawnPosition(spawnPosition, hotspot))
+                    if (await IsValidSpawnPosition(spawnPosition, hotspotMinDistFromPlayer))
                     {
 #if DEBUG
                         DonutComponent.Logger.LogDebug("Found spawn position at: " + spawnPosition);
@@ -42,17 +42,17 @@ namespace Donuts
             return null;
         }
 
-        private static Vector3 GenerateRandomSpawnPosition(Entry hotspot, Vector3 coordinate)
+        private static Vector3 GenerateRandomSpawnPosition(float hotspotMaxDist, float hotspotMinDist, Vector3 coordinate)
         {
-            float randomX = Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
-            float randomZ = Random.Range(-hotspot.MaxDistance, hotspot.MaxDistance);
+            float randomX = Random.Range(-hotspotMaxDist, hotspotMaxDist);
+            float randomZ = Random.Range(-hotspotMaxDist, hotspotMaxDist);
 
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
-        internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, Entry hotspot)
+        internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, float hotspotMinDistFromPlayer)
         {
-            if (spawnPosition == null || hotspot == null)
+            if (spawnPosition == null)
             {
                 DonutComponent.Logger.LogDebug("Spawn position or hotspot is null.");
                 return false;
@@ -71,12 +71,12 @@ namespace Donuts
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, hotspot));
+                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition));
             }
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
             {
-                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition, hotspot));
+                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition));
             }
 
             bool[] results = await UniTask.WhenAll(tasks);
@@ -145,11 +145,11 @@ namespace Donuts
             return !Physics.Raycast(ray, distance, LayerMaskClass.HighPolyWithTerrainMask);
         }
 
-        private static float GetMinDistanceFromPlayer(Entry hotspot)
+        internal static float GetMinDistanceFromPlayer()
         {
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                switch (hotspot.MapName.ToLower())
+                switch (DonutsBotPrep.maplocation)
                 {
                     case "bigmap": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerCustoms.Value;
                     case "factory4_day": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerFactory.Value;
@@ -162,18 +162,18 @@ namespace Donuts
                     case "woods": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerWoods.Value;
                     case "laboratory": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerLaboratory.Value;
                     case "interchange": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerInterchange.Value;
-                    default: return hotspot.MinSpawnDistanceFromPlayer;
+                    default: return 50f;
                 }
             }
             else
             {
-                return hotspot.MinSpawnDistanceFromPlayer;
+                return 0f;
             }
         }
 
-        private static float GetMinDistanceFromOtherBots(Entry hotspot)
+        internal static float GetMinDistanceFromOtherBots()
         {
-            switch (hotspot.MapName.ToLower())
+            switch (DonutsBotPrep.maplocation)
             {
                 case "bigmap": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsCustoms.Value;
                 case "factory4_day": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsFactory.Value;
@@ -190,9 +190,9 @@ namespace Donuts
             }
         }
 
-        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, Entry hotspot)
+        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position)
         {
-            float minDistanceFromPlayer = GetMinDistanceFromPlayer(hotspot);
+            float minDistanceFromPlayer = GetMinDistanceFromPlayer();
 
             var tasks = playerList
                 .Where(player => player != null && player.HealthController != null && player.HealthController.IsAlive)
@@ -210,9 +210,9 @@ namespace Donuts
             return results.Any(result => result);
         }
 
-        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position, Entry hotspot)
+        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position)
         {
-            float minDistanceFromOtherBots = GetMinDistanceFromOtherBots(hotspot);
+            float minDistanceFromOtherBots = GetMinDistanceFromOtherBots();
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
 
             var tasks = players
@@ -230,7 +230,6 @@ namespace Donuts
             bool[] results = await Task.WhenAll(tasks);
             return results.Any(result => result);
         }
-
 
         #endregion
     }
