@@ -287,7 +287,7 @@ namespace Donuts
 
             forceAllBotType = new Setting<string>(
                 "Force Bot Type for All Spawns",
-                "Force a specific faction for all PMC spawns or use the default specified faction in the Donuts spawn files. Default is a random faction.",
+                "Force a specific bot type for all spawns - this option converts all defined starting spawns and waves to the specified bot type. Default is Disabled.",
                 "Disabled",
                 "Disabled",
                 null,
