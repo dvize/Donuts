@@ -60,6 +60,8 @@ namespace Donuts
         internal static Gizmos gizmos;
         internal static int currentInitialPMCs = 0;
         internal static int currentInitialSCAVs = 0;
+        internal static int currentMaxPMC;
+        internal static int currentMaxSCAV;
 
         internal static GameWorld gameWorld;
         internal static BotSpawner botSpawnerClass;
@@ -182,6 +184,10 @@ namespace Donuts
             // reset starting bots boolean each raid
             hasSpawnedStartingBots = false;
 
+            // reset current max bot counts each raid
+            currentMaxPMC = 0;
+            currentMaxSCAV = 0;
+
             Logger.LogDebug("Setup PMC Bot limit: " + Initialization.PMCBotLimit);
             Logger.LogDebug("Setup SCAV Bot limit: " + Initialization.SCAVBotLimit);
 
@@ -296,6 +302,7 @@ namespace Donuts
             }
         }
 
+        // Checks trigger distance and spawn chance
         private bool CanSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
         {
             if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate) && DonutsBotPrep.maplocation == DonutsBotPrep.maplocation)
@@ -313,6 +320,7 @@ namespace Donuts
             return false;
         }
 
+        // Checks certain spawn options, reset groups timers
         private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
         {
             if (forceAllBotType.Value != "Disabled")
@@ -337,26 +345,6 @@ namespace Donuts
                 return;
             }
 
-            int count = botWave.MinGroupSize; // Assume botWave.MinGroupSize is the initial count
-            int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
-            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
-
-            if (wildSpawnType == "pmc" && activePMCs + count > Initialization.PMCBotLimit)
-            {
-                count = Initialization.PMCBotLimit - activePMCs;
-            }
-
-            if (wildSpawnType == "scav" && activeSCAVs + count > Initialization.SCAVBotLimit)
-            {
-                count = Initialization.SCAVBotLimit - activeSCAVs;
-            }
-
-            if (count <= 0)
-            {
-                ResetGroupTimers(botWave.GroupNum, wildSpawnType); // Reset timer if no bots can be spawned
-                return;
-            }
-
             botWave.TimesSpawned++;
             ResetGroupTimers(botWave.GroupNum, wildSpawnType);
 
@@ -368,6 +356,7 @@ namespace Donuts
             await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType);
         }
 
+        // Get the spawn wave configs from the waves json files
         public static BotWavesConfig GetBotWavesConfig(string selectionName)
         {
             var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == DonutsBotPrep.maplocation).Key;
@@ -441,6 +430,7 @@ namespace Donuts
         public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
 
+            // I have to do this because I get NREs for some reason otherwise
             var mapName = "";
 
             if (DonutsBotPrep.maplocation == "bigmap")
@@ -509,6 +499,7 @@ namespace Donuts
             }
         }
 
+        // Gets a list of spawn points for defined zones. Checks for certain keywords.
         public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
         {
             var spawnPointsDict = new Dictionary<string, Vector3>();

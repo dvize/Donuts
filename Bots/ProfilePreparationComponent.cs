@@ -256,6 +256,8 @@ namespace Donuts
                 maxBots = Initialization.SCAVBotLimit;
             }
 
+            Logger.LogDebug($"Max starting bots for {botType}: {maxBots}");
+
             int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
 
             // Get random spawn points, depending on StartingBots cfg, for all starting bots

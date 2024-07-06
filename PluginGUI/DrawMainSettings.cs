@@ -211,6 +211,12 @@ namespace Donuts
             }
             GUILayout.Space(10);
 
+            DefaultPluginVars.maxRespawnsPMC.Value = Slider(DefaultPluginVars.maxRespawnsPMC.Name, DefaultPluginVars.maxRespawnsPMC.ToolTipText, DefaultPluginVars.maxRespawnsPMC.Value, 0, 100)
+            GUILayout.Space(10);
+
+            DefaultPluginVars.maxRespawnsSCAV.Value = Slider(DefaultPluginVars.maxRespawnsSCAV.Name, DefaultPluginVars.maxRespawnsSCAV.ToolTipText, DefaultPluginVars.maxRespawnsSCAV.Value, 0, 100)
+            GUILayout.Space(10);
+
             GUILayout.EndVertical();
             GUILayout.BeginVertical();
 
@@ -248,7 +254,7 @@ namespace Donuts
 
         internal static void DrawMainSettingsBotAttributes()
         {
-            // Draw other spawn settings 
+            // Draw other spawn settings
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 

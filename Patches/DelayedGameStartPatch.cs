@@ -10,6 +10,8 @@ namespace Donuts.Patches
     public class DelayedGameStartPatch : ModulePatch
     {
         private static object localGameObj = null;
+        private static float maxWaitTime = DefaultPluginVars.maxRaidDelay.Value;
+
         protected override MethodBase GetTargetMethod()
         {
             Type localGameType = Aki.Reflection.Utils.PatchConstants.LocalGameType;
@@ -20,13 +22,15 @@ namespace Donuts.Patches
         private static void PatchPostfix(ref IEnumerator __result, object __instance, float startDelay)
         {
             localGameObj = __instance;
-            __result = addIterationsToWaitForBotGenerators(__result);  //thanks danW
+            __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
         }
+
         private static IEnumerator addIterationsToWaitForBotGenerators(IEnumerator originalTask)
         {
             // Now also wait for all bots to be fully initialized
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             float lastLogTime = Time.time;
+            float startTime = Time.time;
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
@@ -37,11 +41,23 @@ namespace Donuts.Patches
                     lastLogTime = Time.time; // Update the last log time
                     Logger.LogWarning("Donuts still waiting...");
                 }
+
+                if (Time.time - startTime >= maxWaitTime)
+                {
+                    Logger.LogWarning("Max raid delay time reached. Proceeding with raid start, some bots might spawn late!");
+                    break;
+                }
             }
 
             // Continue with the original task
             Logger.LogWarning("Donuts bot preparation is complete...");
             yield return originalTask;
+        }
+
+        // Method to set the max wait time from configuration
+        public static void SetMaxWaitTime(float waitTime)
+        {
+            maxWaitTime = waitTime;
         }
     }
 }

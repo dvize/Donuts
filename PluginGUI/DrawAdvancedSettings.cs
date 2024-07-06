@@ -17,6 +17,15 @@ namespace Donuts
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical();
 
+            // Slider for maxRaidDelay
+            maxRaidDelay.Value = ImGUIToolkit.Slider(
+                maxRaidDelay.Name,
+                maxRaidDelay.ToolTipText,
+                maxRaidDelay.Value,
+                maxRaidDelay.MinValue,
+                maxRaidDelay.MaxValue
+            );
+
             // Slider for replenishInterval
             replenishInterval.Value = ImGUIToolkit.Slider(
                 replenishInterval.Name,
