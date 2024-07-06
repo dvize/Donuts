@@ -45,7 +45,7 @@ namespace Donuts
             pmcFactionIndex = FindIndex(DefaultPluginVars.pmcFaction);
             forceAllBotTypeIndex = FindIndex(DefaultPluginVars.forceAllBotType);
 
-            
+
 
 
             if (DefaultPluginVars.pmcScenarioSelection.Options != null && DefaultPluginVars.pmcScenarioSelection.Options.Length > 0)
@@ -211,10 +211,10 @@ namespace Donuts
             }
             GUILayout.Space(10);
 
-            DefaultPluginVars.maxRespawnsPMC.Value = Slider(DefaultPluginVars.maxRespawnsPMC.Name, DefaultPluginVars.maxRespawnsPMC.ToolTipText, DefaultPluginVars.maxRespawnsPMC.Value, 0, 100)
+            DefaultPluginVars.maxRespawnsPMC.Value = Slider(DefaultPluginVars.maxRespawnsPMC.Name, DefaultPluginVars.maxRespawnsPMC.ToolTipText, DefaultPluginVars.maxRespawnsPMC.Value, 0, 100);
             GUILayout.Space(10);
 
-            DefaultPluginVars.maxRespawnsSCAV.Value = Slider(DefaultPluginVars.maxRespawnsSCAV.Name, DefaultPluginVars.maxRespawnsSCAV.ToolTipText, DefaultPluginVars.maxRespawnsSCAV.Value, 0, 100)
+            DefaultPluginVars.maxRespawnsSCAV.Value = Slider(DefaultPluginVars.maxRespawnsSCAV.Name, DefaultPluginVars.maxRespawnsSCAV.ToolTipText, DefaultPluginVars.maxRespawnsSCAV.Value, 0, 100);
             GUILayout.Space(10);
 
             GUILayout.EndVertical();

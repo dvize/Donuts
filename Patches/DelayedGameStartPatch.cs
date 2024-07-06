@@ -10,8 +10,6 @@ namespace Donuts.Patches
     public class DelayedGameStartPatch : ModulePatch
     {
         private static object localGameObj = null;
-        private static float maxWaitTime = DefaultPluginVars.maxRaidDelay.Value;
-
         protected override MethodBase GetTargetMethod()
         {
             Type localGameType = Aki.Reflection.Utils.PatchConstants.LocalGameType;
@@ -31,6 +29,9 @@ namespace Donuts.Patches
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             float lastLogTime = Time.time;
             float startTime = Time.time;
+
+            float maxWaitTime = DefaultPluginVars.maxRaidDelay.Value;
+            Logger.LogDebug("maxWaitTime: " + maxWaitTime);
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
@@ -52,12 +53,6 @@ namespace Donuts.Patches
             // Continue with the original task
             Logger.LogWarning("Donuts bot preparation is complete...");
             yield return originalTask;
-        }
-
-        // Method to set the max wait time from configuration
-        public static void SetMaxWaitTime(float waitTime)
-        {
-            maxWaitTime = waitTime;
         }
     }
 }

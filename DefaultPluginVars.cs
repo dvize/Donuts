@@ -531,7 +531,7 @@ namespace Donuts
             // Advanced Settings
             maxRaidDelay = new Setting<float>(
                 "Raid Load Time Delay",
-                "Maximum time (in seconds) that Donuts will force delay raid load so that Donuts has time to generate bot data for all starting points.\nThis is to avoid bot spawn delays on raid start. Default is 10 seconds, that means if necessary, Donuts will add a 10 second forced delay AFTER the raid load timers reaches 0.",
+                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 10 seconds.",
                 10f,
                 10f,
                 0f,
@@ -555,9 +555,9 @@ namespace Donuts
 
             despawnInterval = new Setting<float>(
                 "Despawn Bot Interval",
-                "This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
-                30f,
-                30f,
+                "This value is the number in seconds that Donuts should despawn bots. Default is 15 seconds. Note: decreasing this value may affect your performance.",
+                15f,
+                15f,
                 5f,
                 600f);
 

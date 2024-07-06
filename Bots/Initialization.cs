@@ -144,6 +144,9 @@ namespace Donuts
                 }
 
                 fileLoaded = true;
+
+                // Display selected preset
+                DonutsPlugin.LogSelectedPreset(DonutsBotPrep.selectionName);
             }
         }
     }

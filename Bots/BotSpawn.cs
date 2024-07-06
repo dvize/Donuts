@@ -110,12 +110,12 @@ namespace Donuts
 
             if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
             {
-                count = Initialization.PMCBotLimit - activePMCs;
+                maxCount = Initialization.PMCBotLimit - activePMCs;
             }
 
             if (wildSpawnType == "scav" && activeSCAVs + maxCount > Initialization.SCAVBotLimit)
             {
-                count = Initialization.SCAVBotLimit - activeSCAVs;
+                maxCount = Initialization.SCAVBotLimit - activeSCAVs;
             }
 
             bool isGroup = maxCount > 1;
@@ -178,7 +178,7 @@ namespace Donuts
 
             if (DonutComponent.currentMaxPMC + count > Initialization.PMCBotLimit)
             {
-                Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
+                DonutComponent.Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
                 return;
             }
             else
@@ -188,7 +188,7 @@ namespace Donuts
 
             if (DonutComponent.currentMaxSCAV + count > Initialization.SCAVBotLimit)
             {
-                Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
+                DonutComponent.Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
                 return;
             }
             else
@@ -219,7 +219,7 @@ namespace Donuts
 
             if (DonutComponent.currentMaxPMC + 1 > Initialization.PMCBotLimit)
             {
-                Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
+                DonutComponent.Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
                 return;
             }
             else
@@ -229,7 +229,7 @@ namespace Donuts
 
             if (DonutComponent.currentMaxSCAV + 1 > Initialization.SCAVBotLimit)
             {
-                Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
+                DonutComponent.Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
                 return;
             }
             else
