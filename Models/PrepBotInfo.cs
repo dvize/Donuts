@@ -1,5 +1,4 @@
 ﻿using EFT;
-using BotCacheClass = GClass591;
 
 namespace Donuts.Models
 {
@@ -8,7 +7,7 @@ namespace Donuts.Models
         public WildSpawnType SpawnType { get; set; }
         public BotDifficulty Difficulty { get; set; }
         public EPlayerSide Side { get; set; }
-        public BotCacheClass Bots { get; set; }
+        public BotCreationDataClass Bots { get; set; }
         public bool IsGroup { get; set; }
         public int GroupSize { get; set; }
 

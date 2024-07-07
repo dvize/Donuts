@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Aki.PrePatch;
+using SPT.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
@@ -12,7 +12,6 @@ using EFT;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
-using BotCacheClass = GClass591;
 using IProfileData = GClass592;
 
 #pragma warning disable IDE0007, CS4014
@@ -34,9 +33,6 @@ namespace Donuts
         {
             get; set;
         }
-
-        private static WildSpawnType sptUsec;
-        private static WildSpawnType sptBear;
 
         private HashSet<string> usedZonesPMC = new HashSet<string>();
         private HashSet<string> usedZonesSCAV = new HashSet<string>();
@@ -118,9 +114,6 @@ namespace Donuts
             botSpawnInfos = new List<BotSpawnInfo>();
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
-
-            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
@@ -232,11 +225,9 @@ namespace Donuts
 
         private async UniTask InitializePMCType(StartingBotConfig startingBotConfig, string maplocation)
         {
-            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
-            WildSpawnType wildSpawnType = GetPMCWildSpawnType(sptUsec, sptBear);
-            EPlayerSide side = GetPMCSide(wildSpawnType, sptUsec, sptBear);
+            WildSpawnType wildSpawnType = GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
+            EPlayerSide side = GetPMCSide(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
 
             await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
         }
@@ -457,7 +448,7 @@ namespace Donuts
 #if DEBUG
             Logger.LogDebug($"Creating bot: Type={botInfo.SpawnType}, Difficulty={botInfo.Difficulty}, Side={botInfo.Side}, GroupSize={groupSize}");
 #endif
-            BotCacheClass bot = await BotCacheClass.Create(botData, botCreator, groupSize, botSpawnerClass);
+            BotCreationDataClass bot = await BotCreationDataClass.Create(botData, botCreator, groupSize, botSpawnerClass);
             if (bot == null || bot.Profiles == null || !bot.Profiles.Any())
             {
 #if DEBUG
@@ -472,7 +463,7 @@ namespace Donuts
 #endif
         }
 
-        public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
+        public static BotCreationDataClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
             if (DonutsBotPrep.BotInfos == null)
             {
@@ -500,7 +491,7 @@ namespace Donuts
             }
         }
 
-        public static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
+        public static List<BotCreationDataClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
             return BotInfos
                 .Where(b => b.SpawnType == spawnType && b.Difficulty == botDifficulty)

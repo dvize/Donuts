@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Aki.PrePatch;
-using Aki.Reflection.Utils;
+using SPT.PrePatch;
+using SPT.Reflection.Utils;
 using BepInEx.Logging;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
@@ -31,8 +31,8 @@ namespace Donuts
 
         internal List<WildSpawnType> validDespawnListPMC = new List<WildSpawnType>()
         {
-            (WildSpawnType)AkiBotsPrePatcher.sptUsecValue,
-            (WildSpawnType)AkiBotsPrePatcher.sptBearValue
+            WildSpawnType.pmcUSEC,
+            WildSpawnType.pmcBEAR
         };
 
         internal List<WildSpawnType> validDespawnListScav = new List<WildSpawnType>()
@@ -77,9 +77,6 @@ namespace Donuts
         internal static MapBotWaves botWaves;
         internal static Dictionary<string, MethodInfo> methodCache;
         internal static MethodInfo displayMessageNotificationMethod;
-
-        internal static WildSpawnType sptUsec;
-        internal static WildSpawnType sptBear;
 
         internal static bool isInBattle;
         internal static float timeSinceLastHit = 0;
@@ -262,8 +259,6 @@ namespace Donuts
 
         private async UniTask SpawnBotWaves(MapBotWaves botWaves)
         {
-            bool spawnTriggered = false;
-
             foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
             {
                 if (botWave.ShouldSpawn())
@@ -288,7 +283,6 @@ namespace Donuts
                         if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
                         {
                             await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType);
-                            spawnTriggered = true;
                             break;
                         }
                     }
@@ -298,7 +292,7 @@ namespace Donuts
 
         private bool CanSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
         {
-            if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate) && DonutsBotPrep.maplocation == DonutsBotPrep.maplocation)
+            if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate))
             {
                 bool isHotspotZone = zone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
 
@@ -655,8 +649,8 @@ namespace Donuts
                 hardStopPercent = hardStopPercentSCAV.Value;
             }
 
-            int raidTimeLeftTime = (int)Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds(); // Time left
-            int raidTimeLeftPercent = (int)(Aki.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100f); // Percent left
+            int raidTimeLeftTime = (int)SPT.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRemainingRaidSeconds(); // Time left
+            int raidTimeLeftPercent = (int)(SPT.SinglePlayer.Utils.InRaid.RaidTimeUtil.GetRaidTimeRemainingFraction() * 100f); // Percent left
 
             //why is this method failing?
 

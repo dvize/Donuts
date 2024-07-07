@@ -129,10 +129,10 @@ namespace Donuts
             "gifter",
             "marksman",
             "pmc",
+            "pmcBEAR",
+            "pmcUSEC",
             "sectantpriest",
             "sectantwarrior",
-            "sptusec",
-            "sptbear",
         };
 
 
