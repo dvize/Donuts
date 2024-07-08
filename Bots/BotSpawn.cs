@@ -247,7 +247,7 @@ namespace Donuts
         {
             int factionRatio = pmcFactionRatio.Value;
             Random rand = new Random();
-            return rand.Next(100) < factionRatio ? sptUsec : sptBear;
+            return rand.Next(100) < factionRatio ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
         }
 
         #region botHelperMethods
@@ -259,7 +259,7 @@ namespace Donuts
             {
                 return grabSCAVDifficulty();
             }
-            else if (wildSpawnType == sptUsec || wildSpawnType == sptBear || wildSpawnType == WildSpawnType.pmcBot)
+            else if (wildSpawnType == WildSpawnType.pmcUSEC || wildSpawnType == WildSpawnType.pmcBEAR || wildSpawnType == WildSpawnType.pmcBot)
             {
                 return grabPMCDifficulty();
             }
@@ -540,11 +540,11 @@ namespace Donuts
 
         internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
+            if (spawnType == WildSpawnType.pmcBot || spawnType == WildSpawnType.pmcUSEC)
             {
                 return EPlayerSide.Usec;
             }
-            else if (spawnType == sptBear)
+            else if (spawnType == WildSpawnType.pmcBEAR)
             {
                 return EPlayerSide.Bear;
             }

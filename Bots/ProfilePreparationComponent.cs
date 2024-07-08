@@ -229,6 +229,9 @@ namespace Donuts
             WildSpawnType wildSpawnType = GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
             EPlayerSide side = GetPMCSide(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
 
+            Logger.LogDebug(wildSpawnType);
+            Logger.LogDebug(side);
+
             await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
         }
 
@@ -317,22 +320,22 @@ namespace Donuts
             }
             else if (DefaultPluginVars.pmcFaction.Value == "USEC")
             {
-                return sptUsec;
+                return WildSpawnType.pmcUSEC;
             }
             else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
             {
-                return sptBear;
+                return WildSpawnType.pmcBEAR;
             }
             return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
         }
 
         private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (wildSpawnType == sptUsec)
+            if (wildSpawnType == WildSpawnType.pmcUSEC)
             {
                 return EPlayerSide.Usec;
             }
-            else if (wildSpawnType == sptBear)
+            else if (wildSpawnType == WildSpawnType.pmcBEAR)
             {
                 return EPlayerSide.Bear;
             }
