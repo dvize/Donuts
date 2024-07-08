@@ -21,8 +21,8 @@ using UnityEngine;
 namespace Donuts
 {
 
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.5.0")]
-    [BepInDependency("com.spt-SPT.core", "3.8.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.5.1")]
+    [BepInDependency("com.SPT.core", "3.9.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("com.Arys.UnityToolkit")]
     public class DonutsPlugin : BaseUnityPlugin
