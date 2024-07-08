@@ -40,6 +40,8 @@ namespace Donuts
         internal static Setting<bool> hotspotIgnoreHardCapSCAV;
         internal static Setting<int> pmcFactionRatio;
         internal static Setting<float> battleStateCoolDown;
+        internal static Setting<int> maxRespawnsPMC;
+        internal static Setting<int> maxRespawnsSCAV;
 
         // Global Minimum Spawn Distance From Player
         internal static Setting<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -74,6 +76,7 @@ namespace Donuts
         internal static Setting<string> groupWeightDistroLow;
         internal static Setting<string> groupWeightDistroDefault;
         internal static Setting<string> groupWeightDistroHigh;
+        internal static Setting<float> maxRaidDelay;
 
         // Debugging
         internal static Setting<bool> DebugGizmos;
@@ -321,14 +324,6 @@ namespace Donuts
                 300,
                 300);
 
-            hardStopPercentPMC = new Setting<int>(
-                "PMC Spawn Hard Stop: Percent Left of Raid",
-                "The percentage of time left in your raid that will stop any further PMC spawns (if option is enabled). Default is 50 percent of the full raid time.",
-                50,
-                50,
-                0,
-                100);
-
             hardStopOptionSCAV = new Setting<bool>(
                 "SCAV Spawn Hard Stop",
                 "If enabled, all SCAV spawns stop completely once there is n time or percentage time left in your raid. This is configurable in either seconds or percentage (see below).",
@@ -384,6 +379,18 @@ namespace Donuts
                 "It will stop spawning bots until you haven't been hit for X amount of seconds\nas you are still considered being in battle",
                 20f,
                 20f);
+
+            maxRespawnsPMC = new Setting<int>(
+                "Maximum number of PMC respawns per raid",
+                "Once Donuts has spawned this many PMCs in a raid it will skip all subsequent triggered PMC spawns. Default is 0 (unlimited)",
+                0,
+                0);
+
+            maxRespawnsSCAV = new Setting<int>(
+                "Maximum number of SCAV respawns per raid",
+                "Once Donuts has spawned this many SCAVs in a raid it will skip all subsequent triggered SCAV spawns. Default is 0 (unlimited)",
+                0,
+                0);
 
             // Global Minimum Spawn Distance From Player
             #region global mininum spawn distances
@@ -522,6 +529,14 @@ namespace Donuts
             #endregion
 
             // Advanced Settings
+            maxRaidDelay = new Setting<float>(
+                "Raid Load Time Delay",
+                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 10 seconds.",
+                10f,
+                10f,
+                0f,
+                60f);
+
             replenishInterval = new Setting<float>(
                 "Bot Cache Replenish Interval",
                 "The time interval for Donuts to re-fill its bot data cache. Leave default unless you know what you're doing.",
@@ -540,9 +555,9 @@ namespace Donuts
 
             despawnInterval = new Setting<float>(
                 "Despawn Bot Interval",
-                "This value is the number in seconds that Donuts should despawn bots. Default is 10 seconds. Note: decreasing this value may affect your performance.",
-                30f,
-                30f,
+                "This value is the number in seconds that Donuts should despawn bots. Default is 15 seconds. Note: decreasing this value may affect your performance.",
+                15f,
+                15f,
                 5f,
                 600f);
 
