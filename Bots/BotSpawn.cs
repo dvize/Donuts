@@ -20,9 +20,6 @@ namespace Donuts
 {
     internal class BotSpawn
     {
-        private const string PmcSpawnTypes = "pmc,sptusec,sptbear";
-        private const string ScavSpawnType = "assault";
-
         internal static AICorePoint GetClosestCorePoint(Vector3 position)
         {
             var botGame = Singleton<IBotGame>.Instance;
@@ -75,11 +72,9 @@ namespace Donuts
 #if DEBUG
             DonutComponent.Logger.LogDebug($"Spawning a group of {count} bots.");
 #endif
-            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType, sptUsec, sptBear);
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, sptUsec, sptBear);
+            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
 
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, count);
             if (cachedBotGroup == null)
@@ -110,11 +105,11 @@ namespace Donuts
         private static async UniTask SpawnSingleBot(HotspotTimer hotspotTimer, WildSpawnType wildSpawnType, Vector3 coordinate)
         {
             DonutComponent.Logger.LogDebug($"Spawning a single bot.");
-            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType, sptUsec, sptBear);
+            
+            
+            EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, sptUsec, sptBear);
+            BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
             Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(hotspotTimer.Hotspot, coordinate, maxSpawnTriesPerBot.Value);
@@ -129,33 +124,33 @@ namespace Donuts
 
         private static WildSpawnType DetermineWildSpawnType(HotspotTimer hotspotTimer, string hotspotSpawnType)
         {
-            WildSpawnType sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            WildSpawnType sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
+            
+            
             WildSpawnType wildSpawnType = GetWildSpawnType(
                 forceAllBotType.Value == "PMC" ? "pmc" :
                 forceAllBotType.Value == "SCAV" ? "assault" :
-                hotspotTimer.Hotspot.WildSpawnType, sptUsec, sptBear);
+                hotspotTimer.Hotspot.WildSpawnType);
 
-            return wildSpawnType == GetWildSpawnType("pmc", sptUsec, sptBear) ? DeterminePMCFactionBasedOnRatio(sptUsec, sptBear) : wildSpawnType;
+            return wildSpawnType == GetWildSpawnType("pmc") ? DeterminePMCFactionBasedOnRatio() : wildSpawnType;
         }
 
-        private static WildSpawnType DeterminePMCFactionBasedOnRatio(WildSpawnType sptUsec, WildSpawnType sptBear)
+        private static WildSpawnType DeterminePMCFactionBasedOnRatio()
         {
             int factionRatio = pmcFactionRatio.Value;
             Random rand = new Random();
-            return rand.Next(100) < factionRatio ? sptUsec : sptBear;
+            return rand.Next(100) < factionRatio ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
         }
 
         #region botHelperMethods
 
         #region botDifficulty
-        internal static BotDifficulty GetBotDifficulty(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        internal static BotDifficulty GetBotDifficulty(WildSpawnType wildSpawnType)
         {
             if (wildSpawnType == WildSpawnType.assault)
             {
                 return grabSCAVDifficulty();
             }
-            else if (wildSpawnType == sptUsec || wildSpawnType == sptBear || wildSpawnType == WildSpawnType.pmcBot)
+            else if (wildSpawnType == WildSpawnType.pmcUSEC || wildSpawnType == WildSpawnType.pmcBEAR || wildSpawnType == WildSpawnType.pmcBot)
             {
                 return grabPMCDifficulty();
             }
@@ -285,7 +280,7 @@ namespace Donuts
 
         internal static async UniTask CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource)
         {
-            BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType, (WildSpawnType)AkiBotsPrePatcher.sptUsecValue, (WildSpawnType)AkiBotsPrePatcher.sptBearValue);
+            BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType);
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCacheClass bot = await BotCacheClass.Create(botData, ibotCreator, 1, botSpawnerClass);
@@ -351,7 +346,7 @@ namespace Donuts
             return false;
         }
 
-        internal static WildSpawnType GetWildSpawnType(string spawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        internal static WildSpawnType GetWildSpawnType(string spawnType)
         {
             switch (spawnType.ToLower())
             {
@@ -416,11 +411,11 @@ namespace Donuts
                 case "sectantwarrior":
                     return WildSpawnType.sectantWarrior;
                 case "usec":
-                case "sptusec":
-                    return sptUsec;
+                case "pmcUSEC":
+                    return WildSpawnType.pmcUSEC;
                 case "bear":
-                case "sptbear":
-                    return sptBear;
+                case "pmcBEAR":
+                    return WildSpawnType.pmcBEAR;
                 case "followerbigpipe":
                     return WildSpawnType.followerBigPipe;
                 case "followerbirdeye":
@@ -428,19 +423,19 @@ namespace Donuts
                 case "bossknight":
                     return WildSpawnType.bossKnight;
                 case "pmc":
-                    return UnityEngine.Random.Range(0, 2) == 0 ? sptUsec : sptBear;
+                    return UnityEngine.Random.Range(0, 2) == 0 ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
                 default:
                     return WildSpawnType.assault;
             }
         }
 
-        internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
+        internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
         {
-            if (spawnType == WildSpawnType.pmcBot || spawnType == sptUsec)
+            if (spawnType == WildSpawnType.pmcBot || spawnType == WildSpawnType.pmcUSEC)
             {
                 return EPlayerSide.Usec;
             }
-            else if (spawnType == sptBear)
+            else if (spawnType == WildSpawnType.pmcBEAR)
             {
                 return EPlayerSide.Bear;
             }
