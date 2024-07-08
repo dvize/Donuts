@@ -20,13 +20,18 @@ namespace Donuts.Patches
         private static void PatchPostfix(ref IEnumerator __result, object __instance)
         {
             localGameObj = __instance;
-            __result = addIterationsToWaitForBotGenerators(__result);  //thanks danW
+            __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
         }
+
         private static IEnumerator addIterationsToWaitForBotGenerators(IEnumerator originalTask)
         {
             // Now also wait for all bots to be fully initialized
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             float lastLogTime = Time.time;
+            float startTime = Time.time;
+
+            float maxWaitTime = DefaultPluginVars.maxRaidDelay.Value;
+            Logger.LogDebug("maxWaitTime: " + maxWaitTime);
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
@@ -36,6 +41,12 @@ namespace Donuts.Patches
                 {
                     lastLogTime = Time.time; // Update the last log time
                     Logger.LogWarning("Donuts still waiting...");
+                }
+
+                if (Time.time - startTime >= maxWaitTime)
+                {
+                    Logger.LogWarning("Max raid delay time reached. Proceeding with raid start, some bots might spawn late!");
+                    break;
                 }
             }
 

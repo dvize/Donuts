@@ -282,18 +282,16 @@ namespace Donuts
                 .Aggregate((currentPreset, nextPreset) =>
                     randomWeight < (currentPreset.Weight += nextPreset.Weight) ? currentPreset : nextPreset);
 
-            LogSelectedPreset(selectedPreset.Name);
-
             return selectedPreset.Name;
         }
 
-        private static void LogSelectedPreset(string selectedPreset)
+        public static void LogSelectedPreset(string selectedPreset)
         {
-            Console.WriteLine($"Donuts: Random Selected Preset: {selectedPreset}");
+            Console.WriteLine($"Donuts Selected Spawn Preset: {selectedPreset}");
 
             if (DefaultPluginVars.ShowRandomFolderChoice.Value && DonutComponent.methodCache.TryGetValue("DisplayMessageNotification", out var displayMessageNotificationMethod))
             {
-                var txt = $"Donuts Random Selected Preset: {selectedPreset}";
+                var txt = $"Donuts Selected Spawn Preset: {selectedPreset}";
                 EFT.UI.ConsoleScreen.Log(txt);
                 displayMessageNotificationMethod.Invoke(null, new object[] { txt, ENotificationDurationType.Long, ENotificationIconType.Default, Color.yellow });
             }
