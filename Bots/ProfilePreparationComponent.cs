@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
@@ -9,8 +8,8 @@ using Donuts.Models;
 using EFT;
 using HarmonyLib;
 using UnityEngine;
-using BotCacheClass = GClass591;
-using IProfileData = GClass592;
+using BotCacheClass = BotCreationDataClass;
+using IProfileData = GClass605;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -24,9 +23,6 @@ namespace Donuts
         private static Player mainplayer;
 
         internal static Dictionary<string, WildSpawnType> OriginalBotSpawnTypes;
-
-        private static WildSpawnType sptUsec;
-        private static WildSpawnType sptBear;
 
         public static List<PrepBotInfo> BotInfos
         {
@@ -102,9 +98,6 @@ namespace Donuts
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
 
-            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
-
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
                 OriginalBotSpawnTypes.Remove(bot.Profile.Id);
@@ -173,11 +166,11 @@ namespace Donuts
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        var botInfoUsec = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, false, 1);
+                        var botInfoUsec = new PrepBotInfo(WildSpawnType.pmcUSEC, difficulty, EPlayerSide.Usec, false, 1);
                         await CreateBot(botInfoUsec, botInfoUsec.IsGroup, botInfoUsec.GroupSize);
                         BotInfos.Add(botInfoUsec);
 
-                        var botInfoBear = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, false, 1);
+                        var botInfoBear = new PrepBotInfo(WildSpawnType.pmcBEAR, difficulty, EPlayerSide.Bear, false, 1);
                         await CreateBot(botInfoBear, botInfoBear.IsGroup, botInfoBear.GroupSize);
                         BotInfos.Add(botInfoBear);
                     }
@@ -185,11 +178,11 @@ namespace Donuts
 
                 foreach (int groupSize in groupSizes)
                 {
-                    var botInfoUsecGroup = new PrepBotInfo(sptUsec, difficulty, EPlayerSide.Usec, true, groupSize);
+                    var botInfoUsecGroup = new PrepBotInfo(WildSpawnType.pmcUSEC, difficulty, EPlayerSide.Usec, true, groupSize);
                     await CreateBot(botInfoUsecGroup, botInfoUsecGroup.IsGroup, botInfoUsecGroup.GroupSize);
                     BotInfos.Add(botInfoUsecGroup);
 
-                    var botInfoBearGroup = new PrepBotInfo(sptBear, difficulty, EPlayerSide.Bear, true, groupSize);
+                    var botInfoBearGroup = new PrepBotInfo(WildSpawnType.pmcBEAR, difficulty, EPlayerSide.Bear, true, groupSize);
                     await CreateBot(botInfoBearGroup, botInfoBearGroup.IsGroup, botInfoBearGroup.GroupSize);
                     BotInfos.Add(botInfoBearGroup);
                 }

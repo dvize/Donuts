@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Reflection;
-using Aki.Reflection.Patching;
-using Donuts;
+using SPT.Reflection.Patching;
 using UnityEngine;
 
 namespace Donuts.Patches
@@ -12,7 +11,7 @@ namespace Donuts.Patches
         private static object localGameObj = null;
         protected override MethodBase GetTargetMethod()
         {
-            Type localGameType = Aki.Reflection.Utils.PatchConstants.LocalGameType;
+            Type localGameType = SPT.Reflection.Utils.PatchConstants.LocalGameType;
             return localGameType.GetMethod("method_18", BindingFlags.Public | BindingFlags.Instance);
         }
 

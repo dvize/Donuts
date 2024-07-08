@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Aki.PrePatch;
-using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
 using Donuts.Models;
 using Cysharp.Threading.Tasks;
 using static Donuts.DonutComponent;
-using static Donuts.DefaultPluginVars;
-using static Donuts.Gizmos;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -40,9 +35,6 @@ namespace Donuts
             SCAVBotLimit = 0;
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
-
-            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
-            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
 
         internal static void SetupBotLimit(string folderName)

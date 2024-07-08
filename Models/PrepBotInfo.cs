@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using EFT;
-using BotCacheClass = GClass591;
+﻿using EFT;
+using BotCacheClass = BotCreationDataClass;
 
 namespace Donuts.Models
 {

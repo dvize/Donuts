@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Aki.PrePatch;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
 using Donuts.Models;
@@ -11,8 +10,8 @@ using HarmonyLib;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
 using static Donuts.DonutComponent;
-using BotCacheClass = GClass591;
-using IProfileData = GClass592;
+using BotCacheClass = BotCreationDataClass;
+using IProfileData = GClass605;
 using Random = System.Random;
 
 #pragma warning disable IDE0007, IDE0044

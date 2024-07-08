@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using EFT;
 using static Donuts.DonutComponent;
-using BotCacheClass = GClass591;
+using BotCacheClass = BotCreationDataClass;
 
 namespace Donuts.Models
 {
