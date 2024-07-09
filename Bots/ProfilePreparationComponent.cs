@@ -247,7 +247,7 @@ namespace Donuts
                 }
 
                 var wildSpawnType = botType == "PMC" ? GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR) : WildSpawnType.assault;
-                var side = botType == "PMC" ? GetPMCSide(wildSpawnType, (WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR)) : EPlayerSide.Savage;
+                var side = botType == "PMC" ? GetPMCSide(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR) : EPlayerSide.Savage;
 
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
