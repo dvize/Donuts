@@ -49,7 +49,7 @@ namespace Donuts
             toggleGUIKey = Config.Bind(
                 "Config Settings",
                 "Key To Enable/Disable Config Interface",
-                new KeyboardShortcut(KeyCode.F8),
+                new KeyboardShortcut(KeyCode.F9),
                 "Key to Enable/Disable Donuts Configuration Menu");
 
             escapeKey = KeyCode.Escape;
