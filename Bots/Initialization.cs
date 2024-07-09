@@ -97,7 +97,7 @@ namespace Donuts
             }
         }
 
-        internal static async UniTask LoadFightLocations()
+        internal static async UniTask LoadFightLocations(CancellationToken cancellationToken)
         {
             if (!fileLoaded)
             {

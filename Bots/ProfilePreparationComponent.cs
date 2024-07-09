@@ -20,6 +20,7 @@ namespace Donuts
 {
     internal class DonutsBotPrep : MonoBehaviour
     {
+        private CancellationToken cancellationToken;
         internal static string selectionName;
         internal static string maplocation;
         private static GameWorld gameWorld;
@@ -105,6 +106,8 @@ namespace Donuts
 
         public async void Awake()
         {
+            cancellationToken = this.GetCancellationTokenOnDestroy();
+
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
@@ -155,7 +158,7 @@ namespace Donuts
                     return;
                 }
 
-                await InitializeAllBotInfos(startingBotConfig, maplocation);
+                await InitializeAllBotInfos(startingBotConfig, maplocation, cancellationToken);
             }
             else
             {
@@ -194,7 +197,7 @@ namespace Donuts
             }
         }
 
-        private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation, CancellationToken cancellationToken)
         {
             await UniTask.WhenAll(
                 InitializeBotInfos(startingBotConfig, maplocation, "PMC"),
@@ -202,7 +205,7 @@ namespace Donuts
             );
         }
 
-        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation, string botType)
+        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation, string botType, CancellationToken cancellationToken)
         {
             if (DefaultPluginVars.forceAllBotType.Value == "PMC")
             {
@@ -381,7 +384,7 @@ namespace Donuts
             }
         }
 
-        private async UniTask ReplenishAllBots()
+        private async UniTask ReplenishAllBots(CancellationToken cancellationToken)
         {
             isReplenishing = true;
             int singleBotsCount = 0;
@@ -429,7 +432,7 @@ namespace Donuts
             return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
         }
 
-        internal static async UniTask CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
+        internal static async UniTask CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize, CancellationToken cancellationToken)
         {
             var botData = new IProfileData(botInfo.Side, botInfo.SpawnType, botInfo.Difficulty, 0f, null);
 #if DEBUG

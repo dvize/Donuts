@@ -177,7 +177,7 @@ namespace Donuts
             }
         }
 
-        internal static async UniTask WriteToJsonFile()
+        internal static async UniTask WriteToJsonFile(CancellationToken cancellationToken)
         {
             // Check if any of the required objects are null
             if (Donuts.DonutComponent.gameWorld == null)

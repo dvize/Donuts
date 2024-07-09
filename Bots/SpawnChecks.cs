@@ -97,7 +97,7 @@ namespace Donuts
             return true;
         }
 
-        internal static async UniTask<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
+        internal static async UniTask<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition, CancellationToken cancellationToken)
         {
             foreach (var player in playerList)
             {
@@ -116,7 +116,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async UniTask<bool> IsSpawnPositionInsideWall(Vector3 position)
+        internal static async UniTask<bool> IsSpawnPositionInsideWall(Vector3 position, CancellationToken cancellationToken)
         {
             Vector3 boxSize = new Vector3(1f, 1f, 1f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
@@ -137,7 +137,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async UniTask<bool> IsSpawnInAir(Vector3 position)
+        internal static async UniTask<bool> IsSpawnInAir(Vector3 position, CancellationToken cancellationToken)
         {
             Ray ray = new Ray(position, Vector3.down);
             float distance = 10f;
