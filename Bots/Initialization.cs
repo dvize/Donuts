@@ -13,6 +13,7 @@ using Cysharp.Threading.Tasks;
 using static Donuts.DonutComponent;
 using static Donuts.DefaultPluginVars;
 using static Donuts.Gizmos;
+using System.Threading;
 
 #pragma warning disable IDE0007, IDE0044
 

@@ -53,6 +53,10 @@ namespace Donuts
                 despawnInterval.MaxValue
             );
 
+            groupWeightDistroLow.Value = ImGUIToolkit.TextField(groupWeightDistroLow.Name, groupWeightDistroLow.ToolTipText, groupWeightDistroLow.Value);
+            groupWeightDistroDefault.Value = ImGUIToolkit.TextField(groupWeightDistroDefault.Name, groupWeightDistroDefault.ToolTipText, groupWeightDistroDefault.Value);
+            groupWeightDistroHigh.Value = ImGUIToolkit.TextField(groupWeightDistroHigh.Name, groupWeightDistroHigh.ToolTipText, groupWeightDistroHigh.Value);
+
             GUILayout.Space(150);
 
             // Reset to Default Values button

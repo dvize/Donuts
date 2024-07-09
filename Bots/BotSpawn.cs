@@ -53,7 +53,7 @@ namespace Donuts
             {
                 DonutComponent.Logger.LogDebug("No starting bots found in cache for this spawn, need to generate data on the fly, this may take some time.");
                 var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, groupSize > 1, groupSize);
-                await DonutsBotPrep.CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                await DonutsBotPrep.CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken);
                 DonutsBotPrep.BotInfos.Add(botInfo);
                 cachedBotGroup = botInfo.Bots;
             }
@@ -69,7 +69,7 @@ namespace Donuts
                     return;
                 }
 
-                await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize, zone);
+                await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize, zone, cancellationToken);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Donuts
 #endif
 
                 var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
-                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
             else
             {
@@ -117,7 +117,7 @@ namespace Donuts
             }
 
             bool isGroup = maxCount > 1;
-            await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate, zone);
+            await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate, zone, cancellationToken);
         }
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMinCount, int defaultMaxCount)
@@ -131,11 +131,11 @@ namespace Donuts
             DonutComponent.Logger.LogDebug($"Attempting to spawn {(isGroup ? "group" : "solo")} with bot count {maxCount} in spawn zone {zone}");
             if (isGroup)
             {
-                await SpawnGroupBots(botWave, maxCount, wildSpawnType, coordinate, zone);
+                await SpawnGroupBots(botWave, maxCount, wildSpawnType, coordinate, zone, cancellationToken);
             }
             else
             {
-                await SpawnSingleBot(botWave, wildSpawnType, coordinate, zone);
+                await SpawnSingleBot(botWave, wildSpawnType, coordinate, zone, cancellationToken);
             }
         }
 
@@ -155,7 +155,7 @@ namespace Donuts
                 DonutComponent.Logger.LogWarning($"No cached bots found for this spawn, generating on the fly for {count} bots - this may take some time.");
 #endif
                 var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, true, count);
-                await DonutsBotPrep.CreateBot(botInfo, true, count);
+                await DonutsBotPrep.CreateBot(botInfo, true, count, cancellationToken);
                 DonutsBotPrep.BotInfos.Add(botInfo);
                 cachedBotGroup = botInfo.Bots;
             }
@@ -192,7 +192,7 @@ namespace Donuts
                 DonutComponent.currentMaxSCAV += count;
             }
 
-            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave, zone);
+            await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave, zone, cancellationToken);
         }
 
         private static async UniTask SpawnSingleBot(BotWave botWave, WildSpawnType wildSpawnType, Vector3 coordinate, string zone, CancellationToken cancellationToken)
@@ -231,7 +231,7 @@ namespace Donuts
                 DonutComponent.currentMaxSCAV++;
             }
 
-            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave, zone);
+            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave, zone, cancellationToken);
         }
         private static WildSpawnType DetermineWildSpawnType(string spawnType)
         {
@@ -341,14 +341,14 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, botWave, zone);
+                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, botWave, zone, cancellationToken);
             }
             else
             {
 #if DEBUG
                 DonutComponent.Logger.LogDebug("Bot Cache is empty for solo bot. Creating a new bot.");
 #endif
-                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource, zone);
+                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource, zone, cancellationToken);
             }
         }
 
@@ -362,7 +362,7 @@ namespace Donuts
             DonutComponent.Logger.LogWarning($"Spawning bot at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                                              $"of side: {botCacheElement.Side} in spawn zone {zone}");
 #endif
-            await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+            await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
         }
 
         internal static async UniTask SpawnBotForGroup(BotCreationDataClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
@@ -379,7 +379,7 @@ namespace Donuts
                                                  $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone {zone}");
 #endif
 
-                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource);
+                await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
             else
             {
@@ -402,7 +402,7 @@ namespace Donuts
                                              $"of side: {bot.Side} and difficulty: {botdifficulty} in spawn zone {zone}");
 #endif
 
-            await ActivateBot(closestBotZone, bot, cancellationTokenSource);
+            await ActivateBot(closestBotZone, bot, cancellationTokenSource, cancellationToken);
         }
 
         internal static async UniTask ActivateBot(BotZone botZone, BotCreationDataClass botData, CancellationTokenSource cancellationTokenSource, CancellationToken cancellationToken)
@@ -566,22 +566,23 @@ namespace Donuts
             {
                 return minGroupSize;
             }
-            if (pluginGroupChance == "Max")
+            else if (pluginGroupChance == "Max")
             {
                 return maxGroupSize;
             }
-            if (pluginGroupChance == "Random")
+            else if (pluginGroupChance == "Random")
             {
                 string[] groupChances = { "None", "Low", "Default", "High", "Max" };
                 pluginGroupChance = groupChances[UnityEngine.Random.Range(0, groupChances.Length)];
+
+                int actualGroupSize = getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize);
+                return actualGroupSize;
             }
             else
             {
-                int actualGroupChance = getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize);
-                return actualGroupChance;
+                int actualGroupSize = getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize);
+                return actualGroupSize;
             }
-
-            return getActualBotCount(pluginGroupChance, minGroupSize, maxGroupSize);
         }
 
         internal static int getGroupChance(string pmcGroupChance, int minGroupSize, int maxGroupSize)

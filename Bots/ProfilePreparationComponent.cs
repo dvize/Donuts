@@ -13,6 +13,7 @@ using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 using IProfileData = GClass592;
+using System.Threading;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -20,7 +21,6 @@ namespace Donuts
 {
     internal class DonutsBotPrep : MonoBehaviour
     {
-        private CancellationToken cancellationToken;
         internal static string selectionName;
         internal static string maplocation;
         private static GameWorld gameWorld;
@@ -106,8 +106,6 @@ namespace Donuts
 
         public async void Awake()
         {
-            cancellationToken = this.GetCancellationTokenOnDestroy();
-
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
@@ -158,7 +156,7 @@ namespace Donuts
                     return;
                 }
 
-                await InitializeAllBotInfos(startingBotConfig, maplocation, cancellationToken);
+                await InitializeAllBotInfos(startingBotConfig, maplocation, cancellationToken: this.GetCancellationTokenOnDestroy());
             }
             else
             {
@@ -200,8 +198,8 @@ namespace Donuts
         private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation, CancellationToken cancellationToken)
         {
             await UniTask.WhenAll(
-                InitializeBotInfos(startingBotConfig, maplocation, "PMC"),
-                InitializeBotInfos(startingBotConfig, maplocation, "SCAV")
+                InitializeBotInfos(startingBotConfig, maplocation, "PMC", cancellationToken),
+                InitializeBotInfos(startingBotConfig, maplocation, "SCAV", cancellationToken)
             );
         }
 
@@ -286,7 +284,7 @@ namespace Donuts
 
                 // Add data to bot cache, this is required
                 var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
-                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken);
                 BotInfos.Add(botInfo);
 
                 // Starting Bots data for actually spawning them into raids
@@ -380,7 +378,7 @@ namespace Donuts
             if (timeSinceLastReplenish >= DefaultPluginVars.replenishInterval.Value && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
-                ReplenishAllBots().Forget();
+                ReplenishAllBots(this.GetCancellationTokenOnDestroy()).Forget();
             }
         }
 
@@ -402,7 +400,7 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize));
+                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
                         groupBotsCount++;
                     }
                     else if (!botInfo.IsGroup && singleBotsCount < 3)
@@ -410,7 +408,7 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
-                        tasks.Add(CreateBot(botInfo, false, 1));
+                        tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
                         singleBotsCount++;
                     }
 

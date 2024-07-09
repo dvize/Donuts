@@ -16,14 +16,13 @@ using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
+using System.Threading;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
-        private CancellationToken cancellationToken;
-
         internal static FightLocations fightLocations;
         internal static FightLocations sessionLocations;
 
@@ -171,13 +170,11 @@ namespace Donuts
 
         private void Start()
         {
-            cancellationToken = this.GetCancellationTokenOnDestroy();
-
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
-            Initialization.LoadFightLocations(cancellationToken);
+            Initialization.LoadFightLocations(this.GetCancellationTokenOnDestroy());
 
             botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName);
             botWaves = botWaveConfig.Maps[DonutsBotPrep.maplocation];
@@ -235,7 +232,7 @@ namespace Donuts
             if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
             {
                 spawnCheckTimer.Restart();
-                StartSpawnProcess(cancellationToken).Forget();
+                StartSpawnProcess(this.GetCancellationTokenOnDestroy()).Forget();
             }
 
             Gizmos.DisplayMarkerInformation();
@@ -254,12 +251,12 @@ namespace Donuts
 
             if (DespawnEnabledPMC.Value)
             {
-                await DespawnFurthestBot("pmc");
+                await DespawnFurthestBot("pmc", cancellationToken);
             }
 
             if (DespawnEnabledSCAV.Value)
             {
-                await DespawnFurthestBot("scav");
+                await DespawnFurthestBot("scav", cancellationToken);
             }
 
             await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
@@ -290,7 +287,7 @@ namespace Donuts
 
                         if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
                         {
-                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType);
+                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken: this.GetCancellationTokenOnDestroy());
                             break;
                         }
                     }
@@ -328,10 +325,10 @@ namespace Donuts
 
             if (HardCapEnabled.Value)
             {
-                tasks.Add(CheckHardCap(wildSpawnType));
+                tasks.Add(CheckHardCap(wildSpawnType, cancellationToken));
             }
 
-            tasks.Add(CheckRaidTime(wildSpawnType));
+            tasks.Add(CheckRaidTime(wildSpawnType, cancellationToken));
 
             bool[] results = await UniTask.WhenAll(tasks);
 
@@ -349,7 +346,7 @@ namespace Donuts
                 botWave.TriggerCooldown();
             }
 
-            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType);
+            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, cancellationToken);
         }
 
         // Get the spawn wave configs from the waves json files
@@ -713,7 +710,7 @@ namespace Donuts
                 return;
             }
 
-            if (!await ShouldConsiderDespawning(bottype))
+            if (!await ShouldConsiderDespawning(bottype, cancellationToken))
             {
                 return;
             }
