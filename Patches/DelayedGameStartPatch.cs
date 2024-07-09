@@ -29,9 +29,7 @@ namespace Donuts.Patches
             Logger.LogWarning("Donuts is waiting for bot preparation to complete...");
             float lastLogTime = Time.time;
             float startTime = Time.time;
-
             float maxWaitTime = DefaultPluginVars.maxRaidDelay.Value;
-            Logger.LogDebug("maxWaitTime: " + maxWaitTime);
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {

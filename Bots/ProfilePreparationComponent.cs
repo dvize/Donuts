@@ -196,51 +196,30 @@ namespace Donuts
 
         private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation)
         {
-            await UniTask.WhenAll(InitializeBotInfos(startingBotConfig, maplocation), InitializeScavBotInfos(startingBotConfig, maplocation));
+            await UniTask.WhenAll(
+                InitializeBotInfos(startingBotConfig, maplocation, "PMC"),
+                InitializeBotInfos(startingBotConfig, maplocation, "SCAV")
+            );
         }
 
-        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation)
-        {
-            if (DefaultPluginVars.forceAllBotType.Value == "SCAV")
-            {
-                await InitializeBotType(startingBotConfig, maplocation, WildSpawnType.assault, EPlayerSide.Savage, DefaultPluginVars.botDifficultiesSCAV.Value.ToLower(), "SCAV");
-            }
-            else
-            {
-                await InitializePMCType(startingBotConfig, maplocation);
-            }
-        }
-
-        private async UniTask InitializeScavBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation, string botType)
         {
             if (DefaultPluginVars.forceAllBotType.Value == "PMC")
             {
-                await InitializePMCType(startingBotConfig, maplocation);
+                botType = "PMC";
             }
-            else
+            else if (DefaultPluginVars.forceAllBotType.Value == "SCAV")
             {
-                await InitializeBotType(startingBotConfig, maplocation, WildSpawnType.assault, EPlayerSide.Savage, DefaultPluginVars.botDifficultiesSCAV.Value.ToLower(), "SCAV");
+                botType = "SCAV";
             }
-        }
 
-        private async UniTask InitializePMCType(StartingBotConfig startingBotConfig, string maplocation)
-        {
+            var difficultySetting = botType == "PMC" ? DefaultPluginVars.botDifficultiesPMC.Value.ToLower() : DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
 
-            WildSpawnType wildSpawnType = GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
-            EPlayerSide side = GetPMCSide(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
-
-            Logger.LogDebug(wildSpawnType);
-            Logger.LogDebug(side);
-
-            await InitializeBotType(startingBotConfig, maplocation, wildSpawnType, side, DefaultPluginVars.botDifficultiesPMC.Value.ToLower(), "PMC");
-        }
-
-        private async UniTask InitializeBotType(StartingBotConfig startingBotConfig, string maplocation, WildSpawnType wildSpawnType, EPlayerSide side, string difficultySetting, string botType)
-        {
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
 
+            // Don't allow maxBots > bot limits
             if (botType == "PMC" && maxBots > Initialization.PMCBotLimit)
             {
                 maxBots = Initialization.PMCBotLimit;
@@ -252,20 +231,23 @@ namespace Donuts
 
             Logger.LogDebug($"Max starting bots for {botType}: {maxBots}");
 
-            int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
-
             // Get random spawn points, depending on StartingBots cfg, for all starting bots
             var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
             int totalBots = 0;
             var usedZones = botType == "PMC" ? usedZonesPMC : usedZonesSCAV;
 
+            // Iterate through all starting bots and create them here
             while (totalBots < maxBots)
             {
+                int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
                 if ((totalBots + groupSize) > maxBots)
                 {
                     groupSize = maxBots - totalBots;
                 }
+
+                var wildSpawnType = botType == "PMC" ? GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR) : WildSpawnType.assault;
+                var side = botType == "PMC" ? GetPMCSide(wildSpawnType, (WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR)) : EPlayerSide.Savage;
 
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
