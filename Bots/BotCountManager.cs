@@ -1,5 +1,5 @@
 using System;
-using SPT.PrePatch;
+using Aki.PrePatch;
 using Cysharp.Threading.Tasks;
 using EFT;
 using static Donuts.DonutComponent;
@@ -97,7 +97,7 @@ namespace Donuts
 
         private static bool IsPMC(WildSpawnType role)
         {
-            return role == WildSpawnType.pmcUSEC || role == WildSpawnType.pmcBEAR;
+            return role == (WildSpawnType)AkiBotsPrePatcher.sptUsecValue || role == (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
 
         private static bool IsSCAV(WildSpawnType role)

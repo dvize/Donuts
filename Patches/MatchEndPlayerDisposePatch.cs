@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using SPT.Reflection.Patching;
+using Aki.Reflection.Patching;
 using EFT;
 using EFT.AssetsManager;
 using HarmonyLib;
@@ -14,7 +14,7 @@ namespace Donuts.Patches
         protected override MethodBase GetTargetMethod()
         {
             // Method used by SPT for finding BaseLocalGame
-            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), nameof(BaseLocalGame<EftGamePlayerOwner>.smethod_4));
+            return AccessTools.Method(typeof(BaseLocalGame<GamePlayerOwner>), nameof(BaseLocalGame<GamePlayerOwner>.smethod_4));
         }
 
         [PatchPrefix]

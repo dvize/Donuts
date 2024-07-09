@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using SPT.Reflection.Patching;
+using Aki.Reflection.Patching;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -20,9 +20,10 @@ using UnityEngine;
 
 namespace Donuts
 {
+
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.5.0")]
-    [BepInDependency("com.SPT.core", "3.9.0")]
-    //[BepInDependency("xyz.drakia.waypoints")]
+    [BepInDependency("com.spt-aki.core", "3.8.0")]
+    [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("com.Arys.UnityToolkit")]
     public class DonutsPlugin : BaseUnityPlugin
     {
@@ -248,7 +249,7 @@ namespace Donuts
             {
                 var scenarioSelection = DefaultPluginVars.pmcScenarioSelection.Value;
 
-                if (SPT.SinglePlayer.Utils.InRaid.RaidChangesUtil.IsScavRaid)
+                if (Aki.SinglePlayer.Utils.InRaid.RaidChangesUtil.IsScavRaid)
                 {
                     Logger.LogWarning("This is a SCAV raid, using SCAV raid preset selector");
                     scenarioSelection = DefaultPluginVars.scavScenarioSelection.Value;

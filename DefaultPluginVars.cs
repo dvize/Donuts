@@ -132,10 +132,10 @@ namespace Donuts
             "gifter",
             "marksman",
             "pmc",
-            "pmcBEAR",
-            "pmcUSEC",
             "sectantpriest",
             "sectantwarrior",
+            "sptusec",
+            "sptbear",
         };
 
 
@@ -531,9 +531,9 @@ namespace Donuts
             // Advanced Settings
             maxRaidDelay = new Setting<float>(
                 "Raid Load Time Delay",
-                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 20 seconds.",
-                20f,
-                20f,
+                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 10 seconds.",
+                10f,
+                10f,
                 0f,
                 60f);
 
