@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using Donuts;
 using UnityEngine;
 
@@ -12,12 +12,12 @@ namespace Donuts.Patches
         private static object localGameObj = null;
         protected override MethodBase GetTargetMethod()
         {
-            Type localGameType = Aki.Reflection.Utils.PatchConstants.LocalGameType;
+            Type localGameType = SPT.Reflection.Utils.PatchConstants.LocalGameType;
             return localGameType.GetMethod("method_18", BindingFlags.Public | BindingFlags.Instance);
         }
 
         [PatchPostfix]
-        private static void PatchPostfix(ref IEnumerator __result, object __instance, float startDelay)
+        private static void PatchPostfix(ref IEnumerator __result, object __instance)
         {
             localGameObj = __instance;
             __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW

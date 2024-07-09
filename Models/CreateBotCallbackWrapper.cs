@@ -1,15 +1,14 @@
 ﻿using System.Diagnostics;
 using EFT;
 using static Donuts.DonutComponent;
-using BotCacheClass = GClass591;
 
 namespace Donuts.Models
 {
-    // Wrapper around method_10 called after bot creation, so we can pass it the BotCacheClass data
+    // Wrapper around method_10 called after bot creation, so we can pass it the BotCreationDataClass data
 
     internal class CreateBotCallbackWrapper
     {
-        public BotCacheClass botData;
+        public BotCreationDataClass botData;
         public Stopwatch stopWatch = new Stopwatch();
 
         public void CreateBotCallback(BotOwner bot)
