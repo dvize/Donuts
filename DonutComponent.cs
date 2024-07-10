@@ -96,6 +96,21 @@ namespace Donuts
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
         }
 
+        private void ResetPlayerList()
+        {
+            playerList.Clear();
+            if (gameWorld.RegisteredPlayers.Count > 0)
+            {
+                foreach (var player in gameWorld.AllPlayersEverExisted)
+                {
+                    if (!player.IsAI)
+                    {
+                        playerList.Add(player);
+                    }
+                }
+            }
+        }
+
         internal static void Enable()
         {
             if (Singleton<IBotGame>.Instantiated)
@@ -197,6 +212,8 @@ namespace Donuts
             spawnCheckTimer.Start();
 
             mainplayer.BeingHitAction += BeingHitBattleCoolDown;
+
+            ResetPlayerList();
         }
 
         private void BeingHitBattleCoolDown(DamageInfo info, EBodyPart part, float arg3)
