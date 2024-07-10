@@ -20,7 +20,6 @@ using UnityEngine;
 
 namespace Donuts
 {
-
     [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.5.0")]
     [BepInDependency("com.spt-aki.core", "3.8.0")]
     [BepInDependency("xyz.drakia.waypoints")]
@@ -31,7 +30,6 @@ namespace Donuts
         internal static ConfigEntry<KeyboardShortcut> toggleGUIKey;
         internal static KeyCode escapeKey;
         internal static new ManualLogSource Logger;
-        private bool isScenariosInitialized = false;
         DonutsPlugin()
         {
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutsPlugin));

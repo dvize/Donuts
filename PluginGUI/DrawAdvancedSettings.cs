@@ -53,6 +53,10 @@ namespace Donuts
                 despawnInterval.MaxValue
             );
 
+            groupWeightDistroLow.Value = ImGUIToolkit.TextField(groupWeightDistroLow.Name, groupWeightDistroLow.ToolTipText, groupWeightDistroLow.Value);
+            groupWeightDistroDefault.Value = ImGUIToolkit.TextField(groupWeightDistroDefault.Name, groupWeightDistroDefault.ToolTipText, groupWeightDistroDefault.Value);
+            groupWeightDistroHigh.Value = ImGUIToolkit.TextField(groupWeightDistroHigh.Name, groupWeightDistroHigh.ToolTipText, groupWeightDistroHigh.Value);
+
             GUILayout.Space(150);
 
             // Reset to Default Values button
@@ -67,6 +71,7 @@ namespace Donuts
             if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ResetToDefaults();
+                PluginGUIHelper.DisplayMessageNotificationGUI("All Donuts Settings have been reset to default values, but they still need to be saved.");
                 DonutsPlugin.Logger.LogWarning("All settings have been reset to default values.");
                 RestartPluginGUIHelper();
             }

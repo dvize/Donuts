@@ -3,6 +3,7 @@ using Aki.PrePatch;
 using Cysharp.Threading.Tasks;
 using EFT;
 using static Donuts.DonutComponent;
+using System.Threading;
 
 #pragma warning disable IDE0007, IDE0044
 
@@ -10,9 +11,9 @@ namespace Donuts
 {
     public static class BotCountManager
     {
-        public static async UniTask<int> HandleHardCap(string spawnType, int requestedCount)
+        public static async UniTask<int> HandleHardCap(string spawnType, int requestedCount, CancellationToken cancellationToken)
         {
-            int currentBotsAlive = await GetAlivePlayers(spawnType);
+            int currentBotsAlive = await GetAlivePlayers(spawnType, cancellationToken);
             int botLimit = GetBotLimit(spawnType);
             if (currentBotsAlive + requestedCount > botLimit)
             {
@@ -60,7 +61,7 @@ namespace Donuts
             return spawnType.Contains("pmc") ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
         }
 
-        public static UniTask<int> GetAlivePlayers(string spawnType)
+        public static UniTask<int> GetAlivePlayers(string spawnType, CancellationToken cancellationToken)
         {
             return UniTask.Create(async () =>
             {

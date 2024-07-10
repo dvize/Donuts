@@ -531,11 +531,11 @@ namespace Donuts
             // Advanced Settings
             maxRaidDelay = new Setting<float>(
                 "Raid Load Time Delay",
-                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 10 seconds.",
-                10f,
-                10f,
+                "Max time (in seconds) that Donuts force delays raid load so it has time to generate bot data for all starting points. This is to avoid potential bot spawn delays on raid start. This may delay Default is 60 seconds.",
+                60f,
+                60f,
                 0f,
-                60f);
+                120f);
 
             replenishInterval = new Setting<float>(
                 "Bot Cache Replenish Interval",
@@ -562,19 +562,19 @@ namespace Donuts
                 600f);
 
             groupWeightDistroLow = new Setting<string>(
-                "Low",
+                "Group Chance Weights: Low",
                 "Weight Distribution for Group Chance 'Low'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
                 lowWeightsString,
                 lowWeightsString);
 
             groupWeightDistroDefault = new Setting<string>(
-                "Default",
+                "Group Chance Weights: Default",
                 "Weight Distribution for Group Chance 'Default'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
                 defaultWeightsString,
                 defaultWeightsString);
 
             groupWeightDistroHigh = new Setting<string>(
-                "High",
+                "Group Chance Weights: High",
                 "Weight Distribution for Group Chance 'High'. Use relative weights for group sizes 1/2/3/4/5, respectively. Use this formula: group weight / total weight = % chance.",
                 highWeightsString,
                 highWeightsString);

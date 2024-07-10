@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Aki.PrePatch;
 using Aki.Reflection.Utils;
 using BepInEx.Logging;
@@ -22,6 +23,8 @@ namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
+        internal CancellationTokenSource cts;
+
         internal static FightLocations fightLocations;
         internal static FightLocations sessionLocations;
 
@@ -96,6 +99,21 @@ namespace Donuts
             Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(DonutComponent));
         }
 
+        private void ResetPlayerList()
+        {
+            playerList.Clear();
+            if (gameWorld.RegisteredPlayers.Count > 0)
+            {
+                foreach (var player in gameWorld.AllPlayersEverExisted)
+                {
+                    if (!player.IsAI)
+                    {
+                        playerList.Add(player);
+                    }
+                }
+            }
+        }
+
         internal static void Enable()
         {
             if (Singleton<IBotGame>.Instantiated)
@@ -109,6 +127,8 @@ namespace Donuts
 
         private void Awake()
         {
+            cts = new CancellationTokenSource();
+
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(botSpawnerClass.GetType(), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             methodCache = new Dictionary<string, MethodInfo>();
@@ -176,7 +196,8 @@ namespace Donuts
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
-            Initialization.LoadFightLocations();
+
+            Initialization.LoadFightLocations(cts.Token).Forget();
 
             botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName);
             botWaves = botWaveConfig.Maps[DonutsBotPrep.maplocation];
@@ -194,6 +215,8 @@ namespace Donuts
             spawnCheckTimer.Start();
 
             mainplayer.BeingHitAction += BeingHitBattleCoolDown;
+
+            ResetPlayerList();
         }
 
         private void BeingHitBattleCoolDown(DamageInfo info, EBodyPart part, float arg3)
@@ -221,8 +244,6 @@ namespace Donuts
 
             timeSinceLastHit += Time.deltaTime;
 
-            var botWaves = botWaveConfig.Maps[DonutsBotPrep.maplocation];
-
             foreach (var pmcWave in botWaves.PMC)
             {
                 pmcWave.UpdateTimer(Time.deltaTime, DefaultPluginVars.coolDownTimer.Value);
@@ -236,68 +257,76 @@ namespace Donuts
             if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
             {
                 spawnCheckTimer.Restart();
-                StartSpawnProcess().Forget();
+                StartSpawnProcess(cts.Token).Forget();
             }
 
             Gizmos.DisplayMarkerInformation();
         }
 
-        private async UniTask StartSpawnProcess()
+        private async UniTask StartSpawnProcess(CancellationToken cancellationToken)
         {
             if (!hasSpawnedStartingBots)
             {
                 if (DonutsBotPrep.botSpawnInfos != null && DonutsBotPrep.botSpawnInfos.Any())
                 {
-                    await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos);
+                    await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos, cancellationToken);
                     hasSpawnedStartingBots = true;
                 }
             }
 
             if (DespawnEnabledPMC.Value)
             {
-                await DespawnFurthestBot("pmc");
+                await DespawnFurthestBot("pmc", cancellationToken);
             }
 
             if (DespawnEnabledSCAV.Value)
             {
-                await DespawnFurthestBot("scav");
+                await DespawnFurthestBot("scav", cancellationToken);
             }
 
-            await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation]);
+            await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
         }
 
-        private async UniTask SpawnBotWaves(MapBotWaves botWaves)
+        private async UniTask SpawnBotWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
         {
-            bool spawnTriggered = false;
-
-            foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                if (botWave.ShouldSpawn())
+                bool anySpawned = false;
+                foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
                 {
-                    if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
+                    if (botWave.ShouldSpawn())
                     {
-                        Logger.LogDebug($"Skipping spawn due to battle cooldown. Time since last hit: {timeSinceLastHit}");
-                        break;
-                    }
-
-                    // Get coordinates
-                    var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
-
-                    if (spawnPointsDict.Any())
-                    {
-                        // Select a random coordinate from any zone
-                        var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
-                        var coordinate = spawnPointsDict[randomZone];
-
-                        var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
-
-                        if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                        if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                         {
-                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType);
-                            spawnTriggered = true;
-                            break;
+                            Logger.LogDebug($"Skipping spawn due to battle cooldown. Time since last hit: {timeSinceLastHit}");
+                            break; // Instead of stopping, break to wait and retry
+                        }
+
+                        // Get coordinates
+                        var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
+
+                        if (spawnPointsDict.Any())
+                        {
+                            // Select a random coordinate from any zone
+                            var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
+                            var coordinate = spawnPointsDict[randomZone];
+
+                            var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
+
+                            if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                            {
+                                await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken);
+                                anySpawned = true;
+                                break; // Spawned a bot, exit the loop to wait and retry
+                            }
                         }
                     }
+                }
+
+                // If no bots were spawned, delay before retrying
+                if (!anySpawned)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: cancellationToken);
                 }
             }
         }
@@ -321,7 +350,7 @@ namespace Donuts
         }
 
         // Checks certain spawn options, reset groups timers
-        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
+        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, CancellationToken cancellationToken)
         {
             if (forceAllBotType.Value != "Disabled")
             {
@@ -332,10 +361,10 @@ namespace Donuts
 
             if (HardCapEnabled.Value)
             {
-                tasks.Add(CheckHardCap(wildSpawnType));
+                tasks.Add(CheckHardCap(wildSpawnType, cancellationToken));
             }
 
-            tasks.Add(CheckRaidTime(wildSpawnType));
+            tasks.Add(CheckRaidTime(wildSpawnType, cancellationToken));
 
             bool[] results = await UniTask.WhenAll(tasks);
 
@@ -353,7 +382,7 @@ namespace Donuts
                 botWave.TriggerCooldown();
             }
 
-            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType);
+            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, cancellationToken);
         }
 
         // Get the spawn wave configs from the waves json files
@@ -590,10 +619,10 @@ namespace Donuts
             return spawnPointsDict;
         }
 
-        public async UniTask<bool> CheckHardCap(string wildSpawnType)
+        public async UniTask<bool> CheckHardCap(string wildSpawnType, CancellationToken cancellationToken)
         {
-            int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
-            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
+            int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
 
             if (wildSpawnType == "pmc" && activePMCs >= Initialization.PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
             {
@@ -610,7 +639,7 @@ namespace Donuts
             return true;
         }
 
-        private async UniTask<bool> CheckRaidTime(string wildSpawnType)
+        private async UniTask<bool> CheckRaidTime(string wildSpawnType, CancellationToken cancellationToken)
         {
             if (wildSpawnType == "pmc" && hardStopOptionPMC.Value && !IsRaidTimeRemaining("pmc"))
             {
@@ -704,7 +733,7 @@ namespace Donuts
             });
         }
 
-        private async UniTask DespawnFurthestBot(string bottype)
+        private async UniTask DespawnFurthestBot(string bottype, CancellationToken cancellationToken)
         {
             if (bottype != "pmc" && bottype != "scav")
                 return;
@@ -717,7 +746,7 @@ namespace Donuts
                 return;
             }
 
-            if (!await ShouldConsiderDespawning(bottype))
+            if (!await ShouldConsiderDespawning(bottype, cancellationToken))
             {
                 return;
             }
@@ -776,10 +805,10 @@ namespace Donuts
             }
         }
 
-        private async UniTask<bool> ShouldConsiderDespawning(string botType)
+        private async UniTask<bool> ShouldConsiderDespawning(string botType, CancellationToken cancellationToken)
         {
             int botLimit = botType == "pmc" ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
-            int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
+            int activeBotCount = await BotCountManager.GetAlivePlayers(botType, cancellationToken);
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
@@ -791,6 +820,10 @@ namespace Donuts
 
         private void OnDestroy()
         {
+            // Cancel any ongoing tasks
+            cts?.Cancel();
+            cts?.Dispose();
+
             botSpawnerClass.OnBotRemoved -= removedBot =>
             {
                 foreach (var player in playerList)

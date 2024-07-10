@@ -1,6 +1,10 @@
 ﻿using System.IO;
 using System.Reflection;
+using System.Linq;
+using SPT.Reflection.Utils;
 using UnityEngine;
+using EFT.Communications;
+using System;
 
 namespace Donuts
 {
@@ -28,9 +32,18 @@ namespace Donuts
         internal static GUIStyle tooltipStyle;
         private static bool stylesInitialized = false;
 
+        internal static MethodInfo displayMessageNotificationMethodGUICache;
+
         private void Start()
         {
             LoadWindowSettings();
+
+            var displayMessageNotificationMethodGUI = PatchConstants.EftTypes
+                .Single(x => x.GetMethod("DisplayMessageNotification") != null)
+                .GetMethod("DisplayMessageNotification");
+
+            // Cache the method for later use
+            displayMessageNotificationMethodGUICache = displayMessageNotificationMethodGUI;
         }
 
         private void OnGUI()
@@ -193,8 +206,6 @@ namespace Donuts
             HandleWindowResizing();
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width, 20));
-
-            SaveWindowSettings();
         }
 
         private void DrawMainTabs()
@@ -255,6 +266,7 @@ namespace Donuts
             if (GUILayout.Button("Save All Changes", greenButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ExportConfig();
+                DisplayMessageNotificationGUI("All Donuts Settings have been saved.");
                 DonutsPlugin.Logger.LogWarning("All changes saved.");
             }
 
@@ -317,12 +329,6 @@ namespace Donuts
             }
         }
 
-        private void SaveWindowSettings()
-        {
-            DefaultPluginVars.windowRect = windowRect;
-            ExportConfig();
-        }
-
         private void LoadWindowSettings()
         {
             var dllPath = Assembly.GetExecutingAssembly().Location;
@@ -360,9 +366,27 @@ namespace Donuts
             {
                 Directory.CreateDirectory(configDirectory);
             }
-
+            DefaultPluginVars.windowRect = windowRect;
             string json = DefaultPluginVars.ExportToJson();
             File.WriteAllText(configFilePath, json);
+        }
+
+        internal static void DisplayMessageNotificationGUI(string message)
+        {
+            if (displayMessageNotificationMethodGUICache == null)
+            {
+                Debug.LogError("displayMessageNotificationMethodGUICache is not initialized.");
+                return;
+            }
+
+            try
+            {
+                displayMessageNotificationMethodGUICache.Invoke(null, new object[] { message, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.cyan });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error invoking DisplayMessageNotification: {ex.Message}\n{ex.StackTrace}");
+            }
         }
     }
 }
