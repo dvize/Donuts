@@ -347,33 +347,6 @@ namespace Donuts
             }
         }
 
-        private int[] DetermineGroupSizes(string groupChance, string botType)
-        {
-            switch (botType.ToLower())
-            {
-                case "pmc":
-                    return groupChance.ToLower() switch
-                    {
-                        "none" => Array.Empty<int>(),
-                        "low" => new int[] { 1, 1, 2 },
-                        "max" => new int[] { 5, 5 },
-                        "high" => new int[] { 3, 4, 5 },
-                        _ => new int[] { 1, 2, 3 },
-                    };
-                case "scav":
-                    return groupChance.ToLower() switch
-                    {
-                        "none" => Array.Empty<int>(),
-                        "low" => new int[] { 1, 2 },
-                        "max" => new int[] { 3, 4 },
-                        "high" => new int[] { 2, 3 },
-                        _ => new int[] { 1, 1, 2 },
-                    };
-                default:
-                    throw new ArgumentException("Invalid bot type provided.");
-            }
-        }
-
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
