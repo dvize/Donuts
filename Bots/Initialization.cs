@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using SPT.PrePatch;
+using Aki.PrePatch;
 using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
@@ -43,6 +43,9 @@ namespace Donuts
             hotspotTimers = new List<HotspotTimer>();
             currentInitialPMCs = 0;
             currentInitialSCAVs = 0;
+
+            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
         }
 
         internal static void SetupBotLimit(string folderName)

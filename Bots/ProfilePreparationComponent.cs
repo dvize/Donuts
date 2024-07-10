@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using SPT.PrePatch;
+using Aki.PrePatch;
 using BepInEx.Logging;
 using Comfort.Common;
 using Cysharp.Threading.Tasks;
@@ -12,6 +12,7 @@ using EFT;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
+using BotCacheClass = GClass591;
 using IProfileData = GClass592;
 using System.Threading;
 
@@ -34,6 +35,9 @@ namespace Donuts
         {
             get; set;
         }
+
+        private static WildSpawnType sptUsec;
+        private static WildSpawnType sptBear;
 
         private HashSet<string> usedZonesPMC = new HashSet<string>();
         private HashSet<string> usedZonesSCAV = new HashSet<string>();
@@ -118,6 +122,9 @@ namespace Donuts
             botSpawnInfos = new List<BotSpawnInfo>();
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
+
+            sptUsec = (WildSpawnType)AkiBotsPrePatcher.sptUsecValue;
+            sptBear = (WildSpawnType)AkiBotsPrePatcher.sptBearValue;
 
             botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
             {
@@ -249,9 +256,8 @@ namespace Donuts
                     groupSize = maxBots - totalBots;
                 }
 
-                var wildSpawnType = botType == "PMC" ? GetPMCWildSpawnType(WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR) : WildSpawnType.assault;
-                var side = botType == "PMC" ? GetPMCSide(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR) : EPlayerSide.Savage;
-
+                var wildSpawnType = botType == "PMC" ? GetPMCWildSpawnType((WildSpawnType)AkiBotsPrePatcher.sptUsecValue, (WildSpawnType)AkiBotsPrePatcher.sptBearValue) : WildSpawnType.assault;
+                var side = botType == "PMC" ? GetPMCSide(wildSpawnType, (WildSpawnType)AkiBotsPrePatcher.sptUsecValue, (WildSpawnType)AkiBotsPrePatcher.sptBearValue) : EPlayerSide.Savage;
                 var difficulty = difficultiesForSetting[UnityEngine.Random.Range(0, difficultiesForSetting.Count)];
                 var coordinates = new List<Vector3>();
                 string selectedZone = null;
@@ -305,22 +311,22 @@ namespace Donuts
             }
             else if (DefaultPluginVars.pmcFaction.Value == "USEC")
             {
-                return WildSpawnType.pmcUSEC;
+                return sptUsec;
             }
             else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
             {
-                return WildSpawnType.pmcBEAR;
+                return sptBear;
             }
             return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
         }
 
         private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (wildSpawnType == WildSpawnType.pmcUSEC)
+            if (wildSpawnType == sptUsec)
             {
                 return EPlayerSide.Usec;
             }
-            else if (wildSpawnType == WildSpawnType.pmcBEAR)
+            else if (wildSpawnType == sptBear)
             {
                 return EPlayerSide.Bear;
             }
@@ -411,7 +417,7 @@ namespace Donuts
 #if DEBUG
             Logger.LogDebug($"Creating bot: Type={botInfo.SpawnType}, Difficulty={botInfo.Difficulty}, Side={botInfo.Side}, GroupSize={groupSize}");
 #endif
-            BotCreationDataClass bot = await BotCreationDataClass.Create(botData, botCreator, groupSize, botSpawnerClass);
+            BotCacheClass bot = await BotCacheClass.Create(botData, botCreator, groupSize, botSpawnerClass);
             if (bot == null || bot.Profiles == null || !bot.Profiles.Any())
             {
 #if DEBUG
@@ -426,7 +432,7 @@ namespace Donuts
 #endif
         }
 
-        public static BotCreationDataClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
+        public static BotCacheClass FindCachedBots(WildSpawnType spawnType, BotDifficulty difficulty, int targetCount)
         {
             if (DonutsBotPrep.BotInfos == null)
             {
@@ -454,7 +460,7 @@ namespace Donuts
             }
         }
 
-        public static List<BotCreationDataClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
+        public static List<BotCacheClass> GetWildSpawnData(WildSpawnType spawnType, BotDifficulty botDifficulty)
         {
             return BotInfos
                 .Where(b => b.SpawnType == spawnType && b.Difficulty == botDifficulty)
