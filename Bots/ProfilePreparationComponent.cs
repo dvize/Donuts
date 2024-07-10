@@ -13,6 +13,7 @@ using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 using IProfileData = GClass592;
+using System.Threading;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -105,6 +106,9 @@ namespace Donuts
 
         public async void Awake()
         {
+            var playerLoop = UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
+            Cysharp.Threading.Tasks.PlayerLoopHelper.Initialize(ref playerLoop);
+
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
@@ -155,7 +159,7 @@ namespace Donuts
                     return;
                 }
 
-                await InitializeAllBotInfos(startingBotConfig, maplocation);
+                await InitializeAllBotInfos(startingBotConfig, maplocation, cancellationToken: this.GetCancellationTokenOnDestroy());
             }
             else
             {
@@ -169,7 +173,6 @@ namespace Donuts
         {
             if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null && owner.Memory.HaveEnemy)
             {
-
                 if (owner.Memory.GoalEnemy.Person == (IPlayer)gameWorld.MainPlayer.InteractablePlayer && owner.Memory.GoalEnemy.HaveSeenPersonal && owner.Memory.GoalEnemy.IsVisible)
                 {
                     timeSinceLastReplenish = 0f;
@@ -194,15 +197,15 @@ namespace Donuts
             }
         }
 
-        private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation)
+        private async UniTask InitializeAllBotInfos(StartingBotConfig startingBotConfig, string maplocation, CancellationToken cancellationToken)
         {
             await UniTask.WhenAll(
-                InitializeBotInfos(startingBotConfig, maplocation, "PMC"),
-                InitializeBotInfos(startingBotConfig, maplocation, "SCAV")
+                InitializeBotInfos(startingBotConfig, maplocation, "PMC", cancellationToken),
+                InitializeBotInfos(startingBotConfig, maplocation, "SCAV", cancellationToken)
             );
         }
 
-        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation, string botType)
+        private async UniTask InitializeBotInfos(StartingBotConfig startingBotConfig, string maplocation, string botType, CancellationToken cancellationToken)
         {
             if (DefaultPluginVars.forceAllBotType.Value == "PMC")
             {
@@ -283,7 +286,7 @@ namespace Donuts
 
                 // Add data to bot cache, this is required
                 var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
-                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize);
+                await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken);
                 BotInfos.Add(botInfo);
 
                 // Starting Bots data for actually spawning them into raids
@@ -344,44 +347,17 @@ namespace Donuts
             }
         }
 
-        private int[] DetermineGroupSizes(string groupChance, string botType)
-        {
-            switch (botType.ToLower())
-            {
-                case "pmc":
-                    return groupChance.ToLower() switch
-                    {
-                        "none" => Array.Empty<int>(),
-                        "low" => new int[] { 1, 1, 2 },
-                        "max" => new int[] { 5, 5 },
-                        "high" => new int[] { 3, 4, 5 },
-                        _ => new int[] { 1, 2, 3 },
-                    };
-                case "scav":
-                    return groupChance.ToLower() switch
-                    {
-                        "none" => Array.Empty<int>(),
-                        "low" => new int[] { 1, 2 },
-                        "max" => new int[] { 3, 4 },
-                        "high" => new int[] { 2, 3 },
-                        _ => new int[] { 1, 1, 2 },
-                    };
-                default:
-                    throw new ArgumentException("Invalid bot type provided.");
-            }
-        }
-
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
             if (timeSinceLastReplenish >= DefaultPluginVars.replenishInterval.Value && !isReplenishing)
             {
                 timeSinceLastReplenish = 0f;
-                ReplenishAllBots().Forget();
+                ReplenishAllBots(this.GetCancellationTokenOnDestroy()).Forget();
             }
         }
 
-        private async UniTask ReplenishAllBots()
+        private async UniTask ReplenishAllBots(CancellationToken cancellationToken)
         {
             isReplenishing = true;
             int singleBotsCount = 0;
@@ -399,7 +375,7 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
 #endif
-                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize));
+                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
                         groupBotsCount++;
                     }
                     else if (!botInfo.IsGroup && singleBotsCount < 3)
@@ -407,7 +383,7 @@ namespace Donuts
 #if DEBUG
                         Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
 #endif
-                        tasks.Add(CreateBot(botInfo, false, 1));
+                        tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
                         singleBotsCount++;
                     }
 
@@ -429,7 +405,7 @@ namespace Donuts
             return botInfo.Bots == null || botInfo.Bots.Profiles.Count == 0;
         }
 
-        internal static async UniTask CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize)
+        internal static async UniTask CreateBot(PrepBotInfo botInfo, bool isGroup, int groupSize, CancellationToken cancellationToken)
         {
             var botData = new IProfileData(botInfo.Side, botInfo.SpawnType, botInfo.Difficulty, 0f, null);
 #if DEBUG
