@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Reflection;
 using System.Linq;
-using SPT.Reflection.Utils;
+using Aki.Reflection.Utils;
 using UnityEngine;
 using EFT.Communications;
 using System;
@@ -59,7 +59,7 @@ namespace Donuts
                 // Save the current GUI skin
                 GUISkin originalSkin = GUI.skin;
 
-                windowRect = GUI.Window(123, windowRect, MainWindowFunc, "Donuts Configuration", windowStyle);
+                windowRect = GUI.Window(123, windowRect, MainWindowFunc, "", windowStyle);
                 GUI.FocusWindow(123);
 
                 if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
@@ -191,6 +191,17 @@ namespace Donuts
 
         private void MainWindowFunc(int windowID)
         {
+
+            // Manually draw the window title centered at the top
+            Rect titleRect = new Rect(0, 0, windowRect.width, 20);
+            GUI.Label(titleRect, "Donuts Configuration", new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 20,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white }
+            });
+
             GUILayout.BeginVertical();
 
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
