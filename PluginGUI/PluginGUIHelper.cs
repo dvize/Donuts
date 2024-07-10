@@ -15,9 +15,6 @@ namespace Donuts
         private Vector2 dragOffset;
         private Vector2 scrollPosition = Vector2.zero;
 
-        private float saveSettingsDebounceTime = 0.5f;
-        private Coroutine saveSettingsCoroutine;
-
         private const float ResizeHandleSize = 30f;
         private bool isResizing = false;
         private Vector2 resizeStartPos;
@@ -220,8 +217,6 @@ namespace Donuts
             HandleWindowResizing();
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width, 20));
-
-            DebouncedSaveWindowSettings();
         }
 
         private void DrawMainTabs()
@@ -345,27 +340,6 @@ namespace Donuts
             }
         }
 
-        private void DebouncedSaveWindowSettings()
-        {
-            if (saveSettingsCoroutine != null)
-            {
-                StopCoroutine(saveSettingsCoroutine);
-            }
-            saveSettingsCoroutine = StartCoroutine(SaveWindowSettingsAfterDelay());
-        }
-
-        private System.Collections.IEnumerator SaveWindowSettingsAfterDelay()
-        {
-            yield return new WaitForSeconds(saveSettingsDebounceTime);
-            SaveWindowSettings();
-        }
-
-        private void SaveWindowSettings()
-        {
-            DefaultPluginVars.windowRect = windowRect;
-            ExportConfig();
-        }
-
         private void LoadWindowSettings()
         {
             var dllPath = Assembly.GetExecutingAssembly().Location;
@@ -403,7 +377,7 @@ namespace Donuts
             {
                 Directory.CreateDirectory(configDirectory);
             }
-
+            DefaultPluginVars.windowRect = windowRect;
             string json = DefaultPluginVars.ExportToJson();
             File.WriteAllText(configFilePath, json);
         }
