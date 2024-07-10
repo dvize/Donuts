@@ -1,6 +1,10 @@
 ﻿using System.IO;
 using System.Reflection;
+using System.Linq;
+using SPT.Reflection.Utils;
 using UnityEngine;
+using EFT.Communications;
+using System;
 
 namespace Donuts
 {
@@ -10,6 +14,9 @@ namespace Donuts
         private bool isDragging = false;
         private Vector2 dragOffset;
         private Vector2 scrollPosition = Vector2.zero;
+
+        private float saveSettingsDebounceTime = 0.5f;
+        private Coroutine saveSettingsCoroutine;
 
         private const float ResizeHandleSize = 30f;
         private bool isResizing = false;
@@ -28,9 +35,18 @@ namespace Donuts
         internal static GUIStyle tooltipStyle;
         private static bool stylesInitialized = false;
 
+        internal static MethodInfo displayMessageNotificationMethodGUICache;
+
         private void Start()
         {
             LoadWindowSettings();
+
+            var displayMessageNotificationMethodGUI = PatchConstants.EftTypes
+                .Single(x => x.GetMethod("DisplayMessageNotification") != null)
+                .GetMethod("DisplayMessageNotification");
+
+            // Cache the method for later use
+            displayMessageNotificationMethodGUICache = displayMessageNotificationMethodGUI;
         }
 
         private void OnGUI()
@@ -205,7 +221,7 @@ namespace Donuts
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width, 20));
 
-            SaveWindowSettings();
+            DebouncedSaveWindowSettings();
         }
 
         private void DrawMainTabs()
@@ -266,6 +282,7 @@ namespace Donuts
             if (GUILayout.Button("Save All Changes", greenButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ExportConfig();
+                DisplayMessageNotificationGUI("All Donuts Settings have been saved.");
                 DonutsPlugin.Logger.LogWarning("All changes saved.");
             }
 
@@ -328,6 +345,21 @@ namespace Donuts
             }
         }
 
+        private void DebouncedSaveWindowSettings()
+        {
+            if (saveSettingsCoroutine != null)
+            {
+                StopCoroutine(saveSettingsCoroutine);
+            }
+            saveSettingsCoroutine = StartCoroutine(SaveWindowSettingsAfterDelay());
+        }
+
+        private System.Collections.IEnumerator SaveWindowSettingsAfterDelay()
+        {
+            yield return new WaitForSeconds(saveSettingsDebounceTime);
+            SaveWindowSettings();
+        }
+
         private void SaveWindowSettings()
         {
             DefaultPluginVars.windowRect = windowRect;
@@ -374,6 +406,24 @@ namespace Donuts
 
             string json = DefaultPluginVars.ExportToJson();
             File.WriteAllText(configFilePath, json);
+        }
+
+        internal static void DisplayMessageNotificationGUI(string message)
+        {
+            if (displayMessageNotificationMethodGUICache == null)
+            {
+                Debug.LogError("displayMessageNotificationMethodGUICache is not initialized.");
+                return;
+            }
+
+            try
+            {
+                displayMessageNotificationMethodGUICache.Invoke(null, new object[] { message, ENotificationDurationType.Long, ENotificationIconType.Alert, Color.cyan });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error invoking DisplayMessageNotification: {ex.Message}\n{ex.StackTrace}");
+            }
         }
     }
 }

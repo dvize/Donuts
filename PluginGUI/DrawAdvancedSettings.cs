@@ -71,6 +71,7 @@ namespace Donuts
             if (GUILayout.Button("Reset to Default Values", redButtonStyle, GUILayout.Width(250), GUILayout.Height(50)))
             {
                 ResetToDefaults();
+                PluginGUIHelper.DisplayMessageNotificationGUI("All Donuts Settings have been reset to default values, but they still need to be saved.");
                 DonutsPlugin.Logger.LogWarning("All settings have been reset to default values.");
                 RestartPluginGUIHelper();
             }
