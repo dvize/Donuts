@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EFT;
+using System;
 using System.Collections;
 using System.Reflection;
 using SPT.Reflection.Patching;
