@@ -12,8 +12,8 @@ namespace Donuts.Patches
         private static object localGameObj = null;
         protected override MethodBase GetTargetMethod()
         {
-            Type localGameType = SPT.Reflection.Utils.PatchConstants.LocalGameType;
-            return localGameType.GetMethod("method_18", BindingFlags.Public | BindingFlags.Instance);
+            Type baseGameType = typeof(BaseLocalGame<EftGamePlayerOwner>);
+            return baseGameType.GetMethod("vmethod_4", BindingFlags.Public | BindingFlags.Instance);
         }
 
         [PatchPostfix]
@@ -33,7 +33,7 @@ namespace Donuts.Patches
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
-                yield return new WaitForSeconds(0.1f); // Check every 100ms
+                yield return new WaitForEndOfFrame(); // Check every frame
 
                 if (Time.time - lastLogTime >= 1.0f)
                 {
