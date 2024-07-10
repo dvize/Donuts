@@ -102,18 +102,21 @@ namespace Donuts
 
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MinGroupSize, botWave.MaxGroupSize);
 
-            // we need to "trim" bots here if bots go over the cap
-            int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
-            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
-
-            if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
+            // // we need to "trim" bots here if bots go over the cap but only if hard cap is enabled
+            if (HardCapEnabled.Value)
             {
-                maxCount = Initialization.PMCBotLimit - activePMCs;
-            }
+                int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+                int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
 
-            if (wildSpawnType == "scav" && activeSCAVs + maxCount > Initialization.SCAVBotLimit)
-            {
-                maxCount = Initialization.SCAVBotLimit - activeSCAVs;
+                if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
+                {
+                    maxCount = Initialization.PMCBotLimit - activePMCs;
+                }
+
+                if (wildSpawnType == "scav" && activeSCAVs + maxCount > Initialization.SCAVBotLimit)
+                {
+                    maxCount = Initialization.SCAVBotLimit - activeSCAVs;
+                }
             }
 
             bool isGroup = maxCount > 1;
@@ -172,26 +175,6 @@ namespace Donuts
                 return;
             }
 
-            if (DonutComponent.currentMaxPMC + count > Initialization.PMCBotLimit)
-            {
-                DonutComponent.Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
-                return;
-            }
-            else
-            {
-                DonutComponent.currentMaxPMC += count;
-            }
-
-            if (DonutComponent.currentMaxSCAV + count > Initialization.SCAVBotLimit)
-            {
-                DonutComponent.Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
-                return;
-            }
-            else
-            {
-                DonutComponent.currentMaxSCAV += count;
-            }
-
             await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave, zone, cancellationToken);
         }
 
@@ -209,26 +192,6 @@ namespace Donuts
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
                 return;
-            }
-
-            if (DonutComponent.currentMaxPMC + 1 > Initialization.PMCBotLimit)
-            {
-                DonutComponent.Logger.LogDebug("Current max PMCs reached - no more PMC respawns allowed, skipping this spawn");
-                return;
-            }
-            else
-            {
-                DonutComponent.currentMaxPMC++;
-            }
-
-            if (DonutComponent.currentMaxSCAV + 1 > Initialization.SCAVBotLimit)
-            {
-                DonutComponent.Logger.LogDebug("Current max SCAVs reached - no more SCAV respawns allowed, skipping this spawn");
-                return;
-            }
-            else
-            {
-                DonutComponent.currentMaxSCAV++;
             }
 
             await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave, zone, cancellationToken);

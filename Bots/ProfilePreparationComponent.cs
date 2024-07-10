@@ -222,7 +222,6 @@ namespace Donuts
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
 
-            // Don't allow maxBots > bot limits
             if (botType == "PMC" && maxBots > Initialization.PMCBotLimit)
             {
                 maxBots = Initialization.PMCBotLimit;
@@ -234,13 +233,12 @@ namespace Donuts
 
             Logger.LogDebug($"Max starting bots for {botType}: {maxBots}");
 
-            // Get random spawn points, depending on StartingBots cfg, for all starting bots
             var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(allMapsZoneConfig, maplocation, mapBotConfig.Zones);
 
             int totalBots = 0;
             var usedZones = botType == "PMC" ? usedZonesPMC : usedZonesSCAV;
+            var random = new System.Random();
 
-            // Iterate through all starting bots and create them here
             while (totalBots < maxBots)
             {
                 int groupSize = BotSpawn.DetermineMaxBotCount(botType.ToLower(), mapBotConfig.MinGroupSize, mapBotConfig.MaxGroupSize);
@@ -256,25 +254,17 @@ namespace Donuts
                 var coordinates = new List<Vector3>();
                 string selectedZone = null;
 
-                // Check if all zones are exhausted
-                if (usedZones.Count >= spawnPointsDict.Count)
+                var zoneKeys = spawnPointsDict.Keys.ToList();
+                zoneKeys = zoneKeys.OrderBy(_ => random.Next()).ToList(); // Shuffle the list of zone keys
+
+                foreach (var zone in zoneKeys)
                 {
-                    // If all zones are exhausted, select a random zone
-                    var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
-                    coordinates.Add(spawnPointsDict[randomZone]);
-                    selectedZone = randomZone;
-                }
-                else
-                {
-                    foreach (var zone in spawnPointsDict.Keys.ToList())
+                    if (!usedZones.Contains(zone) && spawnPointsDict.TryGetValue(zone, out var coord))
                     {
-                        if (!usedZones.Contains(zone) && spawnPointsDict.TryGetValue(zone, out var coord))
-                        {
-                            coordinates.Add(coord);
-                            selectedZone = zone;
-                            usedZones.Add(zone); // Mark the zone as used
-                            break;
-                        }
+                        coordinates.Add(coord);
+                        selectedZone = zone;
+                        usedZones.Add(zone);
+                        break;
                     }
                 }
 
@@ -284,12 +274,10 @@ namespace Donuts
                     break;
                 }
 
-                // Add data to bot cache, this is required
                 var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);
                 await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken);
                 BotInfos.Add(botInfo);
 
-                // Starting Bots data for actually spawning them into raids
                 var botSpawnInfo = new BotSpawnInfo(wildSpawnType, groupSize, coordinates, difficulty, side, selectedZone);
                 botSpawnInfos.Add(botSpawnInfo);
 
