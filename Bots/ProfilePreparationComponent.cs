@@ -106,6 +106,9 @@ namespace Donuts
 
         public async void Awake()
         {
+            var playerLoop = UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
+            Cysharp.Threading.Tasks.PlayerLoopHelper.Initialize(ref playerLoop);
+
             maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
@@ -170,7 +173,6 @@ namespace Donuts
         {
             if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null && owner.Memory.HaveEnemy)
             {
-
                 if (owner.Memory.GoalEnemy.Person == (IPlayer)gameWorld.MainPlayer.InteractablePlayer && owner.Memory.GoalEnemy.HaveSeenPersonal && owner.Memory.GoalEnemy.IsVisible)
                 {
                     timeSinceLastReplenish = 0f;

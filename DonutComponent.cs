@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using SPT.PrePatch;
 using SPT.Reflection.Utils;
 using BepInEx.Logging;
@@ -16,13 +17,14 @@ using Newtonsoft.Json;
 using Systems.Effects;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
-using System.Threading;
 
 #pragma warning disable IDE0007, IDE0044
 namespace Donuts
 {
     public class DonutComponent : MonoBehaviour
     {
+        internal CancellationTokenSource cts;
+
         internal static FightLocations fightLocations;
         internal static FightLocations sessionLocations;
 
@@ -107,6 +109,8 @@ namespace Donuts
 
         private void Awake()
         {
+            cts = new CancellationTokenSource();
+
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(botSpawnerClass.GetType(), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             methodCache = new Dictionary<string, MethodInfo>();
@@ -174,7 +178,8 @@ namespace Donuts
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
             Logger.LogDebug("Setup maplocation: " + DonutsBotPrep.maplocation);
-            Initialization.LoadFightLocations(this.GetCancellationTokenOnDestroy());
+
+            Initialization.LoadFightLocations(cts.Token).Forget();
 
             botWaveConfig = GetBotWavesConfig(DonutsBotPrep.selectionName);
             botWaves = botWaveConfig.Maps[DonutsBotPrep.maplocation];
@@ -232,7 +237,7 @@ namespace Donuts
             if (spawnCheckTimer.ElapsedMilliseconds >= SpawnCheckInterval)
             {
                 spawnCheckTimer.Restart();
-                StartSpawnProcess(this.GetCancellationTokenOnDestroy()).Forget();
+                StartSpawnProcess(cts.Token).Forget();
             }
 
             Gizmos.DisplayMarkerInformation();
@@ -264,33 +269,44 @@ namespace Donuts
 
         private async UniTask SpawnBotWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
         {
-            foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                if (botWave.ShouldSpawn())
+                bool anySpawned = false;
+                foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
                 {
-                    if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
+                    if (botWave.ShouldSpawn())
                     {
-                        Logger.LogDebug($"Skipping spawn due to battle cooldown. Time since last hit: {timeSinceLastHit}");
-                        break;
-                    }
-
-                    // Get coordinates
-                    var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
-
-                    if (spawnPointsDict.Any())
-                    {
-                        // Select a random coordinate from any zone
-                        var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
-                        var coordinate = spawnPointsDict[randomZone];
-
-                        var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
-
-                        if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                        if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                         {
-                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken: this.GetCancellationTokenOnDestroy());
-                            break;
+                            Logger.LogDebug($"Skipping spawn due to battle cooldown. Time since last hit: {timeSinceLastHit}");
+                            break; // Instead of stopping, break to wait and retry
+                        }
+
+                        // Get coordinates
+                        var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
+
+                        if (spawnPointsDict.Any())
+                        {
+                            // Select a random coordinate from any zone
+                            var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
+                            var coordinate = spawnPointsDict[randomZone];
+
+                            var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
+
+                            if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                            {
+                                await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken);
+                                anySpawned = true;
+                                break; // Spawned a bot, exit the loop to wait and retry
+                            }
                         }
                     }
+                }
+
+                // If no bots were spawned, delay before retrying
+                if (!anySpawned)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: cancellationToken);
                 }
             }
         }
@@ -585,8 +601,8 @@ namespace Donuts
 
         public async UniTask<bool> CheckHardCap(string wildSpawnType, CancellationToken cancellationToken)
         {
-            int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
-            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
+            int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
 
             if (wildSpawnType == "pmc" && activePMCs >= Initialization.PMCBotLimit && !hotspotIgnoreHardCapPMC.Value)
             {
@@ -772,7 +788,7 @@ namespace Donuts
         private async UniTask<bool> ShouldConsiderDespawning(string botType, CancellationToken cancellationToken)
         {
             int botLimit = botType == "pmc" ? Initialization.PMCBotLimit : Initialization.SCAVBotLimit;
-            int activeBotCount = await BotCountManager.GetAlivePlayers(botType);
+            int activeBotCount = await BotCountManager.GetAlivePlayers(botType, cancellationToken);
 
             return activeBotCount > botLimit; // Only consider despawning if the number of active bots of the type exceeds the limit
         }
@@ -784,6 +800,10 @@ namespace Donuts
 
         private void OnDestroy()
         {
+            // Cancel any ongoing tasks
+            cts?.Cancel();
+            cts?.Dispose();
+
             botSpawnerClass.OnBotRemoved -= removedBot =>
             {
                 foreach (var player in playerList)

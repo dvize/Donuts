@@ -62,7 +62,7 @@ namespace Donuts
 
             foreach (var coordinate in coordinates)
             {
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
+                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
                 if (!spawnPosition.HasValue)
                 {
                     DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
@@ -103,8 +103,8 @@ namespace Donuts
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MinGroupSize, botWave.MaxGroupSize);
 
             // we need to "trim" bots here if bots go over the cap
-            int activePMCs = await BotCountManager.GetAlivePlayers("pmc");
-            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav");
+            int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
 
             if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
             {
@@ -165,7 +165,7 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
             if (!spawnPosition.HasValue)
             {
                 DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
@@ -203,7 +203,7 @@ namespace Donuts
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value);
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
 
             if (!spawnPosition.HasValue)
             {
@@ -532,7 +532,7 @@ namespace Donuts
                 case "bossknight":
                     return WildSpawnType.bossKnight;
                 case "pmc":
-                    return UnityEngine.Random.Range(0, 2) == 0 ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR ;
+                    return UnityEngine.Random.Range(0, 2) == 0 ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
                 default:
                     return WildSpawnType.assault;
             }

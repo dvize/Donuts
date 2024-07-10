@@ -18,7 +18,7 @@ namespace Donuts
     {
         #region spawnchecks
 
-        internal static async Task<Vector3?> GetValidSpawnPosition(float hotspotMinDistFromPlayer, float hotspotMaxDist, float hotspotMinDist, Vector3 coordinate, int maxSpawnAttempts)
+        internal static async Task<Vector3?> GetValidSpawnPosition(float hotspotMinDistFromPlayer, float hotspotMaxDist, float hotspotMinDist, Vector3 coordinate, int maxSpawnAttempts, CancellationToken cancellationToken)
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
@@ -28,7 +28,7 @@ namespace Donuts
                 {
                     spawnPosition = navHit.position;
 
-                    if (await IsValidSpawnPosition(spawnPosition, hotspotMinDistFromPlayer))
+                    if (await IsValidSpawnPosition(spawnPosition, hotspotMinDistFromPlayer, cancellationToken))
                     {
 #if DEBUG
                         DonutComponent.Logger.LogDebug("Found spawn position at: " + spawnPosition);
@@ -37,7 +37,7 @@ namespace Donuts
                     }
                 }
 
-                await Task.Delay(1);
+                await Task.Delay(1, cancellationToken);
             }
 
             return null;
@@ -51,7 +51,7 @@ namespace Donuts
             return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
-        internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, float hotspotMinDistFromPlayer)
+        internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, float hotspotMinDistFromPlayer, CancellationToken cancellationToken)
         {
             if (spawnPosition == null)
             {
@@ -61,9 +61,9 @@ namespace Donuts
 
             var tasks = new List<UniTask<bool>>
             {
-                IsSpawnPositionInsideWall(spawnPosition),
-                IsSpawnPositionInPlayerLineOfSight(spawnPosition),
-                IsSpawnInAir(spawnPosition)
+                IsSpawnPositionInsideWall(spawnPosition, cancellationToken),
+                IsSpawnPositionInPlayerLineOfSight(spawnPosition, cancellationToken),
+                IsSpawnInAir(spawnPosition, cancellationToken)
             };
 
             var tasks2 = new List<Task<bool>>
@@ -72,12 +72,12 @@ namespace Donuts
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromPlayerBool.Value)
             {
-                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition));
+                tasks2.Add(IsMinSpawnDistanceFromPlayerTooShort(spawnPosition, cancellationToken));
             }
 
             if (DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsBool.Value)
             {
-                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition));
+                tasks2.Add(IsPositionTooCloseToOtherBots(spawnPosition, cancellationToken));
             }
 
             bool[] results = await UniTask.WhenAll(tasks);
@@ -98,7 +98,7 @@ namespace Donuts
             return true;
         }
 
-        internal static async UniTask<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition)
+        internal static async UniTask<bool> IsSpawnPositionInPlayerLineOfSight(Vector3 spawnPosition, CancellationToken cancellationToken)
         {
             foreach (var player in playerList)
             {
@@ -117,7 +117,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async UniTask<bool> IsSpawnPositionInsideWall(Vector3 position)
+        internal static async UniTask<bool> IsSpawnPositionInsideWall(Vector3 position, CancellationToken cancellationToken)
         {
             Vector3 boxSize = new Vector3(1f, 1f, 1f);
             Collider[] colliders = Physics.OverlapBox(position, boxSize, Quaternion.identity, LayerMaskClass.LowPolyColliderLayer);
@@ -138,7 +138,7 @@ namespace Donuts
             return false;
         }
 
-        internal static async UniTask<bool> IsSpawnInAir(Vector3 position)
+        internal static async UniTask<bool> IsSpawnInAir(Vector3 position, CancellationToken cancellationToken)
         {
             Ray ray = new Ray(position, Vector3.down);
             float distance = 10f;
@@ -191,7 +191,7 @@ namespace Donuts
             }
         }
 
-        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position)
+        internal static async Task<bool> IsMinSpawnDistanceFromPlayerTooShort(Vector3 position, CancellationToken cancellationToken)
         {
             float minDistanceFromPlayer = GetMinDistanceFromPlayer();
 
@@ -204,14 +204,14 @@ namespace Donuts
                         return true;
                     }
                     return false;
-                }))
+                }, cancellationToken))
                 .ToList();
 
             bool[] results = await Task.WhenAll(tasks);
             return results.Any(result => result);
         }
 
-        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position)
+        internal static async Task<bool> IsPositionTooCloseToOtherBots(Vector3 position, CancellationToken cancellationToken)
         {
             float minDistanceFromOtherBots = GetMinDistanceFromOtherBots();
             List<Player> players = Singleton<GameWorld>.Instance.AllAlivePlayersList;
@@ -225,7 +225,7 @@ namespace Donuts
                         return true;
                     }
                     return false;
-                }))
+                }, cancellationToken))
                 .ToList();
 
             bool[] results = await Task.WhenAll(tasks);

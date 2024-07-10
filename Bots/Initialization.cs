@@ -100,6 +100,9 @@ namespace Donuts
 
         internal static async UniTask LoadFightLocations(CancellationToken cancellationToken)
         {
+            // Check if the operation has been cancelled
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!fileLoaded)
             {
                 methodCache.TryGetValue("DisplayMessageNotification", out MethodInfo displayMessageNotificationMethod);
@@ -107,6 +110,8 @@ namespace Donuts
                 string dllPath = Assembly.GetExecutingAssembly().Location;
                 string directoryPath = Path.GetDirectoryName(dllPath);
                 string jsonFolderPath = Path.Combine(directoryPath, "patterns");
+
+                
 
                 if (DonutsBotPrep.selectionName == null)
                 {
