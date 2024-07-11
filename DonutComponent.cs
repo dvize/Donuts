@@ -244,7 +244,7 @@ namespace Donuts
 
         private void Update()
         {
-            if (!PluginEnabled.Value || !fileLoaded)
+            if (!PluginEnabled.Value || !fileLoaded || !IsBotSpawningEnabled)
                 return;
 
             timeSinceLastHit += Time.deltaTime;
