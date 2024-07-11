@@ -5,6 +5,7 @@ using System.Reflection;
 using SPT.Reflection.Patching;
 using Donuts;
 using UnityEngine;
+using Comfort.Common;
 
 namespace Donuts.Patches
 {
@@ -20,6 +21,11 @@ namespace Donuts.Patches
         [PatchPostfix]
         private static void PatchPostfix(ref IEnumerator __result, object __instance)
         {
+            if(!Singleton<AbstractGame>.Instance.InRaid)
+            {
+                return;
+            }
+
             localGameObj = __instance;
             __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
         }
