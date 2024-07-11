@@ -525,27 +525,18 @@ namespace Donuts
         {
             InitializeGroupChanceWeights();
 
-            if (pluginGroupChance == "None")
-            {
-                return minGroupSize;
-            }
-            else if (pluginGroupChance == "Max")
-            {
-                return maxGroupSize;
-            }
-            else if (pluginGroupChance == "Random")
+            if (pluginGroupChance == "Random")
             {
                 string[] groupChances = { "None", "Low", "Default", "High", "Max" };
                 pluginGroupChance = groupChances[UnityEngine.Random.Range(0, groupChances.Length)];
+            }
 
-                int actualGroupSize = getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize);
-                return actualGroupSize;
-            }
-            else
+            return pluginGroupChance switch
             {
-                int actualGroupSize = getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize);
-                return actualGroupSize;
-            }
+                "None" => minGroupSize,
+                "Max" => maxGroupSize,
+                _ => getGroupChance(pluginGroupChance, minGroupSize, maxGroupSize)
+            };
         }
 
         internal static int getGroupChance(string pmcGroupChance, int minGroupSize, int maxGroupSize)
