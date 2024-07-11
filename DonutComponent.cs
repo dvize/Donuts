@@ -86,6 +86,9 @@ namespace Donuts
         internal static bool isInBattle;
         internal static float timeSinceLastHit = 0;
         internal static Player mainplayer;
+
+        internal static bool IsMultiplayerClient { get => BotsController.AllTypes.Length == 0 ? true : false; }
+
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -189,6 +192,11 @@ namespace Donuts
 
         private void Start()
         {
+            if(IsMultiplayerClient)
+            {
+                return;
+            }
+
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;

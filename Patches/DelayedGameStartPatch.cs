@@ -27,7 +27,11 @@ namespace Donuts.Patches
             }
 
             localGameObj = __instance;
-            __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
+
+            if(!DonutComponent.IsMultiplayerClient && Singleton<GameWorld>.Instance.MainPlayer.Location.ToLower() != "hideout")
+            {
+                __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
+            }
         }
 
         private static IEnumerator addIterationsToWaitForBotGenerators(IEnumerator originalTask)
