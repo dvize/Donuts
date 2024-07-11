@@ -87,7 +87,7 @@ namespace Donuts
         internal static float timeSinceLastHit = 0;
         internal static Player mainplayer;
 
-        internal static bool IsMultiplayerClient { get => BotsController.AllTypes.Length == 0 ? true : false; }
+        internal static bool IsBotSpawningEnabled { get => (bool)AccessTools.Field(typeof(BotsController), "_botEnabled").GetValue(Singleton<IBotGame>.Instance.BotsController); }
 
         internal static ManualLogSource Logger
         {
@@ -192,7 +192,7 @@ namespace Donuts
 
         private void Start()
         {
-            if(IsMultiplayerClient)
+            if(!IsBotSpawningEnabled)
             {
                 return;
             }

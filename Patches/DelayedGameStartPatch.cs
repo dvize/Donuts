@@ -28,7 +28,7 @@ namespace Donuts.Patches
 
             localGameObj = __instance;
 
-            if(!DonutComponent.IsMultiplayerClient)
+            if(DonutComponent.IsBotSpawningEnabled)
             {
                 __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
             }
