@@ -86,6 +86,9 @@ namespace Donuts
         internal static bool isInBattle;
         internal static float timeSinceLastHit = 0;
         internal static Player mainplayer;
+
+        internal static bool IsBotSpawningEnabled { get => (bool)AccessTools.Field(typeof(BotsController), "_botEnabled").GetValue(Singleton<IBotGame>.Instance.BotsController); }
+
         internal static ManualLogSource Logger
         {
             get; private set;
@@ -189,6 +192,11 @@ namespace Donuts
 
         private void Start()
         {
+            if(!IsBotSpawningEnabled)
+            {
+                return;
+            }
+
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
@@ -236,7 +244,7 @@ namespace Donuts
 
         private void Update()
         {
-            if (!PluginEnabled.Value || !fileLoaded)
+            if (!PluginEnabled.Value || !fileLoaded || !IsBotSpawningEnabled)
                 return;
 
             timeSinceLastHit += Time.deltaTime;
@@ -844,7 +852,10 @@ namespace Donuts
                 }
             };
 
-            mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
+            if(IsBotSpawningEnabled)
+            {
+                mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
+            }
 
             StopAllCoroutines();
 
