@@ -852,7 +852,10 @@ namespace Donuts
                 }
             };
 
-            mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
+            if(IsBotSpawningEnabled)
+            {
+                mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
+            }
 
             StopAllCoroutines();
 
