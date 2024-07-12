@@ -157,6 +157,7 @@ namespace Donuts
                     case "factory4_night": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerFactory.Value;
                     case "tarkovstreets": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerStreets.Value;
                     case "sandbox": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerGroundZero.Value;
+                    case "sandbox_high": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerGroundZero.Value;
                     case "rezervbase": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerReserve.Value;
                     case "lighthouse": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerLighthouse.Value;
                     case "shoreline": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerShoreline.Value;
@@ -181,6 +182,7 @@ namespace Donuts
                 case "factory4_night": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsFactory.Value;
                 case "tarkovstreets": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsStreets.Value;
                 case "sandbox": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsGroundZero.Value;
+                case "sandbox_high": return DefaultPluginVars.globalMinSpawnDistanceFromPlayerGroundZero.Value;
                 case "rezervbase": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsReserve.Value;
                 case "lighthouse": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsLighthouse.Value;
                 case "shoreline": return DefaultPluginVars.globalMinSpawnDistanceFromOtherBotsShoreline.Value;

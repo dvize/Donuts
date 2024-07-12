@@ -53,11 +53,12 @@ namespace Donuts
             {"reserve", "rezervbase"},
             {"interchange", "interchange"},
             {"woods", "woods"},
-            {"groundzero", "sandbox"},
+            {"groundzero", "sandbox,sandbox_high"},
             {"laboratory", "laboratory"},
             {"lighthouse", "lighthouse"},
             {"shoreline", "shoreline"}
         };
+
         internal static bool hasSpawnedStartingBots;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
@@ -192,7 +193,7 @@ namespace Donuts
 
         private void Start()
         {
-            if(!IsBotSpawningEnabled)
+            if (!IsBotSpawningEnabled)
             {
                 return;
             }
@@ -393,7 +394,11 @@ namespace Donuts
         // Get the spawn wave configs from the waves json files
         public static BotWavesConfig GetBotWavesConfig(string selectionName)
         {
-            var mapKey = mapLocationDict.FirstOrDefault(x => x.Value == DonutsBotPrep.maplocation).Key;
+            var mapKey = mapLocationDict.FirstOrDefault(x =>
+            {
+                var values = x.Value.Split(',');
+                return values.Contains(DonutsBotPrep.maplocation);
+            }).Key;
 
             if (mapKey == null)
             {
@@ -496,6 +501,10 @@ namespace Donuts
                 mapName = "woods";
             }
             else if (DonutsBotPrep.maplocation == "sandbox")
+            {
+                mapName = "groundzero";
+            }
+            else if (DonutsBotPrep.maplocation == "sandbox_high")
             {
                 mapName = "groundzero";
             }
@@ -737,16 +746,15 @@ namespace Donuts
                 return furthestBot;
             });
         }
-
         private async UniTask DespawnFurthestBot(string bottype, CancellationToken cancellationToken)
         {
-            if (bottype != "pmc" && bottype != "scav")
-                return;
-
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
             float despawnCooldownDuration = bottype == "pmc" ? PMCdespawnCooldownDuration : SCAVdespawnCooldownDuration;
 
-            if (Time.time - despawnCooldown < despawnCooldownDuration)
+            float currentTime = Time.time;
+            float timeSinceLastDespawn = currentTime - despawnCooldown;
+
+            if (timeSinceLastDespawn < despawnCooldownDuration)
             {
                 return;
             }
@@ -764,7 +772,7 @@ namespace Donuts
             }
             else
             {
-                Logger.LogWarning("No bot found to despawn.");
+                Logger.LogWarning($"No {bottype} bot found to despawn.");
             }
         }
 
@@ -852,7 +860,7 @@ namespace Donuts
                 }
             };
 
-            if(IsBotSpawningEnabled)
+            if (IsBotSpawningEnabled)
             {
                 mainplayer.BeingHitAction -= BeingHitBattleCoolDown;
             }
