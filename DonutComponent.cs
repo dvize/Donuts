@@ -307,12 +307,14 @@ namespace Donuts
 
         private async UniTask SpawnBotWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
         {
+            // Combine both lists and process in parallel for potential performance improvement
+            var allBotWaves = botWaves.PMC.Concat(botWaves.SCAV).ToList();
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 bool anySpawned = false;
 
-                // Combine both lists and process in parallel for potential performance improvement
-                var allBotWaves = botWaves.PMC.Concat(botWaves.SCAV).ToList();
+
 
                 foreach (var botWave in allBotWaves)
                 {
