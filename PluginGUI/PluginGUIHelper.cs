@@ -19,6 +19,7 @@ namespace Donuts
         private bool isResizing = false;
         private Vector2 resizeStartPos;
 
+        // InitializeStyles static vars
         internal static GUIStyle windowStyle;
         internal static GUIStyle labelStyle;
         internal static GUIStyle buttonStyle;
@@ -30,12 +31,28 @@ namespace Donuts
         internal static GUIStyle horizontalSliderThumbStyle;
         internal static GUIStyle toggleButtonStyle;
         internal static GUIStyle tooltipStyle;
+
+        // Static texture variables
+        internal static Texture2D windowBackgroundTex;
+        internal static Texture2D buttonNormalTex;
+        internal static Texture2D buttonHoverTex;
+        internal static Texture2D buttonActiveTex;
+        internal static Texture2D subTabNormalTex;
+        internal static Texture2D subTabHoverTex;
+        internal static Texture2D subTabActiveTex;
+        internal static Texture2D toggleEnabledTex;
+        internal static Texture2D toggleDisabledTex;
+        internal static Texture2D tooltipStyleBackgroundTex;
+
+        private static GUISkin originalSkin;
+
         private static bool stylesInitialized = false;
 
         internal static MethodInfo displayMessageNotificationMethodGUICache;
 
         private void Start()
         {
+            stylesInitialized = false;
             LoadWindowSettings();
 
             var displayMessageNotificationMethodGUI = PatchConstants.EftTypes
@@ -57,7 +74,7 @@ namespace Donuts
                 }
 
                 // Save the current GUI skin
-                GUISkin originalSkin = GUI.skin;
+                originalSkin = GUI.skin;
 
                 windowRect = GUI.Window(123, windowRect, MainWindowFunc, "", windowStyle);
                 GUI.FocusWindow(123);
@@ -77,15 +94,16 @@ namespace Donuts
 
         public static void InitializeStyles()
         {
-            var windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f));
-            var buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));
-            var buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));
-            var buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));
-            var subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));
-            var subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));
-            var subTabActiveTex = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f));
-            var toggleEnabledTex = MakeTex(1, 1, Color.red);
-            var toggleDisabledTex = MakeTex(1, 1, Color.gray);
+            windowBackgroundTex = MakeTex(1, 1, new Color(0.1f, 0.1f, 0.1f, 1f));
+            buttonNormalTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.2f, 1f));
+            buttonHoverTex = MakeTex(1, 1, new Color(0.3f, 0.3f, 0.3f, 1f));
+            buttonActiveTex = MakeTex(1, 1, new Color(0.4f, 0.4f, 0.4f, 1f));
+            subTabNormalTex = MakeTex(1, 1, new Color(0.15f, 0.15f, 0.15f, 1f));
+            subTabHoverTex = MakeTex(1, 1, new Color(0.2f, 0.2f, 0.5f, 1f));
+            subTabActiveTex = MakeTex(1, 1, new Color(0.25f, 0.25f, 0.7f, 1f));
+            toggleEnabledTex = MakeTex(1, 1, Color.red);
+            toggleDisabledTex = MakeTex(1, 1, Color.gray);
+            tooltipStyleBackgroundTex = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f));
 
             windowStyle = new GUIStyle(GUI.skin.window)
             {
@@ -170,7 +188,7 @@ namespace Donuts
             {
                 fontSize = 18,
                 wordWrap = true,
-                normal = { background = MakeTex(1, 1, new Color(0.0f, 0.5f, 1.0f)), textColor = Color.white },
+                normal = { background = tooltipStyleBackgroundTex, textColor = Color.white },
                 fontStyle = FontStyle.Bold
             };
         }

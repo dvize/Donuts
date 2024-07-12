@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EFT;
+using System;
 using System.Collections;
 using System.Reflection;
 using Aki.Reflection.Patching;
@@ -19,6 +20,11 @@ namespace Donuts.Patches
         [PatchPostfix]
         private static void PatchPostfix(ref IEnumerator __result, object __instance, float startDelay)
         {
+            if(!Singleton<AbstractGame>.Instance.InRaid)
+            {
+                return;
+            }
+
             localGameObj = __instance;
             __result = addIterationsToWaitForBotGenerators(__result); // Thanks danW
         }
@@ -33,7 +39,7 @@ namespace Donuts.Patches
 
             while (!DonutsBotPrep.IsBotPreparationComplete)
             {
-                yield return new WaitForSeconds(0.1f); // Check every 100ms
+                yield return new WaitForEndOfFrame(); // Check every frame
 
                 if (Time.time - lastLogTime >= 1.0f)
                 {
