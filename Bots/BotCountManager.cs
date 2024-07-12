@@ -46,12 +46,12 @@ namespace Donuts
             });
         }
 
-        private static bool IsPMC(WildSpawnType role)
+        public static bool IsPMC(WildSpawnType role)
         {
             return role == WildSpawnType.pmcUSEC || role == WildSpawnType.pmcBEAR;
         }
 
-        private static bool IsSCAV(WildSpawnType role)
+        public static bool IsSCAV(WildSpawnType role)
         {
             return role == WildSpawnType.assault;
         }

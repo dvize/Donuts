@@ -714,7 +714,7 @@ namespace Donuts
             }
         }
 
-        private UniTask<Player> UpdateDistancesAndFindFurthestBot()
+        private UniTask<Player> UpdateDistancesAndFindFurthestBot(string bottype)
         {
             return UniTask.Create(async () =>
             {
@@ -723,14 +723,17 @@ namespace Donuts
 
                 foreach (var bot in gameWorld.AllAlivePlayersList)
                 {
-                    // Get distance of bot to player using squared distance
-                    float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
-
-                    // Check if this is the furthest distance
-                    if (distance > maxDistance)
+                    if (!bot.IsYourPlayer && IsBotType(bot, bottype))
                     {
-                        maxDistance = distance;
-                        furthestBot = bot;
+                        // Get distance of bot to player using squared distance
+                        float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
+
+                        // Check if this is the furthest distance
+                        if (distance > maxDistance)
+                        {
+                            maxDistance = distance;
+                            furthestBot = bot;
+                        }
                     }
                 }
 
@@ -746,6 +749,20 @@ namespace Donuts
                 return furthestBot;
             });
         }
+
+        private bool IsBotType(Player bot, string bottype)
+        {
+            switch (bottype)
+            {
+                case "scav":
+                    return BotCountManager.IsSCAV(bot.Profile.Info.Settings.Role);
+                case "pmc":
+                    return BotCountManager.IsPMC(bot.Profile.Info.Settings.Role);
+                default:
+                    throw new ArgumentException("Invalid bot type", nameof(bottype));
+            }
+        }
+
         private async UniTask DespawnFurthestBot(string bottype, CancellationToken cancellationToken)
         {
             float despawnCooldown = bottype == "pmc" ? PMCdespawnCooldown : SCAVdespawnCooldown;
@@ -764,7 +781,7 @@ namespace Donuts
                 return;
             }
 
-            Player furthestBot = await UpdateDistancesAndFindFurthestBot();
+            Player furthestBot = await UpdateDistancesAndFindFurthestBot(bottype);
 
             if (furthestBot != null)
             {
