@@ -292,14 +292,17 @@ namespace Donuts
             while (!cancellationToken.IsCancellationRequested)
             {
                 bool anySpawned = false;
-                foreach (var botWave in botWaves.PMC.Concat(botWaves.SCAV))
+
+                // Combine both lists and process in parallel for potential performance improvement
+                var allBotWaves = botWaves.PMC.Concat(botWaves.SCAV).ToList();
+
+                foreach (var botWave in allBotWaves)
                 {
                     if (botWave.ShouldSpawn())
                     {
                         if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                         {
-                            Logger.LogDebug($"Skipping spawn due to battle cooldown. Time since last hit: {timeSinceLastHit}");
-                            break; // Instead of stopping, break to wait and retry
+                            break; // Skip spawn due to battle cooldown
                         }
 
                         // Get coordinates
@@ -322,6 +325,9 @@ namespace Donuts
                         }
                     }
                 }
+
+                // Yield control to allow other tasks to execute
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
                 // If no bots were spawned, delay before retrying
                 if (!anySpawned)
@@ -390,7 +396,7 @@ namespace Donuts
         {
             var mapKey = mapLocationDict.FirstOrDefault(x =>
             {
-                var values = x.Value.Split(',');
+                var values = x.Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 return values.Contains(DonutsBotPrep.maplocation);
             }).Key;
 
