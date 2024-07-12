@@ -218,6 +218,12 @@ namespace Donuts
 
             var difficultySetting = botType == "PMC" ? DefaultPluginVars.botDifficultiesPMC.Value.ToLower() : DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
 
+            // lazy
+            if (maplocation == "sandbox_high")
+            {
+                maplocation = "sandbox";
+            }
+
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
