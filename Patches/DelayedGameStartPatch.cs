@@ -5,6 +5,7 @@ using System.Reflection;
 using Aki.Reflection.Patching;
 using Donuts;
 using UnityEngine;
+using Comfort.Common;
 
 namespace Donuts.Patches
 {

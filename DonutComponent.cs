@@ -771,7 +771,7 @@ namespace Donuts
                 return;
             }
 
-            Player furthestBot = await UpdateDistancesAndFindFurthestBot();
+            Player furthestBot = await UpdateDistancesAndFindFurthestBot(bottype);
 
             if (furthestBot != null)
             {
