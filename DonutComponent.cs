@@ -59,6 +59,8 @@ namespace Donuts
             {"shoreline", "shoreline"}
         };
 
+        internal static bool maxRespawnReachedPMC;
+        internal static bool maxRespawnReachedSCAV;
         internal static bool hasSpawnedStartingBots;
         internal static bool fileLoaded = false;
         internal static Gizmos gizmos;
@@ -216,6 +218,10 @@ namespace Donuts
 
             // reset starting bots boolean each raid
             hasSpawnedStartingBots = false;
+
+            // reset max respawns each raid
+            maxRespawnReachedPMC = false;
+            maxRespawnReachedSCAV = false;
 
             // reset current max bot counts each raid
             currentMaxPMC = 0;

@@ -101,47 +101,63 @@ namespace Donuts
             WildSpawnType actualWildSpawnType = DetermineWildSpawnType(wildSpawnType);
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MinGroupSize, botWave.MaxGroupSize);
 
-            // Check if hard cap is enabled or specific bot limits are set
-            if (HardCapEnabled.Value || maxRespawnsPMC.Value != 0 || maxRespawnsSCAV.Value != 0)
+            // Check if hard cap is enabled and adjust maxCount based on active bot counts and limits
+            if (HardCapEnabled.Value)
             {
-                try
+                // Get active bot counts for PMC and SCAV
+                int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+                int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
+
+                if (wildSpawnType == "pmc")
                 {
-                    // Get active bot counts for PMC and SCAV
-                    int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
-                    int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
-
-                    // Adjust maxCount based on active bot counts and limits
-                    if (wildSpawnType == "pmc")
+                    if (activePMCs + maxCount > Initialization.PMCBotLimit)
                     {
-                        if (activePMCs + maxCount > Initialization.PMCBotLimit)
-                        {
-                            maxCount = Initialization.PMCBotLimit - activePMCs;
-                        }
-
-                        if (currentMaxPMC >= maxRespawnsPMC.Value)
-                        {
-                            DonutComponent.Logger.LogDebug($"Max PMC respawn limit reached: {maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC}");
-                            return;
-                        }
-                    }
-                    else if (wildSpawnType == "scav")
-                    {
-                        if (activeSCAVs + maxCount > Initialization.SCAVBotLimit)
-                        {
-                            maxCount = Initialization.SCAVBotLimit - activeSCAVs;
-                        }
-
-                        if (currentMaxSCAV >= maxRespawnsSCAV.Value)
-                        {
-                            DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV}");
-                            return;
-                        }
+                        maxCount = Initialization.PMCBotLimit - activePMCs;
                     }
                 }
-                catch (Exception ex)
+                else if (wildSpawnType == "scav")
                 {
-                    DonutComponent.Logger.LogError($"Error during bot count retrieval: {ex.Message}");
-                    throw;
+                    if (activeSCAVs + maxCount > Initialization.SCAVBotLimit)
+                    {
+                        maxCount = Initialization.SCAVBotLimit - activeSCAVs;
+                    }
+                }
+            }
+
+            // Check respawn limits and adjust accordingly
+            if (maxRespawnsPMC.Value != 0 || maxRespawnsSCAV.Value != 0)
+            {
+                if (wildSpawnType == "pmc")
+                {
+                    if (!maxRespawnReachedPMC && currentMaxPMC + maxCount >= maxRespawnsPMC.Value)
+                    {
+#if DEBUG
+                        DonutComponent.Logger.LogDebug($"Max PMC respawn limit reached: {maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC + maxCount}");
+#endif
+                        currentMaxPMC += maxCount;
+                        maxRespawnReachedPMC = true;
+                        return;
+                    }
+                    else if (maxRespawnReachedPMC)
+                    {
+                        return;
+                    }
+                }
+                else if (wildSpawnType == "scav")
+                {
+                    if (!maxRespawnReachedSCAV && currentMaxSCAV + maxCount >= maxRespawnsSCAV.Value)
+                    {
+#if DEBUG
+                        DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV + maxCount}");
+#endif
+                        currentMaxSCAV += maxCount;
+                        maxRespawnReachedSCAV = true;
+                        return;
+                    }
+                    else if (maxRespawnReachedSCAV)
+                    {
+                        return;
+                    }
                 }
             }
 
