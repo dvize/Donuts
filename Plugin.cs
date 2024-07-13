@@ -14,6 +14,7 @@ using EFT;
 using EFT.Communications;
 using Newtonsoft.Json;
 using UnityEngine;
+using dvize.Donuts.Patches;
 
 //disable the ide0007 warning for the entire file
 #pragma warning disable IDE0007
@@ -63,6 +64,8 @@ namespace Donuts
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
+            new BotSettingsRepoAbstractClassPatch().Enable();
+
             ImportConfig();
             await SetupScenariosUI();
         }
