@@ -101,28 +101,129 @@ namespace Donuts
         internal static async UniTask SpawnBots(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, CancellationToken cancellationToken)
         {
             WildSpawnType actualWildSpawnType = DetermineWildSpawnType(wildSpawnType);
-
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MinGroupSize, botWave.MaxGroupSize);
 
-            // // we need to "trim" bots here if bots go over the cap but only if hard cap is enabled
+            // Check if hard cap is enabled and adjust maxCount based on active bot counts and limits
             if (HardCapEnabled.Value)
             {
-                int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
-                int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
+                maxCount = await AdjustMaxCountForHardCap(wildSpawnType, maxCount, cancellationToken);
+            }
 
-                if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
+            // Check respawn limits and adjust accordingly
+            if (wildSpawnType == "pmc" && maxRespawnsPMC.Value != 0)
+            {
+                if (maxRespawnReachedPMC)
+                {
+                    #if DEBUG
+                    DonutComponent.Logger.LogDebug("Max PMC respawns reached, skipping this spawn")
+                    #endif
+                    return;
+                }
+                else
+                {
+                    maxCount = AdjustMaxCountForRespawnLimits(wildSpawnType, maxCount);
+                }
+            }
+
+            else if (wildSpawnType == "scav" && maxRespawnsSCAV.Value != 0)
+            {
+                if (maxRespawnReachedSCAV)
+                {
+                    #if DEBUG
+                    DonutComponent.Logger.LogDebug("Max SCAV respawns reached, skipping this spawn")
+                    #endif
+                    return;
+                }
+                else
+                {
+                    maxCount = AdjustMaxCountForRespawnLimits(wildSpawnType, maxCount);
+                }
+            }
+
+            if (maxCount == 0)
+            {
+#if DEBUG
+                DonutComponent.Logger.LogDebug($"Max bot count is 0, skipping spawn");
+#endif
+                return;
+            }
+
+            bool isGroup = maxCount > 1;
+            await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate, zone, cancellationToken);
+        }
+
+        private static async UniTask<int> AdjustMaxCountForHardCap(string wildSpawnType, int maxCount, CancellationToken cancellationToken)
+        {
+            int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+            int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
+
+            if (wildSpawnType == "pmc")
+            {
+                if (activePMCs + maxCount > Initialization.PMCBotLimit)
                 {
                     maxCount = Initialization.PMCBotLimit - activePMCs;
                 }
-
-                if (wildSpawnType == "scav" && activeSCAVs + maxCount > Initialization.SCAVBotLimit)
+            }
+            else if (wildSpawnType == "scav")
+            {
+                if (activeSCAVs + maxCount > Initialization.SCAVBotLimit)
                 {
                     maxCount = Initialization.SCAVBotLimit - activeSCAVs;
                 }
             }
 
-            bool isGroup = maxCount > 1;
-            await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate, zone, cancellationToken);
+            return maxCount;
+        }
+
+        private static int AdjustMaxCountForRespawnLimits(string wildSpawnType, int maxCount)
+        {
+            if (wildSpawnType == "pmc" && !maxRespawnReachedPMC)
+            {
+                if (currentMaxPMC + maxCount >= maxRespawnsPMC.Value)
+                {
+#if DEBUG
+                    DonutComponent.Logger.LogDebug($"Max PMC respawn limit reached: {maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC + maxCount}");
+#endif
+                    if (currentMaxPMC < maxRespawnsPMC.Value)
+                    {
+                        maxCount = maxRespawnsPMC.Value - currentMaxPMC;
+                        maxRespawnReachedPMC = true;
+                    }
+                    else
+                    {
+                        maxRespawnReachedPMC = true;
+                        return 0;
+                    }
+                    maxRespawnReachedPMC = true;
+                }
+                currentMaxPMC += maxCount;
+                return maxCount;
+            }
+
+            if (wildSpawnType == "scav" && !maxRespawnReachedSCAV)
+            {
+                if (currentMaxSCAV + maxCount >= maxRespawnsSCAV.Value)
+                {
+#if DEBUG
+                    DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxPMC + maxCount}");
+#endif
+                    if (currentMaxSCAV < maxRespawnsSCAV.Value)
+                    {
+                        maxCount = maxRespawnsSCAV.Value - currentMaxSCAV;
+                        maxRespawnReachedSCAV = true;
+                    }
+                    else
+                    {
+                        maxRespawnReachedSCAV = true;
+                        return 0;
+                    }
+                    maxRespawnReachedSCAV = true;
+                }
+                currentMaxSCAV += maxCount;
+                return maxCount;
+            }
+
+            return maxCount;
         }
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMinCount, int defaultMaxCount)
