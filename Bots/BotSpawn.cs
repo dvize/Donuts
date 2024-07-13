@@ -150,9 +150,9 @@ namespace Donuts
 
         private static int AdjustMaxCountForRespawnLimits(string wildSpawnType, int maxCount)
         {
-            if (wildSpawnType == "pmc")
+            if (wildSpawnType == "pmc" && !maxRespawnReachedPMC)
             {
-                if (!maxRespawnReachedPMC && currentMaxPMC >= maxRespawnsPMC.Value)
+                if (currentMaxPMC + maxCount >= maxRespawnsPMC.Value)
                 {
 #if DEBUG
                     DonutComponent.Logger.LogDebug($"Max PMC respawn limit reached: {maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC + maxCount}");
@@ -160,44 +160,40 @@ namespace Donuts
                     if (currentMaxPMC < maxRespawnsPMC.Value)
                     {
                         maxCount = maxRespawnsPMC.Value - currentMaxPMC;
+                        maxRespawnReachedPMC = true;
                     }
                     else
                     {
-                        currentMaxPMC += maxCount;
                         maxRespawnReachedPMC = true;
                         return 0;
                     }
-                }
-                else if (maxRespawnReachedPMC)
-                {
-                    return 0;
+                    maxRespawnReachedPMC = true;
                 }
                 currentMaxPMC += maxCount;
-
+                return maxCount;
             }
-            else if (wildSpawnType == "scav")
+
+            if (wildSpawnType == "scav" && !maxRespawnReachedSCAV)
             {
-                if (!maxRespawnReachedSCAV && currentMaxSCAV >= maxRespawnsSCAV.Value)
+                if (currentMaxSCAV + maxCount >= maxRespawnsSCAV.Value)
                 {
 #if DEBUG
-                    DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV + maxCount}");
+                    DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxPMC + maxCount}");
 #endif
                     if (currentMaxSCAV < maxRespawnsSCAV.Value)
                     {
                         maxCount = maxRespawnsSCAV.Value - currentMaxSCAV;
+                        maxRespawnReachedSCAV = true;
                     }
                     else
                     {
-                        currentMaxSCAV += maxCount;
                         maxRespawnReachedSCAV = true;
                         return 0;
                     }
-                }
-                else if (maxRespawnReachedSCAV)
-                {
-                    return 0;
+                    maxRespawnReachedSCAV = true;
                 }
                 currentMaxSCAV += maxCount;
+                return maxCount;
             }
 
             return maxCount;
