@@ -108,9 +108,34 @@ namespace Donuts
             }
 
             // Check respawn limits and adjust accordingly
-            if (maxRespawnsPMC.Value != 0 || maxRespawnsSCAV.Value != 0)
+            if (wildSpawnType == "pmc" && maxRespawnsPMC.Value != 0)
             {
-                maxCount = AdjustMaxCountForRespawnLimits(wildSpawnType, maxCount);
+                if (maxRespawnReachedPMC)
+                {
+                    #if DEBUG
+                    DonutComponent.Logger.LogDebug("Max PMC respawns reached, skipping this spawn")
+                    #endif
+                    return;
+                }
+                else
+                {
+                    maxCount = AdjustMaxCountForRespawnLimits(wildSpawnType, maxCount);
+                }
+            }
+
+            else if (wildSpawnType == "scav" && maxRespawnsSCAV.Value != 0)
+            {
+                if (maxRespawnReachedSCAV)
+                {
+                    #if DEBUG
+                    DonutComponent.Logger.LogDebug("Max SCAV respawns reached, skipping this spawn")
+                    #endif
+                    return;
+                }
+                else
+                {
+                    maxCount = AdjustMaxCountForRespawnLimits(wildSpawnType, maxCount);
+                }
             }
 
             if (maxCount == 0)
