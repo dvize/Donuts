@@ -99,29 +99,56 @@ namespace Donuts
         internal static async UniTask SpawnBots(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, CancellationToken cancellationToken)
         {
             WildSpawnType actualWildSpawnType = DetermineWildSpawnType(wildSpawnType);
-
             int maxCount = DetermineMaxBotCount(wildSpawnType, botWave.MinGroupSize, botWave.MaxGroupSize);
 
-            // // we need to "trim" bots here if bots go over the cap but only if hard cap is enabled
-            if (HardCapEnabled.Value)
+            // Check if hard cap is enabled or specific bot limits are set
+            if (HardCapEnabled.Value || maxRespawnsPMC.Value != 0 || maxRespawnsSCAV.Value != 0)
             {
-                int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
-                int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
-
-                if (wildSpawnType == "pmc" && activePMCs + maxCount > Initialization.PMCBotLimit)
+                try
                 {
-                    maxCount = Initialization.PMCBotLimit - activePMCs;
+                    // Get active bot counts for PMC and SCAV
+                    int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
+                    int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
+
+                    // Adjust maxCount based on active bot counts and limits
+                    if (wildSpawnType == "pmc")
+                    {
+                        if (activePMCs + maxCount > Initialization.PMCBotLimit)
+                        {
+                            maxCount = Initialization.PMCBotLimit - activePMCs;
+                        }
+
+                        if (currentMaxPMC >= maxRespawnsPMC.Value)
+                        {
+                            DonutComponent.Logger.LogDebug($"Max PMC respawn limit reached: {maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC}");
+                            return;
+                        }
+                    }
+                    else if (wildSpawnType == "scav")
+                    {
+                        if (activeSCAVs + maxCount > Initialization.SCAVBotLimit)
+                        {
+                            maxCount = Initialization.SCAVBotLimit - activeSCAVs;
+                        }
+
+                        if (currentMaxSCAV >= maxRespawnsSCAV.Value)
+                        {
+                            DonutComponent.Logger.LogDebug($"Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV}");
+                            return;
+                        }
+                    }
                 }
-
-                if (wildSpawnType == "scav" && activeSCAVs + maxCount > Initialization.SCAVBotLimit)
+                catch (Exception ex)
                 {
-                    maxCount = Initialization.SCAVBotLimit - activeSCAVs;
+                    DonutComponent.Logger.LogError($"Error during bot count retrieval: {ex.Message}");
+                    throw;
                 }
             }
 
             bool isGroup = maxCount > 1;
             await SetupSpawn(botWave, maxCount, isGroup, actualWildSpawnType, coordinate, zone, cancellationToken);
         }
+
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMinCount, int defaultMaxCount)
         {

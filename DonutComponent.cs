@@ -314,8 +314,6 @@ namespace Donuts
             {
                 bool anySpawned = false;
 
-
-
                 foreach (var botWave in allBotWaves)
                 {
                     if (botWave.ShouldSpawn())
