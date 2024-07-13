@@ -273,8 +273,8 @@ namespace Donuts
                 );
 
             ShowRandomFolderChoice = new Setting<bool>(
-                "Show Random Spawn Preset Selection",
-                "Shows the Random Spawn Preset Selected on Raid Start in bottom right",
+                "Show Spawn Preset Selection",
+                "Shows the Spawn Preset Selected on Raid Start in bottom right",
                 true,
                 true);
 
