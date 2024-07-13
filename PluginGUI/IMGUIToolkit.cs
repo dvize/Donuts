@@ -102,6 +102,7 @@ namespace Donuts
 
             value = GUILayout.HorizontalSlider(value, min, max, PluginGUIHelper.horizontalSliderStyle, PluginGUIHelper.horizontalSliderThumbStyle, GUILayout.Width(300));
 
+            GUI.SetNextControlName("floatTextField");
             string textFieldValue = GUILayout.TextField(value.ToString("F2"), PluginGUIHelper.textFieldStyle, GUILayout.Width(100));
             if (float.TryParse(textFieldValue, out float newValue))
             {
@@ -110,6 +111,23 @@ namespace Donuts
 
             GUILayout.EndHorizontal();
             ShowTooltip();
+
+            // Check for Enter key press (both Enter keys) to escape focus
+            if (Event.current.isKey && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter) && GUI.GetNameOfFocusedControl() == "floatTextField")
+            {
+                GUI.FocusControl(null);
+            }
+
+            // Check for mouse click outside the control to escape focus
+            if (Event.current.type == EventType.MouseDown && GUI.GetNameOfFocusedControl() == "floatTextField")
+            {
+                // Check if the mouse click is outside the text field
+                Rect textFieldRect = GUILayoutUtility.GetLastRect();
+                if (!textFieldRect.Contains(Event.current.mousePosition))
+                {
+                    GUI.FocusControl(null);
+                }
+            }
 
             return value;
         }
@@ -125,6 +143,7 @@ namespace Donuts
 
             value = (int)GUILayout.HorizontalSlider(value, min, max, PluginGUIHelper.horizontalSliderStyle, PluginGUIHelper.horizontalSliderThumbStyle, GUILayout.Width(300));
 
+            GUI.SetNextControlName("intTextField");
             string textFieldValue = GUILayout.TextField(value.ToString(), PluginGUIHelper.textFieldStyle, GUILayout.Width(100));
             if (int.TryParse(textFieldValue, out int newValue))
             {
@@ -133,6 +152,23 @@ namespace Donuts
 
             GUILayout.EndHorizontal();
             ShowTooltip();
+
+            // Check for Enter key press (both Enter keys) to escape focus
+            if (Event.current.isKey && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter) && GUI.GetNameOfFocusedControl() == "intTextField")
+            {
+                GUI.FocusControl(null);
+            }
+
+            // Check for mouse click outside the control to escape focus
+            if (Event.current.type == EventType.MouseDown && GUI.GetNameOfFocusedControl() == "intTextField")
+            {
+                // Check if the mouse click is outside the text field
+                Rect textFieldRect = GUILayoutUtility.GetLastRect();
+                if (!textFieldRect.Contains(Event.current.mousePosition))
+                {
+                    GUI.FocusControl(null);
+                }
+            }
 
             return value;
         }
@@ -144,12 +180,20 @@ namespace Donuts
             GUILayout.BeginHorizontal();
 
             GUILayout.Label(labelContent, PluginGUIHelper.labelStyle, GUILayout.Width(200));
+
+            GUI.SetNextControlName("textField");
             string newText = GUILayout.TextField(text, maxLength, PluginGUIHelper.textFieldStyle, GUILayout.Width(300));
 
             // Ensure the text does not exceed the maximum length
             if (newText.Length > maxLength)
             {
                 newText = newText.Substring(0, maxLength);
+            }
+
+            // Check for Enter key press to escape focus
+            if (Event.current.isKey && Event.current.keyCode == KeyCode.Return && GUI.GetNameOfFocusedControl() == "textField")
+            {
+                GUI.FocusControl(null);
             }
 
             GUILayout.EndHorizontal();

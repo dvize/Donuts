@@ -65,6 +65,8 @@ namespace Donuts
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();
             new BotSettingsRepoAbstractClassPatch().Enable();
+            new PlayerFireControlPatchGetter().Enable();
+            new PlayerFireControlPatchSetter().Enable();
 
             ImportConfig();
             await SetupScenariosUI();

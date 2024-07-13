@@ -79,12 +79,9 @@ namespace Donuts
                 windowRect = GUI.Window(123, windowRect, MainWindowFunc, "", windowStyle);
                 GUI.FocusWindow(123);
 
-                if (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDrag)
+                if (Event.current.isMouse)
                 {
-                    if (windowRect.Contains(Event.current.mousePosition))
-                    {
-                        Event.current.Use();
-                    }
+                    Event.current.Use();
                 }
 
                 // Restore the original GUI skin
@@ -195,6 +192,7 @@ namespace Donuts
 
         private void Update()
         {
+            // if showing the gui, disable mouseclicks affecting the game
             if (DefaultPluginVars.showGUI)
             {
                 Cursor.lockState = CursorLockMode.None;
