@@ -730,8 +730,6 @@ namespace Donuts
 
         public void ResetGroupTimers(int groupNum, string wildSpawnType)
         {
-            DonutComponent.Logger.LogDebug($"ResetGroupTimers called for GroupNum: {groupNum}, WildSpawnType: {wildSpawnType}");
-
             // lazy
             if (DonutsBotPrep.maplocation == "sandbox_high")
             {
@@ -745,7 +743,9 @@ namespace Donuts
                 if (botWave.GroupNum == groupNum)
                 {
                     botWave.ResetTimer();
-                    DonutComponent.Logger.LogDebug($"Resetting timer for GroupNum: {groupNum}, BotWave: {botWave}");
+            #if DEBUG
+                    DonutComponent.Logger.LogDebug($"Resetting timer for GroupNum: {groupNum}, WildSpawnType: {wildSpawnType}");
+            #endif
                 }
             }
         }
