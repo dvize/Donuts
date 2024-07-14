@@ -8,7 +8,7 @@ using Donuts;
 using HarmonyLib;
 using Aki.Reflection.Patching;
 
-namespace dvize.Donuts.Patches
+namespace Donuts.Patches
 {
     internal class PlayerFireControlPatchGetter : ModulePatch
     {

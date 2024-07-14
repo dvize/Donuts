@@ -114,8 +114,8 @@ namespace Donuts
             {
                 if (maxRespawnReachedPMC)
                 {
-                    #if DEBUG
-                    DonutComponent.Logger.LogDebug("Max PMC respawns reached, skipping this spawn")
+#if DEBUG
+                    DonutComponent.Logger.LogDebug("Max PMC respawns reached, skipping this spawn");
                     #endif
                     return;
                 }
@@ -129,8 +129,8 @@ namespace Donuts
             {
                 if (maxRespawnReachedSCAV)
                 {
-                    #if DEBUG
-                    DonutComponent.Logger.LogDebug("Max SCAV respawns reached, skipping this spawn")
+#if DEBUG
+                    DonutComponent.Logger.LogDebug("Max SCAV respawns reached, skipping this spawn");
                     #endif
                     return;
                 }
