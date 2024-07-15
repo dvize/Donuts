@@ -366,11 +366,17 @@ namespace Donuts
             {
                 if (botInfo.IsGroup && groupBotsCount < 1)
                 {
+#if DEBUG
+                    Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
+#endif
                     tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
                     groupBotsCount++;
                 }
                 else if (!botInfo.IsGroup && singleBotsCount < 3)
                 {
+#if DEBUG
+                        Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
+#endif
                     tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
                     singleBotsCount++;
                 }
