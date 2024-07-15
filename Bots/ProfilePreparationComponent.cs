@@ -119,16 +119,8 @@ namespace Donuts
             timeSinceLastReplenish = 0;
             IsBotPreparationComplete = false;
 
-            botSpawnerClass.OnBotRemoved += (BotOwner bot) =>
-            {
-                bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
-                OriginalBotSpawnTypes.Remove(bot.Profile.Id);
-            };
-
-            botSpawnerClass.OnBotCreated += (BotOwner bot) =>
-            {
-                bot.Memory.OnGoalEnemyChanged += Memory_OnGoalEnemyChanged;
-            };
+            botSpawnerClass.OnBotRemoved += BotSpawnerClass_OnBotRemoved;
+            botSpawnerClass.OnBotCreated += BotSpawnerClass_OnBotCreated;
 
             if (mainplayer != null)
             {
@@ -169,6 +161,15 @@ namespace Donuts
             IsBotPreparationComplete = true;
         }
 
+        private void BotSpawnerClass_OnBotRemoved(BotOwner bot)
+        {
+            bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
+            OriginalBotSpawnTypes.Remove(bot.Profile.Id);
+        }
+        private void BotSpawnerClass_OnBotCreated(BotOwner bot)
+        {
+            bot.Memory.OnGoalEnemyChanged += Memory_OnGoalEnemyChanged;
+        }
         private void Memory_OnGoalEnemyChanged(BotOwner owner)
         {
             if (owner != null && owner.Memory != null && owner.Memory.GoalEnemy != null && owner.Memory.HaveEnemy)
@@ -354,36 +355,28 @@ namespace Donuts
         private async UniTask ReplenishAllBots(CancellationToken cancellationToken)
         {
             isReplenishing = true;
+
+            var tasks = new List<UniTask>();
+            var botsNeedingReplenishment = BotInfos.Where(NeedReplenishment).ToList();
+
             int singleBotsCount = 0;
             int groupBotsCount = 0;
 
-            var safeBotInfos = new List<PrepBotInfo>(BotInfos);
-            var tasks = new List<UniTask>();
-
-            foreach (var botInfo in safeBotInfos)
+            foreach (var botInfo in botsNeedingReplenishment)
             {
-                if (NeedReplenishment(botInfo))
+                if (botInfo.IsGroup && groupBotsCount < 1)
                 {
-                    if (botInfo.IsGroup && groupBotsCount < 1)
-                    {
-#if DEBUG
-                        Logger.LogWarning($"Replenishing group bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: {botInfo.GroupSize}");
-#endif
-                        tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
-                        groupBotsCount++;
-                    }
-                    else if (!botInfo.IsGroup && singleBotsCount < 3)
-                    {
-#if DEBUG
-                        Logger.LogWarning($"Replenishing single bot: {botInfo.SpawnType} {botInfo.Difficulty} {botInfo.Side} Count: 1");
-#endif
-                        tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
-                        singleBotsCount++;
-                    }
-
-                    if (singleBotsCount >= 3 && groupBotsCount >= 1)
-                        break;
+                    tasks.Add(CreateBot(botInfo, true, botInfo.GroupSize, cancellationToken));
+                    groupBotsCount++;
                 }
+                else if (!botInfo.IsGroup && singleBotsCount < 3)
+                {
+                    tasks.Add(CreateBot(botInfo, false, 1, cancellationToken));
+                    singleBotsCount++;
+                }
+
+                if (singleBotsCount >= 3 && groupBotsCount >= 1)
+                    break;
             }
 
             if (tasks.Count > 0)
@@ -480,16 +473,8 @@ namespace Donuts
         {
             if (botSpawnerClass != null)
             {
-                botSpawnerClass.OnBotRemoved -= (BotOwner bot) =>
-                {
-                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
-                    OriginalBotSpawnTypes.Remove(bot.Profile.Id);
-                };
-
-                botSpawnerClass.OnBotCreated -= (BotOwner bot) =>
-                {
-                    bot.Memory.OnGoalEnemyChanged -= Memory_OnGoalEnemyChanged;
-                };
+                botSpawnerClass.OnBotRemoved -= BotSpawnerClass_OnBotRemoved;
+                botSpawnerClass.OnBotCreated -= BotSpawnerClass_OnBotCreated;
             }
 
             if (mainplayer != null)
