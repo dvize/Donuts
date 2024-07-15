@@ -281,11 +281,20 @@ namespace Donuts
             var totalWeight = folder.presets.Sum(preset => preset.Weight);
             var randomWeight = UnityEngine.Random.Range(0, totalWeight);
 
-            var selectedPreset = folder.presets
-                .Aggregate((currentPreset, nextPreset) =>
-                    randomWeight < (currentPreset.Weight += nextPreset.Weight) ? currentPreset : nextPreset);
+            var cumulativeWeight = 0;
+            foreach (var preset in folder.presets)
+            {
+                cumulativeWeight += preset.Weight;
+                if (randomWeight < cumulativeWeight)
+                {
+                    return preset.Name;
+                }
+            }
 
-            return selectedPreset.Name;
+            // In case something goes wrong, return the last preset as a fallback
+            var fallbackPreset = folder.presets.LastOrDefault();
+            Logger.LogError("Fallback Preset: " + fallbackPreset.Name);
+            return fallbackPreset?.Name;
         }
 
         public static void LogSelectedPreset(string selectedPreset)
