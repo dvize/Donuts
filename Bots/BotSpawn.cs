@@ -43,15 +43,19 @@ namespace Donuts
             var wildSpawnType = botSpawnInfo.BotType;
             var side = botSpawnInfo.Faction;
             var groupSize = botSpawnInfo.GroupSize;
-            var coordinates = botSpawnInfo.Coordinates;
+            var coordinates = new List<Vector3>(botSpawnInfo.Coordinates);
             var botDifficulty = botSpawnInfo.Difficulty;
             var zone = botSpawnInfo.Zone;
 
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, groupSize);
 
+            // hopefully this is never null but just in case
             if (cachedBotGroup == null)
             {
+                #if DEBUG
                 DonutComponent.Logger.LogDebug("No starting bots found in cache for this spawn, need to generate data on the fly, this may take some time.");
+                #endif
+
                 var botInfo = new PrepBotInfo(wildSpawnType, botDifficulty, side, groupSize > 1, groupSize);
                 await DonutsBotPrep.CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken);
                 DonutsBotPrep.BotInfos.Add(botInfo);
@@ -59,17 +63,35 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
+            var random = new System.Random();
+            Vector3? spawnPosition = null;
 
-            foreach (var coordinate in coordinates)
+            while (coordinates.Any())
             {
-                Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
-                if (!spawnPosition.HasValue)
-                {
-                    DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                    return;
-                }
+                var coordIndex = random.Next(coordinates.Count);
+                var coordinate = coordinates[coordIndex];
+                coordinates.RemoveAt(coordIndex);
 
-                await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, botDifficulty, groupSize, zone, cancellationToken);
+                spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
+                if (spawnPosition.HasValue)
+                {
+                    await ActivateStartingBots(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, botDifficulty, groupSize, zone, cancellationToken);
+                    break; // Move to the next bot spawn
+                }
+                else
+                {
+                    #if DEBUG
+                    DonutComponent.Logger.LogDebug("No valid spawn position found - retrying with next coordinate.");
+                    #endif
+                }
+            }
+
+            if (!spawnPosition.HasValue)
+            {
+                #if DEBUG
+                DonutComponent.Logger.LogDebug("No valid spawn position found after exhausting all coordinates - skipping this spawn");
+                #endif
+                return;
             }
         }
 
@@ -82,10 +104,10 @@ namespace Donuts
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
-#if DEBUG
+                #if DEBUG
                 DonutComponent.Logger.LogWarning($"Spawning bots at distance to player of: {Vector3.Distance(spawnPosition, gameWorld.MainPlayer.Position)} " +
-                                  $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone: {zone}");
-#endif
+                                $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone: {zone}");
+                #endif
 
                 var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
@@ -286,16 +308,7 @@ namespace Donuts
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
 
-            var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
-
-            if (!spawnPosition.HasValue)
-            {
-                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
-                return;
-            }
-
-            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, botWave, zone, cancellationToken);
+            await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, cancellationTokenSource, botDifficulty, botWave, zone, cancellationToken, coordinate);
         }
         private static WildSpawnType DetermineWildSpawnType(string spawnType)
         {
@@ -396,7 +409,7 @@ namespace Donuts
         #endregion
 
         internal static async UniTask SpawnBotFromCacheOrCreateNew(List<BotCreationDataClass> botCacheList, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
-            BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, BotWave botWave, string zone, CancellationToken cancellationToken)
+            BotSpawner botSpawnerClass, CancellationTokenSource cancellationTokenSource, BotDifficulty botDifficulty, BotWave botWave, string zone, CancellationToken cancellationToken, Vector3 coordinate)
         {
 #if DEBUG
             DonutComponent.Logger.LogDebug("Finding Cached Bot");
@@ -405,19 +418,28 @@ namespace Donuts
 
             if (botCacheElement != null)
             {
-                await ActivateBotFromCache(botCacheElement, spawnPosition, cancellationTokenSource, botWave, zone, cancellationToken);
+                await ActivateBotFromCache(botCacheElement, cancellationTokenSource, botWave, zone, cancellationToken, coordinate);
             }
             else
             {
 #if DEBUG
                 DonutComponent.Logger.LogDebug("Bot Cache is empty for solo bot. Creating a new bot.");
 #endif
-                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, spawnPosition, cancellationTokenSource, zone, cancellationToken);
+                await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, cancellationTokenSource, zone, cancellationToken, coordinate);
             }
         }
 
-        private static async UniTask ActivateBotFromCache(BotCreationDataClass botCacheElement, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, BotWave botWave, string zone, CancellationToken cancellationToken)
+        private static async UniTask ActivateBotFromCache(BotCreationDataClass botCacheElement, CancellationTokenSource cancellationTokenSource, BotWave botWave, string zone, CancellationToken cancellationToken, Vector3 coordinate)
         {
+            var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
+
+            if (!spawnPosition.HasValue)
+            {
+                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                return;
+            }
+
             var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition, out float dist);
             var closestCorePoint = GetClosestCorePoint(spawnPosition);
             botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
@@ -451,12 +473,22 @@ namespace Donuts
             }
         }
 
-        internal static async UniTask CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, string zone, CancellationToken cancellationToken)
+        internal static async UniTask CreateNewBot(WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator, BotSpawner botSpawnerClass, Vector3 spawnPosition, CancellationTokenSource cancellationTokenSource, string zone, CancellationToken cancellationToken, Vector3 coordinate)
         {
             BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType, WildSpawnType.pmcUSEC, WildSpawnType.pmcBEAR);
 
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCreationDataClass bot = await BotCreationDataClass.Create(botData, ibotCreator, 1, botSpawnerClass);
+
+            var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
+            Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
+
+            if (!spawnPosition.HasValue)
+            {
+                DonutComponent.Logger.LogDebug("No valid spawn position found - skipping this spawn");
+                return;
+            }
+
             var closestCorePoint = GetClosestCorePoint(spawnPosition);
             bot.AddPosition(spawnPosition, closestCorePoint.Id);
 

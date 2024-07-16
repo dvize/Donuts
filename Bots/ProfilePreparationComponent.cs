@@ -261,14 +261,11 @@ namespace Donuts
                 var coordinates = new List<Vector3>();
                 string selectedZone = null;
 
-                var zoneKeys = spawnPointsDict.Keys.ToList();
-                zoneKeys = zoneKeys.OrderBy(_ => random.Next()).ToList(); // Shuffle the list of zone keys
-
-                foreach (var zone in zoneKeys)
+                foreach (var zone in spawnPointsDict.Keys)
                 {
-                    if (!usedZones.Contains(zone) && spawnPointsDict.TryGetValue(zone, out var coord))
+                    if (!usedZones.Contains(zone) && spawnPointsDict.TryGetValue(zone, out var coords))
                     {
-                        coordinates.Add(coord);
+                        coordinates.AddRange(coords);
                         selectedZone = zone;
                         usedZones.Add(zone);
                         break;
