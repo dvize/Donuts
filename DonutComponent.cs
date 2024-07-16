@@ -334,15 +334,14 @@ namespace Donuts
 
                         if (spawnPointsDict.Any())
                         {
-                            // Select a random coordinate from any zone
-                            var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
-                            var coordinate = spawnPointsDict[randomZone];
+                            // Flatten the dictionary to a list of coordinates
+                            var coordinates = spawnPointsDict.SelectMany(zone => zone.Value).ToList();
 
                             var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
 
-                            if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                            if (CanSpawn(botWave, coordinates, wildSpawnType))
                             {
-                                await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken);
+                                await TriggerSpawn(botWave, coordinates, wildSpawnType, cancellationToken);
                                 anySpawned = true;
                                 break; // Spawned a bot, exit the loop to wait and retry
                             }
@@ -362,25 +361,32 @@ namespace Donuts
         }
 
         // Checks trigger distance and spawn chance
-        private bool CanSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
+        private bool CanSpawn(BotWave botWave, List<Vector3> coordinates, string wildSpawnType)
         {
-            if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate))
+            foreach (var kvp in coordinates)
             {
-                bool isHotspotZone = zone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
-                    (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                var zone = kvp.Key;
+                var coordinate = kvp.Value;
+                if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate))
                 {
-                    botWave.SpawnChance = 100;
-                }
+                    bool isHotspotZone = zone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
 
-                return UnityEngine.Random.Range(0, 100) < botWave.SpawnChance;
+                    if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                        (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                    {
+                        botWave.SpawnChance = 100;
+                    }
+
+                    if (UnityEngine.Random.Range(0, 100) < botWave.SpawnChance)
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
 
-        // Checks certain spawn options, reset groups timers
-        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, CancellationToken cancellationToken)
+        private async UniTask TriggerSpawn(BotWave botWave, List<Vector3> coordinates, string wildSpawnType, CancellationToken cancellationToken)
         {
             if (forceAllBotType.Value != "Disabled")
             {
@@ -412,7 +418,7 @@ namespace Donuts
                 botWave.TriggerCooldown();
             }
 
-            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, cancellationToken);
+            await SpawnBots(botWave, coordinates, wildSpawnType, cancellationToken);
         }
 
         // Get the spawn wave configs from the waves json files
