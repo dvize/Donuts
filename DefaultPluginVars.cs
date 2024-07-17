@@ -397,8 +397,8 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerBool = new Setting<bool>(
                 "Use Global Min Distance From Player",
                 "If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                false,
-                false);
+                true,
+                true);
 
             globalMinSpawnDistanceFromPlayerFactory = new Setting<float>(
                 "Factory",
@@ -464,8 +464,8 @@ namespace Donuts
             globalMinSpawnDistanceFromOtherBotsBool = new Setting<bool>(
                 "Use Global Min Distance From Other Bots",
                 "If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                false,
-                false);
+                true,
+                true);
 
             globalMinSpawnDistanceFromOtherBotsFactory = new Setting<float>(
                 "Factory",
