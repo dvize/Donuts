@@ -735,7 +735,7 @@ namespace Donuts
 
                 foreach (var bot in gameWorld.AllAlivePlayersList)
                 {
-                    if (!bot.IsYourPlayer && IsBotType(bot, bottype))
+                    if (!bot.IsYourPlayer && bot.AIData.BotOwner != null && IsBotType(bot, bottype))
                     {
                         // Get distance of bot to player using squared distance
                         float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;
@@ -814,12 +814,6 @@ namespace Donuts
             }
 
             BotOwner botOwner = furthestBot.AIData.BotOwner;
-            if (botOwner == null)
-            {
-                Logger.LogError("BotOwner is null for the furthest bot.");
-                return;
-            }
-
 #if DEBUG
             Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
 #endif
