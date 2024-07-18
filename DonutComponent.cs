@@ -200,12 +200,6 @@ namespace Donuts
                 return;
             }
 
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
@@ -300,12 +294,6 @@ namespace Donuts
             if (DespawnEnabledSCAV.Value)
             {
                 await DespawnFurthestBot("scav", cancellationToken);
-            }
-
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
             }
 
             await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
@@ -418,12 +406,6 @@ namespace Donuts
         // Get the spawn wave configs from the waves json files
         public static BotWavesConfig GetBotWavesConfig(string selectionName)
         {
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
             var mapKey = mapLocationDict.FirstOrDefault(x =>
             {
                 var values = x.Value.Split(',');
@@ -730,12 +712,6 @@ namespace Donuts
 
         public void ResetGroupTimers(int groupNum, string wildSpawnType)
         {
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
             var botWaves = wildSpawnType == "pmc" ? botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC : botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV;
 
             foreach (var botWave in botWaves)

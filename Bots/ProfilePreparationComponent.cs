@@ -22,7 +22,26 @@ namespace Donuts
     internal class DonutsBotPrep : MonoBehaviour
     {
         internal static string selectionName;
-        internal static string maplocation;
+        internal static string maplocation
+        {
+            get
+            {
+                if(Singleton<GameWorld>.instance == null)
+                {
+                    return "";
+                }
+
+                string location = Singleton<GameWorld>.instance.MainPlayer.Location.ToLower();
+
+                // Lazy
+                if (location == "sandbox_high")
+                {
+                    location = "sandbox";
+                }
+
+                return location;
+            }
+        }
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
@@ -109,7 +128,6 @@ namespace Donuts
             var playerLoop = UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
             Cysharp.Threading.Tasks.PlayerLoopHelper.Initialize(ref playerLoop);
 
-            maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             mainplayer = gameWorld?.MainPlayer;
@@ -219,12 +237,7 @@ namespace Donuts
 
             var difficultySetting = botType == "PMC" ? DefaultPluginVars.botDifficultiesPMC.Value.ToLower() : DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
 
-            // lazy
-            if (maplocation == "sandbox_high")
-            {
-                maplocation = "sandbox";
-            }
-
+            // Get map bot configuration
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
