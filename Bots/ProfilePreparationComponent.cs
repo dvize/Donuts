@@ -14,7 +14,6 @@ using Newtonsoft.Json;
 using UnityEngine;
 using IProfileData = GClass592;
 using System.Threading;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
 
 #pragma warning disable IDE0007, CS4014
 
