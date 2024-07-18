@@ -480,66 +480,9 @@ namespace Donuts
 
         public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
-
-            // I have to do this because I get NREs for some reason otherwise
-            var mapName = "";
-
-            if (DonutsBotPrep.maplocation == "bigmap")
-            {
-                mapName = "customs";
-            }
-            else if (DonutsBotPrep.maplocation == "factory4_day")
-            {
-                mapName = "factory";
-            }
-            else if (DonutsBotPrep.maplocation == "factory4_night")
-            {
-                mapName = "factory_night";
-            }
-            else if (DonutsBotPrep.maplocation == "tarkovstreets")
-            {
-                mapName = "streets";
-            }
-            else if (DonutsBotPrep.maplocation == "rezervbase")
-            {
-                mapName = "reserve";
-            }
-            else if (DonutsBotPrep.maplocation == "interchange")
-            {
-                mapName = "interchange";
-            }
-            else if (DonutsBotPrep.maplocation == "woods")
-            {
-                mapName = "woods";
-            }
-            else if (DonutsBotPrep.maplocation == "sandbox")
-            {
-                mapName = "groundzero";
-            }
-            else if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                mapName = "groundzero";
-            }
-            else if (DonutsBotPrep.maplocation == "laboratory")
-            {
-                mapName = "laboratory";
-            }
-            else if (DonutsBotPrep.maplocation == "lighthouse")
-            {
-                mapName = "lighthouse";
-            }
-            else if (DonutsBotPrep.maplocation == "shoreline")
-            {
-                mapName = "shoreline";
-            }
-            else
-            {
-                Logger.LogError($"Map location '{DonutsBotPrep.maplocation}' is not recognized.");
-            }
-
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_start.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{DonutsBotPrep.mapName}_start.json");
 
             if (File.Exists(jsonFilePath))
             {
@@ -549,7 +492,7 @@ namespace Donuts
             }
             else
             {
-                Logger.LogError($"{mapName}_start.json file not found.");
+                Logger.LogError($"{DonutsBotPrep.mapName}_start.json file not found.");
                 return null;
             }
         }

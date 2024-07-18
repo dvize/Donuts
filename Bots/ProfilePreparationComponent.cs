@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using UnityEngine;
 using IProfileData = GClass592;
 using System.Threading;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 
 #pragma warning disable IDE0007, CS4014
 
@@ -26,12 +27,12 @@ namespace Donuts
         {
             get
             {
-                if(Singleton<GameWorld>.instance == null)
+                if(Singleton<GameWorld>.Instance == null)
                 {
                     return "";
                 }
 
-                string location = Singleton<GameWorld>.instance.MainPlayer.Location.ToLower();
+                string location = Singleton<GameWorld>.Instance.MainPlayer.Location.ToLower();
 
                 // Lazy
                 if (location == "sandbox_high")
@@ -42,6 +43,42 @@ namespace Donuts
                 return location;
             }
         }
+
+        internal static string mapName
+        {
+            get
+            {
+                switch(maplocation)
+                {
+                    case "bigmap":
+                        return "customs";
+                    case "factory4_day":
+                        return "factory";
+                    case "factory4_night":
+                        return "factory_night";
+                    case "tarkovstreets":
+                        return "streets";
+                    case "rezervbase":
+                        return "reserve";
+                    case "interchange":
+                        return "interchange";
+                    case "woods":
+                        return "woods";
+                    case "sandbox":
+                    case "sandbox_high":
+                        return "groundzero";
+                    case "laboratory":
+                        return "laboratory";
+                    case "lighthouse":
+                        return "lighthouse";
+                    case "shoreline":
+                        return "shoreline";
+                    default:
+                        return maplocation;
+                }
+            }
+        }
+
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
