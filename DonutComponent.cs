@@ -44,21 +44,6 @@ namespace Donuts
             WildSpawnType.cursedAssault
         };
 
-        internal static Dictionary<string, string> mapLocationDict = new Dictionary<string, string>
-        {
-            {"customs", "bigmap"},
-            {"factory", "factory4_day"},
-            {"factory_night", "factory4_night"},
-            {"streets", "tarkovstreets"},
-            {"reserve", "rezervbase"},
-            {"interchange", "interchange"},
-            {"woods", "woods"},
-            {"groundzero", "sandbox,sandbox_high"},
-            {"laboratory", "laboratory"},
-            {"lighthouse", "lighthouse"},
-            {"shoreline", "shoreline"}
-        };
-
         internal static bool maxRespawnReachedPMC;
         internal static bool maxRespawnReachedSCAV;
         internal static bool hasSpawnedStartingBots;
@@ -200,12 +185,6 @@ namespace Donuts
                 return;
             }
 
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
             Initialization.InitializeStaticVariables();
             mainplayer = gameWorld.MainPlayer;
             isInBattle = false;
@@ -300,12 +279,6 @@ namespace Donuts
             if (DespawnEnabledSCAV.Value)
             {
                 await DespawnFurthestBot("scav", cancellationToken);
-            }
-
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
             }
 
             await SpawnBotWaves(botWaveConfig.Maps[DonutsBotPrep.maplocation], cancellationToken);
@@ -418,27 +391,10 @@ namespace Donuts
         // Get the spawn wave configs from the waves json files
         public static BotWavesConfig GetBotWavesConfig(string selectionName)
         {
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
-            var mapKey = mapLocationDict.FirstOrDefault(x =>
-            {
-                var values = x.Value.Split(',');
-                return values.Contains(DonutsBotPrep.maplocation);
-            }).Key;
-
-            if (mapKey == null)
-            {
-                Logger.LogError($"Map location {DonutsBotPrep.maplocation} not found in dictionary.");
-                return null;
-            }
-
+            string mapName = DonutsBotPrep.mapName;
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapKey}_waves.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_waves.json");
 
             if (File.Exists(jsonFilePath))
             {
@@ -446,19 +402,19 @@ namespace Donuts
                 var botWavesData = JsonConvert.DeserializeObject<BotWavesConfig>(jsonString);
                 if (botWavesData != null)
                 {
-                    Logger.LogDebug($"Successfully loaded {mapKey}_waves.json for preset: {selectionName}");
+                    Logger.LogDebug($"Successfully loaded {mapName}_waves.json for preset: {selectionName}");
                     EnsureUniqueGroupNumsForWave(botWavesData);
                     return botWavesData;
                 }
                 else
                 {
-                    Logger.LogError($"Failed to deserialize {mapKey}_waves.json for preset: {selectionName}");
+                    Logger.LogError($"Failed to deserialize {mapName}_waves.json for preset: {selectionName}");
                     return null;
                 }
             }
             else
             {
-                Logger.LogError($"{mapKey}_waves.json file not found at path: {jsonFilePath}");
+                Logger.LogError($"{mapName}_waves.json file not found at path: {jsonFilePath}");
                 return null;
             }
         }
@@ -498,66 +454,9 @@ namespace Donuts
 
         public static StartingBotConfig GetStartingBotConfig(string selectionName)
         {
-
-            // I have to do this because I get NREs for some reason otherwise
-            var mapName = "";
-
-            if (DonutsBotPrep.maplocation == "bigmap")
-            {
-                mapName = "customs";
-            }
-            else if (DonutsBotPrep.maplocation == "factory4_day")
-            {
-                mapName = "factory";
-            }
-            else if (DonutsBotPrep.maplocation == "factory4_night")
-            {
-                mapName = "factory_night";
-            }
-            else if (DonutsBotPrep.maplocation == "tarkovstreets")
-            {
-                mapName = "streets";
-            }
-            else if (DonutsBotPrep.maplocation == "rezervbase")
-            {
-                mapName = "reserve";
-            }
-            else if (DonutsBotPrep.maplocation == "interchange")
-            {
-                mapName = "interchange";
-            }
-            else if (DonutsBotPrep.maplocation == "woods")
-            {
-                mapName = "woods";
-            }
-            else if (DonutsBotPrep.maplocation == "sandbox")
-            {
-                mapName = "groundzero";
-            }
-            else if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                mapName = "groundzero";
-            }
-            else if (DonutsBotPrep.maplocation == "laboratory")
-            {
-                mapName = "laboratory";
-            }
-            else if (DonutsBotPrep.maplocation == "lighthouse")
-            {
-                mapName = "lighthouse";
-            }
-            else if (DonutsBotPrep.maplocation == "shoreline")
-            {
-                mapName = "shoreline";
-            }
-            else
-            {
-                Logger.LogError($"Map location '{DonutsBotPrep.maplocation}' is not recognized.");
-            }
-
             string dllPath = Assembly.GetExecutingAssembly().Location;
             string directoryPath = Path.GetDirectoryName(dllPath);
-            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{mapName}_start.json");
+            string jsonFilePath = Path.Combine(directoryPath, "patterns", selectionName, $"{DonutsBotPrep.mapName}_start.json");
 
             if (File.Exists(jsonFilePath))
             {
@@ -567,7 +466,7 @@ namespace Donuts
             }
             else
             {
-                Logger.LogError($"{mapName}_start.json file not found.");
+                Logger.LogError($"{DonutsBotPrep.mapName}_start.json file not found.");
                 return null;
             }
         }
@@ -730,12 +629,6 @@ namespace Donuts
 
         public void ResetGroupTimers(int groupNum, string wildSpawnType)
         {
-            // lazy
-            if (DonutsBotPrep.maplocation == "sandbox_high")
-            {
-                DonutsBotPrep.maplocation = "sandbox";
-            }
-
             var botWaves = wildSpawnType == "pmc" ? botWaveConfig.Maps[DonutsBotPrep.maplocation].PMC : botWaveConfig.Maps[DonutsBotPrep.maplocation].SCAV;
 
             foreach (var botWave in botWaves)
@@ -759,7 +652,7 @@ namespace Donuts
 
                 foreach (var bot in gameWorld.AllAlivePlayersList)
                 {
-                    if (!bot.IsYourPlayer && IsBotType(bot, bottype))
+                    if (!bot.IsYourPlayer && bot.AIData.BotOwner != null && IsBotType(bot, bottype))
                     {
                         // Get distance of bot to player using squared distance
                         float distance = (mainplayer.Transform.position - bot.Transform.position).sqrMagnitude;

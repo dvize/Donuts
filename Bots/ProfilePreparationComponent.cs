@@ -22,7 +22,62 @@ namespace Donuts
     internal class DonutsBotPrep : MonoBehaviour
     {
         internal static string selectionName;
-        internal static string maplocation;
+        internal static string maplocation
+        {
+            get
+            {
+                if(Singleton<GameWorld>.Instance == null)
+                {
+                    return "";
+                }
+
+                string location = Singleton<GameWorld>.Instance.MainPlayer.Location.ToLower();
+
+                // Lazy
+                if (location == "sandbox_high")
+                {
+                    location = "sandbox";
+                }
+
+                return location;
+            }
+        }
+
+        internal static string mapName
+        {
+            get
+            {
+                switch(maplocation)
+                {
+                    case "bigmap":
+                        return "customs";
+                    case "factory4_day":
+                        return "factory";
+                    case "factory4_night":
+                        return "factory_night";
+                    case "tarkovstreets":
+                        return "streets";
+                    case "rezervbase":
+                        return "reserve";
+                    case "interchange":
+                        return "interchange";
+                    case "woods":
+                        return "woods";
+                    case "sandbox":
+                    case "sandbox_high":
+                        return "groundzero";
+                    case "laboratory":
+                        return "laboratory";
+                    case "lighthouse":
+                        return "lighthouse";
+                    case "shoreline":
+                        return "shoreline";
+                    default:
+                        return maplocation;
+                }
+            }
+        }
+
         private static GameWorld gameWorld;
         private static IBotCreator botCreator;
         private static BotSpawner botSpawnerClass;
@@ -109,7 +164,6 @@ namespace Donuts
             var playerLoop = UnityEngine.LowLevel.PlayerLoop.GetCurrentPlayerLoop();
             Cysharp.Threading.Tasks.PlayerLoopHelper.Initialize(ref playerLoop);
 
-            maplocation = gameWorld.MainPlayer.Location.ToLower();
             botSpawnerClass = Singleton<IBotGame>.Instance.BotsController.BotSpawner;
             botCreator = AccessTools.Field(typeof(BotSpawner), "_botCreator").GetValue(botSpawnerClass) as IBotCreator;
             mainplayer = gameWorld?.MainPlayer;
@@ -219,12 +273,7 @@ namespace Donuts
 
             var difficultySetting = botType == "PMC" ? DefaultPluginVars.botDifficultiesPMC.Value.ToLower() : DefaultPluginVars.botDifficultiesSCAV.Value.ToLower();
 
-            // lazy
-            if (maplocation == "sandbox_high")
-            {
-                maplocation = "sandbox";
-            }
-
+            // Get map bot configuration
             var mapBotConfig = botType == "PMC" ? startingBotConfig.Maps[maplocation].PMC : startingBotConfig.Maps[maplocation].SCAV;
             var difficultiesForSetting = GetDifficultiesForSetting(difficultySetting);
             int maxBots = UnityEngine.Random.Range(mapBotConfig.MinCount, mapBotConfig.MaxCount + 1);
@@ -294,32 +343,28 @@ namespace Donuts
 
         private WildSpawnType GetPMCWildSpawnType(WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (DefaultPluginVars.pmcFaction.Value == "Default")
+            switch(DefaultPluginVars.pmcFaction.Value)
             {
-                return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
+                case "USEC":
+                    return WildSpawnType.pmcUSEC;
+                case "BEAR":
+                    return WildSpawnType.pmcBEAR;
+                default:
+                    return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
             }
-            else if (DefaultPluginVars.pmcFaction.Value == "USEC")
-            {
-                return WildSpawnType.pmcUSEC;
-            }
-            else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
-            {
-                return WildSpawnType.pmcBEAR;
-            }
-            return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
         }
 
         private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (wildSpawnType == WildSpawnType.pmcUSEC)
+            switch(wildSpawnType)
             {
-                return EPlayerSide.Usec;
+                case WildSpawnType.pmcUSEC:
+                    return EPlayerSide.Usec;
+                case WildSpawnType.pmcBEAR:
+                    return EPlayerSide.Bear;
+                default:
+                    return EPlayerSide.Usec;
             }
-            else if (wildSpawnType == WildSpawnType.pmcBEAR)
-            {
-                return EPlayerSide.Bear;
-            }
-            return EPlayerSide.Usec;
         }
 
         private List<BotDifficulty> GetDifficultiesForSetting(string difficultySetting)
