@@ -307,32 +307,28 @@ namespace Donuts
 
         private WildSpawnType GetPMCWildSpawnType(WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (DefaultPluginVars.pmcFaction.Value == "Default")
+            switch(DefaultPluginVars.pmcFaction.Value)
             {
-                return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
+                case "USEC":
+                    return WildSpawnType.pmcUSEC;
+                case "BEAR":
+                    return WildSpawnType.pmcBEAR;
+                default:
+                    return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
             }
-            else if (DefaultPluginVars.pmcFaction.Value == "USEC")
-            {
-                return WildSpawnType.pmcUSEC;
-            }
-            else if (DefaultPluginVars.pmcFaction.Value == "BEAR")
-            {
-                return WildSpawnType.pmcBEAR;
-            }
-            return BotSpawn.DeterminePMCFactionBasedOnRatio(sptUsec, sptBear);
         }
 
         private EPlayerSide GetPMCSide(WildSpawnType wildSpawnType, WildSpawnType sptUsec, WildSpawnType sptBear)
         {
-            if (wildSpawnType == WildSpawnType.pmcUSEC)
+            switch(wildSpawnType)
             {
-                return EPlayerSide.Usec;
+                case WildSpawnType.pmcUSEC:
+                    return EPlayerSide.Usec;
+                case WildSpawnType.pmcBEAR:
+                    return EPlayerSide.Bear;
+                default:
+                    return EPlayerSide.Usec;
             }
-            else if (wildSpawnType == WildSpawnType.pmcBEAR)
-            {
-                return EPlayerSide.Bear;
-            }
-            return EPlayerSide.Usec;
         }
 
         private List<BotDifficulty> GetDifficultiesForSetting(string difficultySetting)
