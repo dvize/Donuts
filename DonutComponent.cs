@@ -731,6 +731,12 @@ namespace Donuts
             }
 
             BotOwner botOwner = furthestBot.AIData.BotOwner;
+            if (botOwner == null)
+            {
+                Logger.LogError("BotOwner is null for the furthest bot.");
+                return;
+            }
+
 #if DEBUG
             Logger.LogDebug($"Despawning bot: {furthestBot.Profile.Info.Nickname} ({furthestBot.name})");
 #endif
