@@ -548,8 +548,8 @@ namespace Donuts
             maxSpawnTriesPerBot = new Setting<int>(
                 "Max Spawn Tries Per Bot",
                 "It will stop trying to spawn one of the bots after this many attempts to find a good spawn point. Lower is better",
-                5,
-                5,
+                1,
+                1,
                 0,
                 10);
 

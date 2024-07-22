@@ -264,10 +264,10 @@ namespace Donuts
         {
             if (!hasSpawnedStartingBots)
             {
+                hasSpawnedStartingBots = true;
                 if (DonutsBotPrep.botSpawnInfos != null && DonutsBotPrep.botSpawnInfos.Any())
                 {
                     await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos, cancellationToken);
-                    hasSpawnedStartingBots = true;
                 }
             }
 
@@ -316,7 +316,7 @@ namespace Donuts
                                 if (zoneKeys.Any())
                                 {
                                     var randomZone = zoneKeys.First();
-                                    var coordinates = spawnPointsDict[randomZone];
+                                    var coordinates = spawnPointsDict[randomZone].OrderBy(_ => random.Next()).ToList();
 
                                     bool isHotspotZone = randomZone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
 

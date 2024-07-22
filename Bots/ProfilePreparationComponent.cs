@@ -301,12 +301,14 @@ namespace Donuts
 
                 var zoneKeys = spawnPointsDict.Keys.OrderBy(_ => random.Next()).ToList();
                 string selectedZone = zoneKeys.FirstOrDefault(z => !usedZones.Contains(z));
+
                 if (selectedZone == null)
                 {
-                    Logger.LogError("No spawn points available for bot spawn.");
-                    break;
+                    usedZones.Clear();
+                    selectedZone = zoneKeys.First();
                 }
-                var coordinates = spawnPointsDict[selectedZone];
+
+                var coordinates = spawnPointsDict[selectedZone].OrderBy(_ => random.Next()).ToList();
                 usedZones.Add(selectedZone);
 
                 var botInfo = new PrepBotInfo(wildSpawnType, difficulty, side, groupSize > 1, groupSize);

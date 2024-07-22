@@ -22,7 +22,7 @@ namespace Donuts
         {
             for (int i = 0; i < maxSpawnAttempts; i++)
             {
-                Vector3 spawnPosition = GenerateRandomSpawnPosition(hotspotMaxDist, hotspotMinDist, coordinate);
+                Vector3 spawnPosition = coordinate;
 
                 if (NavMesh.SamplePosition(spawnPosition, out var navHit, 2f, NavMesh.AllAreas))
                 {
@@ -41,14 +41,6 @@ namespace Donuts
             }
 
             return null;
-        }
-
-        private static Vector3 GenerateRandomSpawnPosition(float hotspotMaxDist, float hotspotMinDist, Vector3 coordinate)
-        {
-            float randomX = Random.Range(-hotspotMaxDist, hotspotMaxDist);
-            float randomZ = Random.Range(-hotspotMaxDist, hotspotMaxDist);
-
-            return new Vector3(coordinate.x + randomX, coordinate.y, coordinate.z + randomZ);
         }
 
         internal static async Task<bool> IsValidSpawnPosition(Vector3 spawnPosition, float hotspotMinDistFromPlayer, CancellationToken cancellationToken)
