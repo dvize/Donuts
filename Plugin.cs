@@ -21,7 +21,7 @@ using dvize.Donuts.Patches;
 
 namespace Donuts
 {
-    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.6.0")]
+    [BepInPlugin("com.dvize.Donuts", "dvize.Donuts", "1.6.1")]
     [BepInDependency("com.SPT.core", "3.9.0")]
     [BepInDependency("xyz.drakia.waypoints")]
     [BepInDependency("com.Arys.UnityToolkit")]
