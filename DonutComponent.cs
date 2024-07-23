@@ -264,10 +264,10 @@ namespace Donuts
         {
             if (!hasSpawnedStartingBots)
             {
+                hasSpawnedStartingBots = true;
                 if (DonutsBotPrep.botSpawnInfos != null && DonutsBotPrep.botSpawnInfos.Any())
                 {
                     await BotSpawn.SpawnBotsFromInfo(DonutsBotPrep.botSpawnInfos, cancellationToken);
-                    hasSpawnedStartingBots = true;
                 }
             }
 
@@ -286,7 +286,6 @@ namespace Donuts
 
         private async UniTask SpawnBotWaves(MapBotWaves botWaves, CancellationToken cancellationToken)
         {
-            // Combine both lists and process in parallel for potential performance improvement
             var allBotWaves = botWaves.PMC.Concat(botWaves.SCAV).ToList();
 
             while (!cancellationToken.IsCancellationRequested)
@@ -299,34 +298,56 @@ namespace Donuts
                     {
                         if (isInBattle && timeSinceLastHit < battleStateCoolDown.Value)
                         {
-                            break; // Skip spawn due to battle cooldown
+                            Logger.LogDebug("In battle state cooldown, breaking the loop.");
+                            break;
                         }
 
-                        // Get coordinates
-                        var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
+                        var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
 
-                        if (spawnPointsDict.Any())
+                        if (CanSpawn(botWave, wildSpawnType))
                         {
-                            // Select a random coordinate from any zone
-                            var randomZone = spawnPointsDict.Keys.ElementAt(UnityEngine.Random.Range(0, spawnPointsDict.Count));
-                            var coordinate = spawnPointsDict[randomZone];
+                            var spawnPointsDict = DonutComponent.GetSpawnPointsForZones(DonutsBotPrep.allMapsZoneConfig, DonutsBotPrep.maplocation, botWave.Zones);
 
-                            var wildSpawnType = botWaves.PMC.Contains(botWave) ? "pmc" : "scav";
-
-                            if (CanSpawn(botWave, randomZone, coordinate, wildSpawnType))
+                            if (spawnPointsDict.Any())
                             {
-                                await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, cancellationToken);
-                                anySpawned = true;
-                                break; // Spawned a bot, exit the loop to wait and retry
+                                var random = new System.Random();
+                                var zoneKeys = spawnPointsDict.Keys.OrderBy(_ => random.Next()).ToList();
+
+                                if (zoneKeys.Any())
+                                {
+                                    var randomZone = zoneKeys.First();
+                                    var coordinates = spawnPointsDict[randomZone].OrderBy(_ => random.Next()).ToList();
+
+                                    bool isHotspotZone = randomZone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                                    if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
+                                        (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
+                                    {
+                                        Logger.LogDebug($"{randomZone} is a hotspot; hotspot boost is enabled, setting spawn chance to 100");
+                                        botWave.SpawnChance = 100;
+                                    }
+
+                                    foreach (var coordinate in coordinates)
+                                    {
+                                        if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate))
+                                        {
+                                            Logger.LogDebug($"Triggering spawn for botWave: {botWave} at {randomZone}, {coordinate}");
+                                            await TriggerSpawn(botWave, randomZone, coordinate, wildSpawnType, coordinates, cancellationToken);
+                                            anySpawned = true;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
+
+                        // if CanSpawn if false then we need to reset the timers for this wave
+                        ResetGroupTimers(botWave.GroupNum, wildSpawnType);
                     }
                 }
 
-                // Yield control to allow other tasks to execute
                 await UniTask.Yield(PlayerLoopTiming.Update);
 
-                // If no bots were spawned, delay before retrying
                 if (!anySpawned)
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: cancellationToken);
@@ -335,25 +356,18 @@ namespace Donuts
         }
 
         // Checks trigger distance and spawn chance
-        private bool CanSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType)
+        private bool CanSpawn(BotWave botWave, string wildSpawnType)
         {
-            if (BotSpawn.IsWithinBotActivationDistance(botWave, coordinate))
-            {
-                bool isHotspotZone = zone.IndexOf("hotspot", StringComparison.OrdinalIgnoreCase) >= 0;
+            int randomValue = UnityEngine.Random.Range(0, 100);
+            bool canSpawn = randomValue < botWave.SpawnChance;
 
-                if ((isHotspotZone && wildSpawnType == "pmc" && hotspotBoostPMC.Value) ||
-                    (isHotspotZone && wildSpawnType == "scav" && hotspotBoostSCAV.Value))
-                {
-                    botWave.SpawnChance = 100;
-                }
+            Logger.LogDebug($"SpawnChance: {botWave.SpawnChance}, RandomValue: {randomValue}, CanSpawn: {canSpawn}");
 
-                return UnityEngine.Random.Range(0, 100) < botWave.SpawnChance;
-            }
-            return false;
+            return canSpawn;
         }
 
         // Checks certain spawn options, reset groups timers
-        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, CancellationToken cancellationToken)
+        private async UniTask TriggerSpawn(BotWave botWave, string zone, Vector3 coordinate, string wildSpawnType, List<Vector3> coordinates, CancellationToken cancellationToken)
         {
             if (forceAllBotType.Value != "Disabled")
             {
@@ -385,7 +399,7 @@ namespace Donuts
                 botWave.TriggerCooldown();
             }
 
-            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, cancellationToken);
+            await BotSpawn.SpawnBots(botWave, zone, coordinate, wildSpawnType, coordinates, cancellationToken);
         }
 
         // Get the spawn wave configs from the waves json files
@@ -471,90 +485,52 @@ namespace Donuts
             }
         }
 
-        // Gets a list of spawn points for defined zones. Checks for certain keywords.
-        public static Dictionary<string, Vector3> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zones)
+        public static Dictionary<string, List<Vector3>> GetSpawnPointsForZones(AllMapsZoneConfig allMapsZoneConfig, string maplocation, List<string> zoneNames)
         {
-            var spawnPointsDict = new Dictionary<string, Vector3>();
+            var spawnPointsDict = new Dictionary<string, List<Vector3>>();
 
-            if (allMapsZoneConfig == null)
+            if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapZoneConfig))
             {
-                Logger.LogError("allMapsZoneConfig is null.");
+                Logger.LogError($"Map location {maplocation} not found in zone configuration.");
                 return spawnPointsDict;
             }
 
-            var lowerCaseZones = zones.Select(z => z.ToLowerInvariant()).ToList();
-
-            if (lowerCaseZones.Contains("start"))
+            foreach (var zoneName in zoneNames)
             {
-                if (!allMapsZoneConfig.StartZones.TryGetValue(maplocation, out var startZoneConfig))
+                if (zoneName == "all")
                 {
-                    Logger.LogError($"Start zones for map location '{maplocation}' not found in allMapsZoneConfig.");
-                    return spawnPointsDict;
-                }
-
-                foreach (var zone in startZoneConfig)
-                {
-                    var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
-                    if (randomCoord != null)
+                    foreach (var zone in mapZoneConfig.Zones)
                     {
-                        spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
-                    }
-                }
-            }
-            else if (lowerCaseZones.Contains("all"))
-            {
-                if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapConfig))
-                {
-                    Logger.LogError($"Map location '{maplocation}' not found in allMapsZoneConfig.");
-                    return spawnPointsDict;
-                }
-
-                foreach (var zone in mapConfig.Zones)
-                {
-                    var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
-                    if (randomCoord != null)
-                    {
-                        spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
-                    }
-                }
-            }
-            else if (lowerCaseZones.Contains("hotspot"))
-            {
-                if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapConfig))
-                {
-                    Logger.LogError($"Map location '{maplocation}' not found in allMapsZoneConfig.");
-                    return spawnPointsDict;
-                }
-
-                foreach (var zone in mapConfig.Zones)
-                {
-                    if (zone.Key.ToLowerInvariant().Contains("hotspot"))
-                    {
-                        var randomCoord = zone.Value.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
-                        if (randomCoord != null)
+                        if (!spawnPointsDict.ContainsKey(zone.Key))
                         {
-                            spawnPointsDict[zone.Key] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                            spawnPointsDict[zone.Key] = new List<Vector3>();
+                        }
+                        spawnPointsDict[zone.Key].AddRange(zone.Value.Select(c => new Vector3(c.x, c.y, c.z)));
+                    }
+                }
+                else if (zoneName == "start" || zoneName == "hotspot")
+                {
+                    foreach (var zone in mapZoneConfig.Zones)
+                    {
+                        if (zone.Key.IndexOf(zoneName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            if (!spawnPointsDict.ContainsKey(zone.Key))
+                            {
+                                spawnPointsDict[zone.Key] = new List<Vector3>();
+                            }
+                            spawnPointsDict[zone.Key].AddRange(zone.Value.Select(c => new Vector3(c.x, c.y, c.z)));
                         }
                     }
                 }
-            }
-            else
-            {
-                if (!allMapsZoneConfig.Maps.TryGetValue(maplocation, out var mapConfig))
+                else
                 {
-                    Logger.LogError($"Map location '{maplocation}' not found in allMapsZoneConfig.");
-                    return spawnPointsDict;
-                }
-
-                foreach (var zoneName in lowerCaseZones)
-                {
-                    if (mapConfig.Zones.TryGetValue(zoneName, out var zonePoints))
+                    if (mapZoneConfig.Zones.TryGetValue(zoneName, out var coordinates))
                     {
-                        var randomCoord = zonePoints.OrderBy(_ => UnityEngine.Random.value).FirstOrDefault();
-                        if (randomCoord != null)
+                        if (!spawnPointsDict.ContainsKey(zoneName))
                         {
-                            spawnPointsDict[zoneName] = new Vector3(randomCoord.x, randomCoord.y, randomCoord.z);
+                            spawnPointsDict[zoneName] = new List<Vector3>();
                         }
+                        spawnPointsDict[zoneName].AddRange(coordinates.Select(c => new Vector3(c.x, c.y, c.z)));
                     }
                 }
             }
@@ -636,9 +612,9 @@ namespace Donuts
                 if (botWave.GroupNum == groupNum)
                 {
                     botWave.ResetTimer();
-            #if DEBUG
+#if DEBUG
                     DonutComponent.Logger.LogDebug($"Resetting timer for GroupNum: {groupNum}, WildSpawnType: {wildSpawnType}");
-            #endif
+#endif
                 }
             }
         }

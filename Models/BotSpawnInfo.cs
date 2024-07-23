@@ -9,7 +9,7 @@ public class BotSpawnInfo
     public List<Vector3> Coordinates { get; set; }
     public BotDifficulty Difficulty { get; set; }
     public EPlayerSide Faction { get; set; }
-    public string Zone { get; set; } 
+    public string Zone { get; set; }
 
     public BotSpawnInfo(WildSpawnType botType, int groupSize, List<Vector3> coordinates, BotDifficulty difficulty, EPlayerSide faction, string zone)
     {

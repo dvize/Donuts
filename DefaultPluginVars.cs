@@ -397,8 +397,8 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerBool = new Setting<bool>(
                 "Use Global Min Distance From Player",
                 "If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                false,
-                false);
+                true,
+                true);
 
             globalMinSpawnDistanceFromPlayerFactory = new Setting<float>(
                 "Factory",
@@ -427,8 +427,8 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerWoods = new Setting<float>(
                 "Woods",
                 "Distance (in meters) that bots should spawn away from the player (you).",
-                125f,
-                125f);
+                110f,
+                110f);
 
             globalMinSpawnDistanceFromPlayerLaboratory = new Setting<float>(
                 "Laboratory",
@@ -445,8 +445,8 @@ namespace Donuts
             globalMinSpawnDistanceFromPlayerGroundZero = new Setting<float>(
                 "Ground Zero",
                 "Distance (in meters) that bots should spawn away from the player (you).",
-                65f,
-                65f);
+                50f,
+                50f);
 
             globalMinSpawnDistanceFromPlayerInterchange = new Setting<float>(
                 "Interchange",
@@ -464,19 +464,19 @@ namespace Donuts
             globalMinSpawnDistanceFromOtherBotsBool = new Setting<bool>(
                 "Use Global Min Distance From Other Bots",
                 "If enabled, all spawns on all presets will use the global minimum spawn distance from player for each map defined below.",
-                false,
-                false);
+                true,
+                true);
 
             globalMinSpawnDistanceFromOtherBotsFactory = new Setting<float>(
                 "Factory",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                20f,
-                20f);
+                15f,
+                15f);
 
             globalMinSpawnDistanceFromOtherBotsCustoms = new Setting<float>(
                 "Customs",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                50f,
+                40f,
                 50f);
 
             globalMinSpawnDistanceFromOtherBotsReserve = new Setting<float>(
@@ -488,38 +488,38 @@ namespace Donuts
             globalMinSpawnDistanceFromOtherBotsStreets = new Setting<float>(
                 "Streets",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                80f,
-                80f);
+                50f,
+                50f);
 
             globalMinSpawnDistanceFromOtherBotsWoods = new Setting<float>(
                 "Woods",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                100f,
-                100f);
+                80f,
+                80f);
 
             globalMinSpawnDistanceFromOtherBotsLaboratory = new Setting<float>(
                 "Laboratory",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                40f,
-                40f);
+                20f,
+                20f);
 
             globalMinSpawnDistanceFromOtherBotsShoreline = new Setting<float>(
                 "Shoreline",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                80f,
-                80f);
+                60f,
+                60f);
 
             globalMinSpawnDistanceFromOtherBotsGroundZero = new Setting<float>(
                 "Ground Zero",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                65f,
-                65f);
+                30f,
+                30f);
 
             globalMinSpawnDistanceFromOtherBotsInterchange = new Setting<float>(
                 "Interchange",
                 "Distance (in meters) that bots should spawn away from other alive bots.",
-                80f,
-                80f);
+                65f,
+                65f);
 
             globalMinSpawnDistanceFromOtherBotsLighthouse = new Setting<float>(
                 "Lighthouse",
@@ -548,8 +548,8 @@ namespace Donuts
             maxSpawnTriesPerBot = new Setting<int>(
                 "Max Spawn Tries Per Bot",
                 "It will stop trying to spawn one of the bots after this many attempts to find a good spawn point. Lower is better",
-                5,
-                5,
+                1,
+                1,
                 0,
                 10);
 
