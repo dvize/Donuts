@@ -14,7 +14,7 @@ using static Donuts.DonutComponent;
 
 namespace Donuts
 {
-    internal class Gizmos
+    internal class Gizmos : MonoBehaviour
     {
         internal bool isGizmoEnabled = false;
         internal static ConcurrentDictionary<Vector3, GameObject> gizmoMarkers = new ConcurrentDictionary<Vector3, GameObject>();
@@ -24,9 +24,12 @@ namespace Donuts
         internal static StringBuilder PreviousMarkerInfo = new StringBuilder();
         internal static Coroutine resetMarkerInfoCoroutine;
 
-        internal Gizmos(MonoBehaviour monoBehaviour)
+        // New spawnmarkers list for managing entries
+        internal static List<Entry> spawnmarkers = new List<Entry>();
+
+        internal Gizmos()
         {
-            monoBehaviourRef = monoBehaviour;
+            monoBehaviourRef = this;
         }
 
         private IEnumerator UpdateGizmoSpheresCoroutine()
@@ -38,15 +41,15 @@ namespace Donuts
             }
         }
 
-        internal static void DrawMarkers(IEnumerable<Entry> locations, Color color, PrimitiveType primitiveType)
+        internal static void DrawMarkers(IEnumerable<Entry> entries, Color color, PrimitiveType primitiveType)
         {
-            foreach (var hotspot in locations)
+            foreach (var entry in entries)
             {
-                var newCoordinate = new Vector3(hotspot.Position.x, hotspot.Position.y, hotspot.Position.z);
+                var newCoordinate = new Vector3(entry.Position.x, entry.Position.y, entry.Position.z);
 
-                if (DonutsBotPrep.maplocation == hotspot.MapName && !gizmoMarkers.ContainsKey(newCoordinate))
+                if (DonutsBotPrep.maplocation == entry.MapName && !gizmoMarkers.ContainsKey(newCoordinate))
                 {
-                    var marker = CreateMarker(newCoordinate, color, primitiveType, hotspot.MaxDistance);
+                    var marker = CreateMarker(newCoordinate, color, primitiveType, entry.MaxDistance);
                     gizmoMarkers[newCoordinate] = marker;
                 }
             }
@@ -86,8 +89,8 @@ namespace Donuts
 
             if (DefaultPluginVars.DebugGizmos.Value)
             {
-                DrawMarkers(fightLocations?.Locations ?? Enumerable.Empty<Entry>(), Color.green, PrimitiveType.Sphere);
-                DrawMarkers(sessionLocations?.Locations ?? Enumerable.Empty<Entry>(), Color.red, PrimitiveType.Cube);
+                // Use spawnmarkers for drawing
+                DrawMarkers(spawnmarkers, Color.green, PrimitiveType.Sphere);
             }
         }
 
@@ -176,7 +179,8 @@ namespace Donuts
             Entry closestEntry = null;
             float closestDistanceSq = float.MaxValue;
 
-            foreach (var entry in fightLocations.Locations.Concat(sessionLocations.Locations))
+            // Use spawnmarkers to find the closest entry
+            foreach (var entry in spawnmarkers)
             {
                 var entryPosition = new Vector3(entry.Position.x, entry.Position.y, entry.Position.z);
                 float distanceSq = (entryPosition - position).sqrMagnitude;
@@ -191,5 +195,11 @@ namespace Donuts
         }
 
         public static MethodInfo GetDisplayMessageNotificationMethod() => methodCache["DisplayMessageNotification"];
+
+        public void OnDestroy()
+        {
+            // Clear spawnmarkers on destroy
+            spawnmarkers.Clear();
+        }
     }
 }

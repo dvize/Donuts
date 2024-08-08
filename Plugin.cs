@@ -245,7 +245,7 @@ namespace Donuts
             return DefaultPluginVars.pmcScenarios.FirstOrDefault(folder => folder.Name == folderName);
         }
 
-        internal static string RunWeightedScenarioSelection()
+        internal static string RunWeightedScenarioSelectionSync()
         {
             try
             {
@@ -262,19 +262,19 @@ namespace Donuts
 
                 if (selectedFolder != null)
                 {
-                    return SelectPreset(selectedFolder);
+                    return SelectPresetSync(selectedFolder);
                 }
 
                 return null;
             }
             catch (Exception e)
             {
-                Logger.LogError("Error in RunWeightedScenarioSelection: " + e);
+                Logger.LogError("Error in RunWeightedScenarioSelectionSync: " + e);
                 return null;
             }
         }
 
-        private static string SelectPreset(Folder folder)
+        internal static string SelectPresetSync(Folder folder)
         {
             if (folder.presets == null || folder.presets.Count == 0) return folder.Name;
 
@@ -291,7 +291,6 @@ namespace Donuts
                 }
             }
 
-            // In case something goes wrong, return the last preset as a fallback
             var fallbackPreset = folder.presets.LastOrDefault();
             Logger.LogError("Fallback Preset: " + fallbackPreset.Name);
             return fallbackPreset?.Name;
