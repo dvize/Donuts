@@ -34,16 +34,16 @@ namespace Donuts
                 methodCache["DisplayMessageNotification"] = displayMessageNotification;
             }
 
-            var methodInfo = typeof(BotSpawner).GetMethod("method_9", BindingFlags.Instance | BindingFlags.NonPublic);
+            var methodInfo = AccessTools.Method(typeof(BotSpawner), "method_9");
             if (methodInfo != null)
             {
                 methodCache[methodInfo.Name] = methodInfo;
             }
 
-            methodInfo = AccessTools.Method(typeof(BotSpawner), "method_10");
-            if (methodInfo != null)
+            var methodInfo2 = AccessTools.Method(typeof(BotSpawner), "method_10");
+            if (methodInfo2 != null)
             {
-                methodCache[methodInfo.Name] = methodInfo;
+                methodCache[methodInfo2.Name] = methodInfo2;
             }
 
             if (gameWorld.RegisteredPlayers.Count > 0)

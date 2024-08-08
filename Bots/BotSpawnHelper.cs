@@ -487,6 +487,12 @@ namespace Donuts
             IProfileData botData = new IProfileData(side, wildSpawnType, botdifficulty, 0f, null);
             BotCreationDataClass bot = await BotCreationDataClass.Create(botData, ibotCreator, 1, botSpawnerClass);
 
+            if (bot == null)
+            {
+                Logger.LogError("CreateNewBot: BotCreationDataClass.Create returned null.");
+                return;
+            }
+
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
             Logger.LogInfo($"CreateNewBot: Min spawn distance from player: {minSpawnDistFromPlayer}");
 
@@ -528,37 +534,73 @@ namespace Donuts
 
         internal static async UniTask ActivateBot(BotZone botZone, BotCreationDataClass botData, CancellationTokenSource cancellationTokenSource, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.IsCancellationRequested) 
+                return;
 
-            CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
+            /*CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
             {
                 botData = botData
-            };
+            };*/
 
-            GetGroupWrapper getGroupWrapper = new GetGroupWrapper(botSpawnerClass, gameWorld);
 
-            botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(createBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
-            await ClearBotCacheAfterActivation(botData);
+            //GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
 
-            if (BotSupportTracker.GetBotSourceType(botData.Id.ToString()) == BotSourceType.Support)
+            // Provide a default implementation for the Action<BotOwner>
+            Action<BotOwner> defaultAction = bot => {  };
+
+            //botCreator.ActivateBot(botData, botZone, true, new Func<BotOwner, BotZone, BotsGroup>(botSpawnerClass.GetGroupAndSetEnemies), defaultAction, cancellationTokenSource.Token);
+
+            //SOMETHING ELSE BROKEN CAUSING DEAD BOT OWNER BRAINS
+            ClearBotCacheAfterActivation(botData);
+
+        }
+
+        internal static void ClearBotCacheAfterActivation(BotCreationDataClass botData)
+        {
+            DonutsBotPrep.timeSinceLastReplenish = 0f;
+
+            if (botData == null)
+            {
+                Logger.LogError("ClearBotCacheAfterActivation: BotCreationDataClass is null.");
+                return;
+            }
+
+            if (botData.Profiles == null)
+            {
+                Logger.LogError("ClearBotCacheAfterActivation: BotCreationDataClass.Profiles is null.");
+                return;
+            }
+            
+            //Check to make sure DonutBotPrep.BotInfos is not null
+            if (DonutsBotPrep.BotInfos == null)
+            {
+                Logger.LogError("ClearBotCacheAfterActivation: DonutsBotPrep.BotInfos is null.");
+                return;
+            }
+
+            //search DonutsBotPrep.BotInfos.SpawnType == botData.SpawnType
+            foreach (var botInfo in DonutsBotPrep.BotInfos)
+            {
+                if (botInfo == null)
+                {
+                    Logger.LogError("ClearBotCacheAfterActivation: BotInfo is null.");
+                    continue;
+                }
+
+                if (botInfo.Bots == botData)
+                {
+                    botInfo.Bots.Profiles.Clear();
+                    break;
+                }
+            }
+
+            //remove bot from cache
+            var botSourceType = BotSupportTracker.GetBotSourceType(botData.Id.ToString());
+            if (botSourceType == BotSourceType.Support)
             {
                 BotSupportTracker.RemoveBot(botData.Id.ToString());
             }
-            
-        }
-
-        internal static async UniTask<bool> ClearBotCacheAfterActivation(BotCreationDataClass botData)
-        {
-            var botInfo = DonutsBotPrep.BotInfos.FirstOrDefault(b => b.Bots == botData);
-            if (botInfo != null)
-            {
-                DonutsBotPrep.timeSinceLastReplenish = 0f;
-                botInfo.Bots = null;
-                Logger.LogInfo($"ClearBotCacheAfterActivation: Cleared cached bot info for bot type: {botInfo.SpawnType}");
-            }
-
-
-            return true;
+        
         }
 
         internal static bool IsWithinBotActivationDistance(BotWave botWave, Vector3 position)

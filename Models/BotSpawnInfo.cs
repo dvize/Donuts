@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EFT;
+using EFT.Bots;
 using UnityEngine;
 
 public class BotSpawnInfo

@@ -10,6 +10,7 @@ using Comfort.Common;
 using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
+using EFT.Bots;
 using EFT.InventoryLogic;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -584,11 +585,10 @@ namespace Donuts
         {
             Logger.LogInfo($"Scheduling boss spawn: {bossSpawn.BossName}");
 
-            // Get the closest bot zone to the first coordinate
-            var closestBotZone = botSpawnerClass.GetClosestZone(coordinates.FirstOrDefault(), out float dist);
-
             // Create boss and get the central position for supports
             var bossCreationData = await CreateBoss(bossSpawn, coordinates, cancellationToken, selectedZone);
+
+            Logger.LogInfo($"ScheduleBossSpawn: Completed creating boss: {bossSpawn.BossName}");
 
             if (bossCreationData != null)
             {
@@ -599,9 +599,6 @@ namespace Donuts
                 {
                     await ScheduleSupportsAsync(bossSpawn.Supports, centralPosition.position, coordinates, selectedZone, cancellationToken);
                 }
-
-                // Activate the boss - Disable as it needs to be handled after game starts
-                //botCreator.ActivateBot(bossCreationData, closestBotZone, true, BossGroupAction, null, cancellationToken);
             }
         }
 
@@ -617,45 +614,21 @@ namespace Donuts
             {
                 Logger.LogError("Bot creator is not initialized.");
                 return null;
-
             }
 
             var bossWildSpawnType = WildSpawnTypeDictionaries.StringToWildSpawnType[bossSpawn.BossName.ToLower()];
             var bossSide = WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide[bossWildSpawnType];
+            var bossDifficulty = GetRandomDifficultyForBoss();
+            var centralPosition = GetCentralPosition(coordinates);
 
-            // Randomize and select boss difficulty
-            var bossDifficultyList = GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesOther.Value.ToLower())
-                .OrderBy(x => UnityEngine.Random.value)
-                .ToList();
-            var bossDifficulty = bossDifficultyList.FirstOrDefault();
+            var bossData = CreateProfileData(bossSide, bossWildSpawnType, bossDifficulty);
+            var botInfo = CreateBotInfo(bossWildSpawnType, bossDifficulty, bossSide);
 
-            var bossData = new IProfileData(
-                side: bossSide,
-                role: bossWildSpawnType,
-                botDifficulty: bossDifficulty,
-                0f,
-                null
-            );
+            var boss = await CreateAndAddBot(botInfo, bossData, centralPosition.First(), cancellationToken, false);
 
-            // Generate the bot info needed for spawning
-            var botInfo = new PrepBotInfo(bossWildSpawnType, bossDifficulty, bossSide);
-            var boss = await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken, false, bossData);
+            AddBotSpawnInfo(bossWildSpawnType, 1, centralPosition, bossDifficulty, bossSide, selectedZone);
 
-            // Assign a random position for the boss spawn
-            var centralPosition = new List<Vector3> { coordinates.Random() };
-
-            Logger.LogInfo($"Central Position Count In Boss Creation: {centralPosition.Count()}");
-            //think there were 12 given and i passed the whole list instead of the one element
-            botInfo.Bots.AddPosition(centralPosition.First(), UnityEngine.Random.Range(0, 10000));
-            BotInfos.Add(botInfo);
-
-            //handle for 
-            var botSpawnInfo = new BotSpawnInfo(bossWildSpawnType, 1, centralPosition, bossDifficulty, bossSide, selectedZone);
-            botSpawnInfos.Add(botSpawnInfo);
-
-#if DEBUG
             Logger.LogInfo($"Creating boss: Name={bossSpawn.BossName}, Difficulty={bossDifficulty}, Side={bossSide}");
-#endif
 
             return boss;
         }
@@ -670,53 +643,81 @@ namespace Donuts
 
         private static async UniTask CreateSupportAsync(Support support, Vector3 centralPosition, List<Vector3> coordinates, string selectedZone, CancellationToken cancellationToken)
         {
-            if (botCreator == null)
-            {
-                Logger.LogError("Bot creator is not initialized.");
-                return;
-            }
+            Logger.LogInfo($"Creating supportAsync Started for : Type={support.BossEscortType}, Amount={support.BossEscortAmount}");
 
             var supportWildSpawnType = WildSpawnTypeDictionaries.StringToWildSpawnType[support.BossEscortType.ToLower()];
             var supportSide = WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide[supportWildSpawnType];
+            var supportDifficulty = GetRandomDifficultyForSupport();
 
-            var supportData = new IProfileData(
-                side: supportSide,
-                role: supportWildSpawnType,
-                botDifficulty: BotDifficulty.normal,
-                0f,
-                null
-            );
+            var supportData = CreateProfileData(supportSide, supportWildSpawnType, supportDifficulty);
+            var supportInfo = CreateBotInfo(supportWildSpawnType, supportDifficulty, supportSide, support.BossEscortAmount);
 
-            // Generate the bot info needed for spawning
-            var groupsize = support.BossEscortAmount;
-            bool isgroup = groupsize > 1;
+            var offsetPosition = GetOffsetPosition(centralPosition);
+            var offsetPositionList = new List<Vector3> { offsetPosition };
 
-            var supportInfo = new PrepBotInfo(supportWildSpawnType, BotDifficulty.normal, supportSide, isgroup, groupsize);
+            AddBotSpawnInfo(supportWildSpawnType, support.BossEscortAmount, offsetPositionList, supportDifficulty, supportSide, selectedZone);
 
-            //create bot with isSupport parameter set to true
-            await CreateBot(supportInfo, supportInfo.IsGroup, supportInfo.GroupSize, cancellationToken, true, supportData);
-          
-            // Assign positions around the central position for support units
+            var botCreationCache = await CreateAndAddBot(supportInfo, supportData, offsetPosition, cancellationToken, true);
+
+            if (supportInfo.Bots == null)
+            {
+                Logger.LogError("SupportInfo.Bots is null.");
+            }
+
+            Logger.LogInfo($"Creating support: Type={support.BossEscortType}, Difficulty=normal, Amount={support.BossEscortAmount}");
+        }
+
+        private static BotDifficulty GetRandomDifficultyForBoss()
+        {
+            return GetRandomDifficulty(GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesOther.Value.ToLower()));
+        }
+
+        private static BotDifficulty GetRandomDifficultyForSupport()
+        {
+            return GetRandomDifficulty(GetDifficultiesForSetting(DefaultPluginVars.botDifficultiesOther.Value.ToLower()));
+        }
+
+        private static IProfileData CreateProfileData(EPlayerSide side, WildSpawnType role, BotDifficulty difficulty)
+        {
+            return new IProfileData(side, role, difficulty, 0f, null);
+        }
+
+        private static PrepBotInfo CreateBotInfo(WildSpawnType role, BotDifficulty difficulty, EPlayerSide side, int groupSize = 1)
+        {
+            bool isGroup = groupSize > 1;
+            return new PrepBotInfo(role, difficulty, side, isGroup, groupSize);
+        }
+
+        private static async UniTask<BotCreationDataClass> CreateAndAddBot(PrepBotInfo botInfo, IProfileData botData, Vector3 position, CancellationToken cancellationToken, bool isSupport)
+        {
+            var bot = await CreateBot(botInfo, botInfo.IsGroup, botInfo.GroupSize, cancellationToken, isSupport, botData);
+            botInfo.Bots = bot;
+            botInfo.Bots.AddPosition(position, UnityEngine.Random.Range(0, 10000));
+            BotInfos.Add(botInfo);
+            return bot;
+        }
+
+        private static void AddBotSpawnInfo(WildSpawnType type, int amount, List<Vector3> positions, BotDifficulty difficulty, EPlayerSide side, string zone)
+        {
+            var botSpawnInfo = new BotSpawnInfo(type, amount, positions, difficulty, side, zone);
+            botSpawnInfos.Add(botSpawnInfo);
+        }
+
+        private static List<Vector3> GetCentralPosition(List<Vector3> coordinates)
+        {
+            return new List<Vector3> { coordinates.Random() };
+        }
+
+        private static Vector3 GetOffsetPosition(Vector3 centralPosition)
+        {
             float spreadRange = 5.0f; // Define a spread range for support units
-
-            var offsetPosition = centralPosition + new Vector3(
+            return centralPosition + new Vector3(
                 UnityEngine.Random.Range(-spreadRange / 2, spreadRange / 2),
                 0,
                 UnityEngine.Random.Range(-spreadRange / 2, spreadRange / 2)
             );
-
-            //edit the position of supportInfo.Bots[i].AddPosition
-            supportInfo.Bots.AddPosition(offsetPosition, UnityEngine.Random.Range(0, 10000));
-            var offsetPositionList = new List<Vector3> { offsetPosition };
-            BotInfos.Add(supportInfo);
-            var supportSpawnInfo = new BotSpawnInfo(supportWildSpawnType, support.BossEscortAmount, offsetPositionList, BotDifficulty.normal, supportSide, selectedZone);
-            botSpawnInfos.Add(supportSpawnInfo);
-
-#if DEBUG
-            Logger.LogInfo($"Creating support: Type={support.BossEscortType}, Difficulty=normal, Amount={support.BossEscortAmount}");
-#endif
-            return ;
         }
+
         private void Update()
         {
             timeSinceLastReplenish += Time.deltaTime;
@@ -828,6 +829,17 @@ namespace Donuts
 #endif
                 return null;
             }
+        }
+        public static BotDifficulty GetRandomDifficulty(List<BotDifficulty> difficulties)
+        {
+            if (difficulties == null || difficulties.Count == 0)
+            {
+                throw new ArgumentException("Difficulties list cannot be null or empty.");
+            }
+
+            System.Random random = new System.Random();
+            int randomIndex = random.Next(difficulties.Count);
+            return difficulties[randomIndex];
         }
 
         private void OnDestroy()
