@@ -55,12 +55,9 @@ namespace Donuts
 
             // Patches
             new NewGameDonutsPatch().Enable();
-            new BotGroupAddEnemyPatch().Enable();
-            new BotMemoryAddEnemyPatch().Enable();
             new MatchEndPlayerDisposePatch().Enable();
             new PatchStandbyTeleport().Enable();
             new BotProfilePreparationHook().Enable();
-            new AddEnemyPatch().Enable();
             new ShootDataNullRefPatch().Enable();
             new CoverPointMasterNullRef().Enable();
             new DelayedGameStartPatch().Enable();

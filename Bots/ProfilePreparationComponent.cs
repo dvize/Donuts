@@ -624,6 +624,10 @@ namespace Donuts
             var bossData = CreateProfileData(bossSide, bossWildSpawnType, bossDifficulty);
             var botInfo = CreateBotInfo(bossWildSpawnType, bossDifficulty, bossSide);
 
+            // Mark this bot as a boss
+            bossData.SpawnParams = new BotSpawnParams();
+            bossData.SpawnParams.ShallBeGroup = new ShallBeGroupParams(true, true);
+
             var boss = await CreateAndAddBot(botInfo, bossData, centralPosition.First(), cancellationToken, false);
 
             AddBotSpawnInfo(bossWildSpawnType, 1, centralPosition, bossDifficulty, bossSide, selectedZone);
@@ -643,28 +647,40 @@ namespace Donuts
 
         private static async UniTask CreateSupportAsync(Support support, Vector3 centralPosition, List<Vector3> coordinates, string selectedZone, CancellationToken cancellationToken)
         {
-            Logger.LogInfo($"Creating supportAsync Started for : Type={support.BossEscortType}, Amount={support.BossEscortAmount}");
+            Logger.LogInfo($"Creating supportAsync Started for: Type={support.BossEscortType}, Amount={support.BossEscortAmount}");
 
             var supportWildSpawnType = WildSpawnTypeDictionaries.StringToWildSpawnType[support.BossEscortType.ToLower()];
             var supportSide = WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide[supportWildSpawnType];
             var supportDifficulty = GetRandomDifficultyForSupport();
 
-            var supportData = CreateProfileData(supportSide, supportWildSpawnType, supportDifficulty);
-            var supportInfo = CreateBotInfo(supportWildSpawnType, supportDifficulty, supportSide, support.BossEscortAmount);
-
-            var offsetPosition = GetOffsetPosition(centralPosition);
-            var offsetPositionList = new List<Vector3> { offsetPosition };
-
-            AddBotSpawnInfo(supportWildSpawnType, support.BossEscortAmount, offsetPositionList, supportDifficulty, supportSide, selectedZone);
-
-            var botCreationCache = await CreateAndAddBot(supportInfo, supportData, offsetPosition, cancellationToken, true);
-
-            if (supportInfo.Bots == null)
+            for (int i = 0; i < support.BossEscortAmount; i++)
             {
-                Logger.LogError("SupportInfo.Bots is null.");
+                Logger.LogInfo($"Creating support bot {i + 1}/{support.BossEscortAmount}");
+
+                // Create individual profile and info for each bot
+                var supportData = CreateProfileData(supportSide, supportWildSpawnType, supportDifficulty);
+                var supportInfo = CreateBotInfo(supportWildSpawnType, supportDifficulty, supportSide, 1);
+
+                // Calculate offset position for each bot
+                var offsetPosition = GetOffsetPosition(centralPosition);
+                var offsetPositionList = new List<Vector3> { offsetPosition };
+
+                // Mark this bot as a support
+                supportData.SpawnParams = new BotSpawnParams();
+                supportData.SpawnParams.ShallBeGroup = new ShallBeGroupParams(true, true, support.BossEscortAmount);
+
+                AddBotSpawnInfo(supportWildSpawnType, 1, offsetPositionList, supportDifficulty, supportSide, selectedZone);
+
+                // Create and add bot
+                var supportBot = await CreateAndAddBot(supportInfo, supportData, offsetPosition, cancellationToken, true);
+
+                if (supportInfo.Bots == null)
+                {
+                    Logger.LogError("SupportInfo.Bots is null.");
+                }
             }
 
-            Logger.LogInfo($"Creating support: Type={support.BossEscortType}, Difficulty=normal, Amount={support.BossEscortAmount}");
+            Logger.LogInfo($"Creating support completed: Type={support.BossEscortType}, Difficulty=normal, Amount={support.BossEscortAmount}");
         }
 
         private static BotDifficulty GetRandomDifficultyForBoss()

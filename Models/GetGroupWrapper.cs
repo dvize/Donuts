@@ -1,4 +1,6 @@
-﻿using EFT;
+﻿using System;
+using EFT;
+using UnityEngine;
 
 using static Donuts.DonutComponent;
 
@@ -11,11 +13,35 @@ namespace Donuts.Models
 
         public BotsGroup GetGroupAndSetEnemies(BotOwner bot, BotZone zone)
         {
-            // If we haven't found/created our BotsGroup yet, do so, and then lock it so nobody else can use it
-            if (group == null && !bot.IsYourPlayer && bot.isActiveAndEnabled)
+            if (bot == null)
             {
-                group = botSpawnerClass.GetGroupAndSetEnemies(bot, zone);
-                group.Lock();
+                Debug.LogError("GetGroupAndSetEnemies: BotOwner is null.");
+                return null;
+            }
+
+            if (zone == null)
+            {
+                Debug.LogError("GetGroupAndSetEnemies: BotZone is null.");
+                return null;
+            }
+
+            if (group == null)
+            {
+                try
+                {
+                    group = botSpawnerClass.GetGroupAndSetEnemies(bot, zone);
+                    if (group == null)
+                    {
+                        Debug.LogError("GetGroupAndSetEnemies: Failed to create or retrieve BotsGroup.");
+                        return null;
+                    }
+                    group.Lock();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"GetGroupAndSetEnemies: Exception occurred while creating BotsGroup - {ex.Message}");
+                    return null;
+                }
             }
 
             return group;

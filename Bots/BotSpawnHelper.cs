@@ -38,7 +38,8 @@ namespace Donuts
         internal static async UniTask ActivateStartingBots(BotCreationDataClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
             BotSpawner botSpawnerClass, Vector3 spawnPosition, BotDifficulty botDifficulty, int maxCount, string zone, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.IsCancellationRequested) 
+                return;
 
             bool isFollowerOrBoss = false;
 
@@ -537,25 +538,33 @@ namespace Donuts
             if (cancellationToken.IsCancellationRequested) 
                 return;
 
-            /*CreateBotCallbackWrapper createBotCallbackWrapper = new CreateBotCallbackWrapper
+            // Ensure botData and profile data are not null
+            if (botData == null || botData._profileData == null)
             {
-                botData = botData
-            };*/
+                Debug.LogError("BotCreationDataClass or ProfileData is null.");
+                return;
+            }
 
+            Debug.Log($"ActivateBot: BotCreationDataClass data initialized: {botData != null}");
+            Debug.Log($"ActivateBot: ProfileData initialized: {botData._profileData != null}");
 
-            //GetGroupWrapper getGroupWrapper = new GetGroupWrapper();
+            /*CreateBotCallbackWrapper.Initialize(botSpawnerClass, botData);
+            GetGroupWrapper getGroupWrapper = new GetGroupWrapper();*/
 
-            // Provide a default implementation for the Action<BotOwner>
-            Action<BotOwner> defaultAction = bot => {  };
+            // Use game's method_9 for activation, which handles necessary setup
+            //botCreator.ActivateBot(botData, botZone, false, new Func<BotOwner, BotZone, BotsGroup>(getGroupWrapper.GetGroupAndSetEnemies), new Action<BotOwner>(CreateBotCallbackWrapper.CreateBotCallback), cancellationTokenSource.Token);
 
-            //botCreator.ActivateBot(botData, botZone, true, new Func<BotOwner, BotZone, BotsGroup>(botSpawnerClass.GetGroupAndSetEnemies), defaultAction, cancellationTokenSource.Token);
+            //grab private CancellationTokenSource _cancellationTokenSource from BotSpawner using accesstools
 
-            //SOMETHING ELSE BROKEN CAUSING DEAD BOT OWNER BRAINS
-            ClearBotCacheAfterActivation(botData);
+            var cancTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
+            botSpawnerClass.method_9(botZone, botData, null, cancTokenSource.Token);
+
+            // Clear bot cache after activation to ensure proper cleanup
+            await ClearBotCacheAfterActivation(botData);
 
         }
 
-        internal static void ClearBotCacheAfterActivation(BotCreationDataClass botData)
+        internal static async UniTask ClearBotCacheAfterActivation(BotCreationDataClass botData)
         {
             DonutsBotPrep.timeSinceLastReplenish = 0f;
 
