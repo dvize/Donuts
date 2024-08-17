@@ -11,7 +11,7 @@ namespace Donuts
     {
         private static int selectedBossIndex = 0;
         private static string[] bossNames = {
-            "Cultistst", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
+            "Cultists", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
             "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
         };
 
