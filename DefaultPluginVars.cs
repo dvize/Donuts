@@ -34,7 +34,7 @@ namespace Donuts
         internal static Setting<bool> hardStopOptionSCAV;
         internal static Setting<int> hardStopTimeSCAV;
         internal static Setting<int> hardStopPercentSCAV;
-        
+
         internal static Setting<bool> hotspotBoostPMC;
         internal static Setting<bool> hotspotBoostSCAV;
         internal static Setting<bool> hotspotIgnoreHardCapPMC;
@@ -43,6 +43,10 @@ namespace Donuts
         internal static Setting<float> battleStateCoolDown;
         internal static Setting<int> maxRespawnsPMC;
         internal static Setting<int> maxRespawnsSCAV;
+
+        // Bosses
+        internal static Dictionary<string, Setting<bool>> BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
+        internal static Dictionary<string, Dictionary<string, Setting<int>>> BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
 
         // Global Minimum Spawn Distance From Player
         internal static Setting<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -168,7 +172,7 @@ namespace Donuts
         //IMGUI Vars
         internal static int selectedTabIndex = 0;
         internal static int selectedSubTabIndex = 0;
-        internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
+        internal static string[] tabNames = { "Main Settings", "Spawn Settings", "Boss Settings", "Advanced Settings", "SpawnPoint Maker", "Debugging" };
         internal static bool showGUI = false;
         internal static string[] botDiffList = { "AsOnline", "Easy", "Normal", "Hard", "Impossible" };
 
@@ -193,6 +197,201 @@ namespace Donuts
         //Default Constructor
         static DefaultPluginVars()
         {
+            // Boss settings
+            string[] bossNames = {
+                "Cultists", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
+                "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
+            };
+
+            string[] mapNames = {
+                "Factory", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
+                "Shoreline", "Ground Zero", "Interchange", "Lighthouse"
+            };
+
+            Dictionary<string, Dictionary<string, int>> defaultSpawnChances = new Dictionary<string, Dictionary<string, int>>
+            {
+                {"Cultists", new Dictionary<string, int> {
+                    {"Factory", 2},
+                    {"Customs", 20},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 20},
+                    {"Laboratory", 0},
+                    {"Shoreline", 15},
+                    {"Ground Zero", 2},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Goons", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 40},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 40},
+                    {"Laboratory", 0},
+                    {"Shoreline", 40},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 40}
+                }},
+                {"Glukhar", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 40},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Kaban", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 40},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Killa", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 40},
+                    {"Lighthouse", 0}
+                }},
+                {"Kollontay", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 40},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 40},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Raiders", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Reshala", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 40},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Rogues", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Sanitar", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 40},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Shturman", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 40},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Tagilla", new Dictionary<string, int> {
+                    {"Factory", 40},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 0}
+                }},
+                {"Zryachiy", new Dictionary<string, int> {
+                    {"Factory", 0},
+                    {"Customs", 0},
+                    {"Reserve", 0},
+                    {"Streets", 0},
+                    {"Woods", 0},
+                    {"Laboratory", 0},
+                    {"Shoreline", 0},
+                    {"Ground Zero", 0},
+                    {"Interchange", 0},
+                    {"Lighthouse", 100}
+                }}
+            };
+
+            foreach (var boss in bossNames)
+            {
+                BossUseGlobalSpawnChance[boss] = new Setting<bool>($"{boss} Use Global Spawn Chance", $"Use Global Spawn Chance for {boss}", false, false);
+                BossSpawnChances[boss] = new Dictionary<string, Setting<int>>();
+
+                foreach (var map in mapNames)
+                {
+                    int defaultChance = 0;
+                    if (defaultSpawnChances.ContainsKey(boss) && defaultSpawnChances[boss].ContainsKey(map))
+                    {
+                        defaultChance = defaultSpawnChances[boss][map];
+                    }
+
+                    BossSpawnChances[boss][map] = new Setting<int>(
+                        $"{boss} Spawn Chance {map}",
+                        $"{boss} spawn chance for {map}",
+                        defaultChance,
+                        defaultChance,
+                        0,
+                        100
+                    );
+                }
+            }
+
             // Main Settings
             PluginEnabled = new Setting<bool>(
                 "Donuts On",
