@@ -370,7 +370,7 @@ namespace Donuts
 
             foreach (var boss in bossNames)
             {
-                BossUseGlobalSpawnChance[boss] = new Setting<bool>($"{boss} Use Global Spawn Chance", $"Use Global Spawn Chance for {boss}", false, false);
+                BossUseGlobalSpawnChance[boss] = new Setting<bool>("Use Global Spawn Chance", $"Use Global Spawn Chance for {boss}", false, false);
                 BossSpawnChances[boss] = new Dictionary<string, Setting<int>>();
 
                 foreach (var map in mapNames)
@@ -382,7 +382,7 @@ namespace Donuts
                     }
 
                     BossSpawnChances[boss][map] = new Setting<int>(
-                        $"{boss} Spawn Chance {map}",
+                        "Spawn Chance",
                         $"{boss} spawn chance for {map}",
                         defaultChance,
                         defaultChance,
