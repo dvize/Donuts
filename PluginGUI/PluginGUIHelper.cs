@@ -265,12 +265,15 @@ namespace Donuts
                     DrawSpawnSettings.Enable();
                     break;
                 case 2:
-                    DrawAdvancedSettings.Enable();
+                    DrawBossSettings.Enable();
                     break;
                 case 3:
-                    DrawSpawnPointMaker.Enable();
+                    DrawAdvancedSettings.Enable();
                     break;
                 case 4:
+                    DrawSpawnPointMaker.Enable();
+                    break;
+                case 5:
                     DrawDebugging.Enable();
                     break;
             }

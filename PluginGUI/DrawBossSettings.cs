@@ -11,8 +11,8 @@ namespace Donuts
     {
         private static int selectedBossIndex = 0;
         private static string[] bossNames = {
-            "Cultist Priest", "Death Knight", "Glukhar", "Kaban", "Killa", "Kollontay",
-            "Raider", "Reshala", "Rogue", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
+            "Cultistst", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
+            "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
         };
 
         private static string[] mapNames = {
@@ -45,10 +45,10 @@ namespace Donuts
         {
             for (int i = 0; i < bossNames.Length; i++)
             {
-                GUIStyle currentStyle = subTabButtonStyle;
+                GUIStyle currentStyle = PluginGUIHelper.subTabButtonStyle;
                 if (selectedBossIndex == i)
                 {
-                    currentStyle = subTabButtonActiveStyle;
+                    currentStyle = PluginGUIHelper.subTabButtonActiveStyle;
                 }
 
                 if (GUILayout.Button(bossNames[i], currentStyle))
@@ -69,7 +69,7 @@ namespace Donuts
                 DefaultPluginVars.BossUseGlobalSpawnChance[bossName].Value);
 
             GUILayout.Space(20);
-            GUILayout.Label("Spawn Chances Per Map", labelStyle);
+            GUILayout.Label("Spawn Chances Per Map", PluginGUIHelper.labelStyle);
 
             foreach (string mapName in mapNames)
             {
