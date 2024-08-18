@@ -442,6 +442,29 @@ namespace Donuts
                 {
                     foreach (var bossSpawn in bosses)
                     {
+                        int spawnChance;
+                        var bossname = "";
+                        if (bossSpawn.BossName == "bosstagilla")
+                        {
+                            bossname = "Tagilla";
+                        }
+
+                        if (DefaultPluginVars.BossUseGlobalSpawnChance[bossname].Value)
+                        {
+                            spawnChance = DefaultPluginVars.BossSpawnChances[bossname]["Factory"].Value;
+                        }
+                        else
+                        {
+                            spawnChance = bossSpawn.BossChance;
+                        }
+
+                        // Check if the boss should spawn based on the new spawn chance
+                        var randomValue = UnityEngine.Random.Range(0, 100);
+                        if (randomValue >= spawnChance)
+                        {
+                            return;
+                        }
+
                         Logger.LogInfo($"Configuring boss spawn: {bossSpawn.BossName} with chance {bossSpawn.BossChance}");
 
                         // Use similar logic as InitializeBotInfos to get zone and coordinates
