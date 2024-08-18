@@ -372,14 +372,28 @@ namespace Donuts
             BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
             BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
 
-            foreach (var boss in bossNames)
+            foreach (var bossKvp in WildSpawnTypeDictionaries.BossNameToConfigName)
             {
-                BossUseGlobalSpawnChance[boss] = new Setting<bool>($"Use Global Spawn Chance for {boss}", $"Use Global Spawn Chance for {boss}", true, true);
-                BossSpawnChances[boss] = new Dictionary<string, Setting<int>>();
+                string bossKey = bossKvp.Key;
+                string bossConfigName = bossKvp.Value;
+                BossSpawnChances[bossConfigName] = new Dictionary<string, Setting<int>>();
 
-                foreach (var map in mapNames)
+                foreach (var mapKvp in WildSpawnTypeDictionaries.MapNameToConfigName)
                 {
-                    BossSpawnChances[boss][map] = new Setting<int>($"{boss} spawn chance for {map}", $"{boss} spawn chance for {map}", 0, 0, 0, 100);
+                    string mapKey = mapKvp.Key;
+                    string mapConfigName = mapKvp.Value;
+
+                    int defaultChance = defaultSpawnChances.TryGetValue(bossKey, out var bossChances) &&
+                                        bossChances.TryGetValue(mapKey, out var chance) ? chance : 0;
+
+                    BossSpawnChances[bossConfigName][mapConfigName] = new Setting<int>(
+                        $"{mapConfigName}",
+                        $"Spawn chance for {bossConfigName} on {mapConfigName}",
+                        defaultChance,
+                        defaultChance,
+                        0,
+                        100
+                    );
                 }
             }
 
@@ -937,6 +951,19 @@ namespace Donuts
                         }
                     }
                 }
+                else if (field.Name == "BossUseGlobalSpawnChance")
+                {
+                    var dict = (Dictionary<string, Setting<bool>>)field.GetValue(null);
+                    settingsDictionary[field.Name] = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
+                }
+                else if (field.Name == "BossSpawnChances")
+                {
+                    var dict = (Dictionary<string, Dictionary<string, Setting<int>>>)field.GetValue(null);
+                    settingsDictionary[field.Name] = dict.ToDictionary(
+                        bossKvp => bossKvp.Key,
+                        bossKvp => bossKvp.Value.ToDictionary(mapKvp => mapKvp.Key, mapKvp => mapKvp.Value.Value)
+                    );
+                }
             }
 
             // Add windowRect position and size to the dictionary
@@ -953,7 +980,6 @@ namespace Donuts
             var settingsDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
             var fields = typeof(DefaultPluginVars).GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-
 
             foreach (var field in fields)
             {
@@ -1002,6 +1028,36 @@ namespace Donuts
                         catch (Exception ex)
                         {
                             Debug.LogError($"Error setting value for field {field.Name}: {ex}");
+                        }
+                    }
+                }
+                else if (field.Name == "BossUseGlobalSpawnChance" && settingsDictionary.TryGetValue(field.Name, out var bossUseGlobalSpawnChanceObj))
+                {
+                    var dict = (Dictionary<string, Setting<bool>>)field.GetValue(null);
+                    var loadedDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(JsonConvert.SerializeObject(bossUseGlobalSpawnChanceObj));
+                    foreach (var kvp in loadedDict)
+                    {
+                        if (dict.TryGetValue(kvp.Key, out var setting))
+                        {
+                            setting.Value = kvp.Value;
+                        }
+                    }
+                }
+                else if (field.Name == "BossSpawnChances" && settingsDictionary.TryGetValue(field.Name, out var bossSpawnChancesObj))
+                {
+                    var dict = (Dictionary<string, Dictionary<string, Setting<int>>>)field.GetValue(null);
+                    var loadedDict = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int>>>(JsonConvert.SerializeObject(bossSpawnChancesObj));
+                    foreach (var bossKvp in loadedDict)
+                    {
+                        if (dict.TryGetValue(bossKvp.Key, out var mapDict))
+                        {
+                            foreach (var mapKvp in bossKvp.Value)
+                            {
+                                if (mapDict.TryGetValue(mapKvp.Key, out var setting))
+                                {
+                                    setting.Value = mapKvp.Value;
+                                }
+                            }
                         }
                     }
                 }
