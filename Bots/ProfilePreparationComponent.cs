@@ -443,13 +443,13 @@ namespace Donuts
                     foreach (var bossSpawn in bosses)
                     {
                         int spawnChance;
-                        string bossConfigName = ConfigMappings.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
+                        string bossConfigName = WildSpawnTypeDictionaries.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
                             ? configName
                             : bossSpawn.BossName;
 
-                        string mapConfigName = ConfigMappings.MapNameToConfigName.TryGetValue(CurrentMapName, out var mapName)
+                        string mapConfigName = WildSpawnTypeDictionaries.MapNameToConfigName.TryGetValue(DonutsBotPrep.maplocation, out var mapName)
                             ? mapName
-                            : CurrentMapName;
+                            : DonutsBotPrep.maplocation;
 
                         if (DefaultPluginVars.BossUseGlobalSpawnChance.TryGetValue(bossConfigName, out var useGlobalChance) && useGlobalChance.Value)
                         {
