@@ -443,15 +443,25 @@ namespace Donuts
                     foreach (var bossSpawn in bosses)
                     {
                         int spawnChance;
-                        var bossname = "";
-                        if (bossSpawn.BossName == "bosstagilla")
-                        {
-                            bossname = "Tagilla";
-                        }
+                        string bossConfigName = ConfigMappings.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
+                            ? configName
+                            : bossSpawn.BossName;
 
-                        if (DefaultPluginVars.BossUseGlobalSpawnChance[bossname].Value)
+                        string mapConfigName = ConfigMappings.MapNameToConfigName.TryGetValue(CurrentMapName, out var mapName)
+                            ? mapName
+                            : CurrentMapName;
+
+                        if (DefaultPluginVars.BossUseGlobalSpawnChance.TryGetValue(bossConfigName, out var useGlobalChance) && useGlobalChance.Value)
                         {
-                            spawnChance = DefaultPluginVars.BossSpawnChances[bossname]["Factory"].Value;
+                            if (DefaultPluginVars.BossSpawnChances.TryGetValue(bossConfigName, out var mapChances) &&
+                                mapChances.TryGetValue(mapConfigName, out var chanceForMap))
+                            {
+                                spawnChance = chanceForMap.Value;
+                            }
+                            else
+                            {
+                                spawnChance = bossSpawn.BossChance;
+                            }
                         }
                         else
                         {

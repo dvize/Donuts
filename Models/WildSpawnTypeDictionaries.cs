@@ -5,6 +5,39 @@ namespace Donuts.Models
 {
     internal class WildSpawnTypeDictionaries
     {
+        internal static readonly Dictionary<string, string> BossNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "bossboar", "Kaban" },
+            { "bossbully", "Reshala" },
+            { "bossgluhar", "Glukhar" },
+            { "bosskilla", "Killa" },
+            { "bosskojaniy", "Reshala" },
+            { "bosskolontay", "Kollontay" },
+            { "bosssanitar", "Sanitar" },
+            { "bosstagilla", "Tagilla" },
+            { "bosszryachiy", "Zryachiy" },
+            { "exusec", "Rogues" },
+            { "pmcbot", "Raiders" },
+            { "sectantpriest", "Cultists" },
+            { "bossknight", "Knight" }
+        };
+
+        internal static readonly Dictionary<string, string> MapNameToConfigName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "factory4_day", "Factory" },
+            { "factory4_night", "Factory Night" },
+            { "bigmap", "Customs" },
+            { "woods", "Woods" },
+            { "shoreline", "Shoreline" },
+            { "lighthouse", "Lighthouse" },
+            { "rezervbase", "Reserve" },
+            { "interchange", "Interchange" },
+            { "laboratory", "Laboratory" },
+            { "tarkovstreets", "Streets" },
+            { "sandbox", "Ground Zero" },
+            { "sandbox_high", "Ground Zero High" }
+        };
+
         internal static readonly Dictionary<WildSpawnType, EPlayerSide> WildSpawnTypeToEPlayerSide = new Dictionary<WildSpawnType, EPlayerSide>
         {
             { WildSpawnType.arenaFighterEvent, EPlayerSide.Savage },
