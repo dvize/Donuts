@@ -45,8 +45,8 @@ namespace Donuts
         internal static Setting<int> maxRespawnsSCAV;
 
         // Bosses
-        internal static Dictionary<string, Setting<bool>> BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
-        internal static Dictionary<string, Dictionary<string, Setting<int>>> BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
+        internal static Dictionary<string, Setting<bool>> BossUseGlobalSpawnChance;
+        internal static Dictionary<string, Dictionary<string, Setting<int>>> BossSpawnChances;
 
         // Global Minimum Spawn Distance From Player
         internal static Setting<bool> globalMinSpawnDistanceFromPlayerBool;
@@ -194,21 +194,18 @@ namespace Donuts
         internal static string pmcScenarioSelectionValue = null;
         internal static string scavScenarioSelectionValue = null;
 
-        //Default Constructor
-        static DefaultPluginVars()
-        {
             // Boss settings
-            string[] bossNames = {
+        internal static string[] bossNames = {
                 "Cultists", "Goons", "Glukhar", "Kaban", "Killa", "Kollontay",
                 "Raiders", "Reshala", "Rogues", "Sanitar", "Shturman", "Tagilla", "Zryachiy"
             };
 
-            string[] mapNames = {
+        internal static string[] mapNames = {
                 "Factory", "Customs", "Reserve", "Streets", "Woods", "Laboratory",
                 "Shoreline", "Ground Zero", "Interchange", "Lighthouse"
             };
 
-            Dictionary<string, Dictionary<string, int>> defaultSpawnChances = new Dictionary<string, Dictionary<string, int>>
+        internal static Dictionary<string, Dictionary<string, int>> defaultSpawnChances = new Dictionary<string, Dictionary<string, int>>
             {
                 {"Cultists", new Dictionary<string, int> {
                     {"Factory", 2},
@@ -368,27 +365,21 @@ namespace Donuts
                 }}
             };
 
+        //Default Constructor
+        static DefaultPluginVars()
+        {
+            // Boss Settings
+            BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
+            BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
+
             foreach (var boss in bossNames)
             {
-                BossUseGlobalSpawnChance[boss] = new Setting<bool>("Use Global Spawn Chance", $"Use Global Spawn Chance for {boss}", true, true);
+                BossUseGlobalSpawnChance[boss] = new Setting<bool>($"Use Global Spawn Chance for {boss}", $"Use Global Spawn Chance for {boss}", true, true);
                 BossSpawnChances[boss] = new Dictionary<string, Setting<int>>();
 
                 foreach (var map in mapNames)
                 {
-                    int defaultChance = 0;
-                    if (defaultSpawnChances.ContainsKey(boss) && defaultSpawnChances[boss].ContainsKey(map))
-                    {
-                        defaultChance = defaultSpawnChances[boss][map];
-                    }
-
-                    BossSpawnChances[boss][map] = new Setting<int>(
-                        $"{map}",
-                        $"{boss} spawn chance for {map}",
-                        defaultChance,
-                        defaultChance,
-                        0,
-                        100
-                    );
+                    BossSpawnChances[boss][map] = new Setting<int>($"{boss} spawn chance for {map}", $"{boss} spawn chance for {map}", 0, 0, 0, 100);
                 }
             }
 

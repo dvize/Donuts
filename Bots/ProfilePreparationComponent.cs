@@ -462,6 +462,7 @@ namespace Donuts
                         var randomValue = UnityEngine.Random.Range(0, 100);
                         if (randomValue >= spawnChance)
                         {
+                            Logger.LogInfo($"Boss spawn chance for {bossSpawn.BossName}: {spawnChance} failed (random value: {randomValue}) Not spawning this boss.");
                             return;
                         }
 
