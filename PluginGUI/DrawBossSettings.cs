@@ -61,24 +61,45 @@ namespace Donuts
         private static void DrawSelectedBossSettings()
         {
             string bossName = bossNames[selectedBossIndex];
-
-            // Use Global Spawn Chance toggle
-            DefaultPluginVars.BossUseGlobalSpawnChance[bossName].Value = Toggle(
-                DefaultPluginVars.BossUseGlobalSpawnChance[bossName].Name,
-                DefaultPluginVars.BossUseGlobalSpawnChance[bossName].ToolTipText,
-                DefaultPluginVars.BossUseGlobalSpawnChance[bossName].Value);
+            
+            // Safely access BossUseGlobalSpawnChance
+            if (DefaultPluginVars.BossUseGlobalSpawnChance.TryGetValue(bossName, out var useGlobalChanceSetting))
+            {
+                useGlobalChanceSetting.Value = Toggle(
+                    useGlobalChanceSetting.Name,
+                    useGlobalChanceSetting.ToolTipText,
+                    useGlobalChanceSetting.Value);
+            }
+            else
+            {
+                Debug.LogWarning($"BossUseGlobalSpawnChance setting not found for boss: {bossName}");
+            }
 
             GUILayout.Space(20);
             GUILayout.Label("Spawn Chances Per Map", PluginGUIHelper.labelStyle);
 
-            foreach (string mapName in mapNames)
+            if (DefaultPluginVars.BossSpawnChances.TryGetValue(bossName, out var bossSpawnChances))
             {
-                DefaultPluginVars.BossSpawnChances[bossName][mapName].Value = (int)Slider(
-                    DefaultPluginVars.BossSpawnChances[bossName][mapName].Name,
-                    DefaultPluginVars.BossSpawnChances[bossName][mapName].ToolTipText,
-                    DefaultPluginVars.BossSpawnChances[bossName][mapName].Value,
-                    DefaultPluginVars.BossSpawnChances[bossName][mapName].MinValue,
-                    DefaultPluginVars.BossSpawnChances[bossName][mapName].MaxValue);
+                foreach (string mapName in mapNames)
+                {
+                    if (bossSpawnChances.TryGetValue(mapName, out var spawnChanceSetting))
+                    {
+                        spawnChanceSetting.Value = (int)Slider(
+                            spawnChanceSetting.Name,
+                            spawnChanceSetting.ToolTipText,
+                            spawnChanceSetting.Value,
+                            spawnChanceSetting.MinValue,
+                            spawnChanceSetting.MaxValue);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Spawn chance setting not found for boss {bossName} on map {mapName}");
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"BossSpawnChances not found for boss: {bossName}");
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Donuts.Models;
 using Newtonsoft.Json;
@@ -372,23 +373,24 @@ namespace Donuts
             BossUseGlobalSpawnChance = new Dictionary<string, Setting<bool>>();
             BossSpawnChances = new Dictionary<string, Dictionary<string, Setting<int>>>();
 
-            foreach (var bossKvp in WildSpawnTypeDictionaries.BossNameToConfigName)
+            foreach (var bossName in WildSpawnTypeDictionaries.BossNameToConfigName.Values)
             {
-                string bossKey = bossKvp.Key;
-                string bossConfigName = bossKvp.Value;
-                BossSpawnChances[bossConfigName] = new Dictionary<string, Setting<int>>();
+                BossUseGlobalSpawnChance[bossName] = new Setting<bool>(
+                    "Use Global Spawn Chance",
+                    $"Use Global Spawn Chance for {bossName}",
+                    true,
+                    true);
 
-                foreach (var mapKvp in WildSpawnTypeDictionaries.MapNameToConfigName)
+                BossSpawnChances[bossName] = new Dictionary<string, Setting<int>>();
+
+                foreach (var mapName in WildSpawnTypeDictionaries.MapNameToConfigName.Values)
                 {
-                    string mapKey = mapKvp.Key;
-                    string mapConfigName = mapKvp.Value;
+                    int defaultChance = defaultSpawnChances.TryGetValue(bossName, out var bossChances) && 
+                                        bossChances.TryGetValue(mapName, out var chance) ? chance : 0;
 
-                    int defaultChance = defaultSpawnChances.TryGetValue(bossKey, out var bossChances) &&
-                                        bossChances.TryGetValue(mapKey, out var chance) ? chance : 0;
-
-                    BossSpawnChances[bossConfigName][mapConfigName] = new Setting<int>(
-                        $"{mapConfigName}",
-                        $"Spawn chance for {bossConfigName} on {mapConfigName}",
+                    BossSpawnChances[bossName][mapName] = new Setting<int>(
+                        $"{mapName}",
+                        $"Spawn chance for {bossName} on {mapName}",
                         defaultChance,
                         defaultChance,
                         0,
