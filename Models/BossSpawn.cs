@@ -34,7 +34,14 @@ internal class BossSpawn
         get; set;
     }
 
-    // Cooldown 
+    public string TriggerID
+    {
+        get; set;
+    }
+
+    public bool HasBeenTriggeredBySwitch { get; set; } = false;
+
+    // Cooldown
     public bool InCooldown
     {
         get; set;

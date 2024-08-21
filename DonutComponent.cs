@@ -151,6 +151,55 @@ namespace Donuts
 
             mainplayer.BeingHitAction += BeingHitBattleCoolDown;
             ResetPlayerList();
+            SetupSwitchSubscriptions();
+        }
+
+        private void SetupSwitchSubscriptions()
+        {
+            foreach (var bossSpawn in botWavesConfig.Maps[DonutsBotPrep.maplocation].BOSSES)
+            {
+                if (!string.IsNullOrEmpty(bossSpawn.TriggerID))
+                {
+                    WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
+                        .FirstOrDefault(obj => obj.Id == bossSpawn.TriggerID);
+
+                    if (switchObj != null)
+                    {
+                        switchObj.OnDoorStateChanged += (obj, prevState, nextState) => OnSwitchStateChanged(bossSpawn, obj, prevState, nextState);
+                    }
+                    else
+                    {
+                        Logger.LogWarning($"Switch with ID {bossSpawn.TriggerID} not found for boss {bossSpawn.BossName}");
+                    }
+                }
+            }
+        }
+
+        private void OnSwitchStateChanged(BossSpawn bossSpawn, WorldInteractiveObject obj, EDoorState prevState, EDoorState nextState)
+        {
+            if (nextState == EDoorState.Open) // Assuming 'Open' means the switch is activated
+            {
+                // Trigger the boss spawn
+                _ = SpawnBossForSwitch(bossSpawn);
+            }
+        }
+
+        private async UniTask SpawnBossForSwitch(BossSpawn bossSpawn)
+        {
+            try
+            {
+                Logger.LogDebug($"Switch-triggered spawn for boss: {bossSpawn.BossName}");
+
+                // Override spawn chance for switch-triggered spawns
+                bossSpawn.BossChance = 100;
+
+                // Use the existing SpawnBossAsync method
+                await SpawnBossAsync(bossSpawn, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error spawning boss {bossSpawn.BossName} from switch: {ex.Message}");
+            }
         }
 
         private void BeingHitBattleCoolDown(DamageInfo info, EBodyPart part, float arg3)
@@ -368,10 +417,6 @@ namespace Donuts
                     {
                         spawnChance = bossSpawn.BossChance;
                     }
-                }
-                else
-                {
-                    spawnChance = bossSpawn.BossChance;
                 }
 
                 // Check if the boss should spawn based on the new spawn chance
@@ -734,7 +779,25 @@ namespace Donuts
         private void OnDestroy()
         {
             DisposeHandlersAndResetStatics();
+            UnsubscribeFromSwitches();
             Logger.LogWarning("Donuts Component cleaned up and disabled.");
+        }
+
+        private void UnsubscribeFromSwitches()
+        {
+            foreach (var bossSpawn in botWaves.BOSSES)
+            {
+                if (!string.IsNullOrEmpty(bossSpawn.TriggerID))
+                {
+                    WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
+                        .FirstOrDefault(obj => obj.Id == bossSpawn.TriggerID);
+
+                    if (switchObj != null)
+                    {
+                        switchObj.OnDoorStateChanged -= (obj, prevState, nextState) => OnSwitchStateChanged(bossSpawn, obj, prevState, nextState);
+                    }
+                }
+            }
         }
 
         private void DisposeHandlersAndResetStatics()
