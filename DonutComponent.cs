@@ -157,6 +157,17 @@ namespace Donuts
 
         private void SetupSwitchSubscriptions()
         {
+
+            foreach (var bossSpawn in botWaves.BOSSES)
+            {
+                bossSpawn.TimesSpawned = 0;
+                bossSpawn.IsSpawnPending = false;
+                Logger.LogDebug($"Reset state for boss: {bossSpawn.BossName}");
+            }
+
+            // Clear existing subscriptions (in case this method is called multiple times)
+            UnsubscribeFromSwitches();
+
             var uniqueTriggerIds = botWaves.BOSSES
                 .Where(b => !string.IsNullOrEmpty(b.TriggerID))
                 .Select(b => b.TriggerID)
@@ -177,6 +188,7 @@ namespace Donuts
                 }
             }
         }
+
         private void OnSwitchStateChanged(WorldInteractiveObject obj, EDoorState prevState, EDoorState nextState)
         {
             if (nextState == EDoorState.Open) // Assuming 'Open' means the switch is activated
