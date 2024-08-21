@@ -9,6 +9,7 @@ using Comfort.Common;
 using Cysharp.Threading.Tasks;
 using Donuts.Models;
 using EFT;
+using EFT.Interactive;
 using HarmonyLib;
 using UnityEngine;
 using static Donuts.DefaultPluginVars;
@@ -156,49 +157,58 @@ namespace Donuts
 
         private void SetupSwitchSubscriptions()
         {
-            foreach (var bossSpawn in botWavesConfig.Maps[DonutsBotPrep.maplocation].BOSSES)
-            {
-                if (!string.IsNullOrEmpty(bossSpawn.TriggerID))
-                {
-                    WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
-                        .FirstOrDefault(obj => obj.Id == bossSpawn.TriggerID);
+            var uniqueTriggerIds = botWaves.BOSSES
+                .Where(b => !string.IsNullOrEmpty(b.TriggerID))
+                .Select(b => b.TriggerID)
+                .Distinct();
 
-                    if (switchObj != null)
-                    {
-                        switchObj.OnDoorStateChanged += (obj, prevState, nextState) => OnSwitchStateChanged(bossSpawn, obj, prevState, nextState);
-                    }
-                    else
-                    {
-                        Logger.LogWarning($"Switch with ID {bossSpawn.TriggerID} not found for boss {bossSpawn.BossName}");
-                    }
+            foreach (var triggerId in uniqueTriggerIds)
+            {
+                WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
+                    .FirstOrDefault(obj => obj.Id == triggerId);
+
+                if (switchObj != null)
+                {
+                    switchObj.OnDoorStateChanged += OnSwitchStateChanged;
+                }
+                else
+                {
+                    Logger.LogWarning($"Switch with ID {triggerId} not found");
                 }
             }
         }
-
-        private void OnSwitchStateChanged(BossSpawn bossSpawn, WorldInteractiveObject obj, EDoorState prevState, EDoorState nextState)
+        private void OnSwitchStateChanged(WorldInteractiveObject obj, EDoorState prevState, EDoorState nextState)
         {
             if (nextState == EDoorState.Open) // Assuming 'Open' means the switch is activated
             {
-                // Trigger the boss spawn
-                _ = SpawnBossForSwitch(bossSpawn);
+                // Trigger all boss spawns associated with this switch
+                Logger.LogDebug("switch opened, spawning boss for trigger...");
+                _ = SpawnBossesForSwitch(obj.Id);
             }
         }
 
-        private async UniTask SpawnBossForSwitch(BossSpawn bossSpawn)
+        private async UniTask SpawnBossesForSwitch(string triggerId)
         {
-            try
+            var triggeredBossSpawns = botWaves.BOSSES.Where(b => b.TriggerID == triggerId).ToList();
+
+            if (!triggeredBossSpawns.Any())
             {
-                Logger.LogDebug($"Switch-triggered spawn for boss: {bossSpawn.BossName}");
-
-                // Override spawn chance for switch-triggered spawns
-                bossSpawn.BossChance = 100;
-
-                // Use the existing SpawnBossAsync method
-                await SpawnBossAsync(bossSpawn, cts.Token);
+                Logger.LogWarning($"No boss spawns found for trigger ID: {triggerId}");
+                return;
             }
-            catch (Exception ex)
+
+            Logger.LogDebug($"Switch-triggered spawn attempt for {triggeredBossSpawns.Count} boss(es) with trigger ID: {triggerId}");
+
+            foreach (var bossSpawn in triggeredBossSpawns)
             {
-                Logger.LogError($"Error spawning boss {bossSpawn.BossName} from switch: {ex.Message}");
+                try
+                {
+                    await SpawnBossAsync(bossSpawn, cts.Token, isSwitchTriggered: true);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Error in switch-triggered spawn attempt for boss {bossSpawn.BossName}: {ex.Message}");
+                }
             }
         }
 
@@ -380,24 +390,31 @@ namespace Donuts
         }
 
         // Boss Waves
-        private async UniTask SpawnBossAsync(BossSpawn bossSpawn, CancellationToken cancellationToken)
+        private async UniTask SpawnBossAsync(BossSpawn bossSpawn, CancellationToken cancellationToken, bool isSwitchTriggered = false)
         {
             string methodName = nameof(SpawnBossAsync);
             try
             {
-                // Update cooldown for the boss
-                bossSpawn.UpdateCooldown(Time.deltaTime, DefaultPluginVars.bossWaveCooldownTimer.Value);
-
-                // Check if the boss should spawn and not already pending
-                if (!bossSpawn.ShouldSpawn())
+                // If the boss has a TriggerID and this isn't a switch-triggered spawn, skip it
+                if (!string.IsNullOrEmpty(bossSpawn.TriggerID) && !isSwitchTriggered)
                 {
-                    //UnityEngine.Debug.Log($"{methodName}: Skipping spawn for {bossSpawn.BossName}: in cooldown or spawn already pending.");
+                    UnityEngine.Debug.Log($"{methodName}: Boss {bossSpawn.BossName} has a TriggerID but wasn't triggered by a switch. Skipping spawn.");
                     return;
+                }
+
+                // For non-switch-triggered spawns, check cooldown and ShouldSpawn
+                if (!isSwitchTriggered)
+                {
+                    bossSpawn.UpdateCooldown(Time.deltaTime, DefaultPluginVars.bossWaveCooldownTimer.Value);
+                    if (!bossSpawn.ShouldSpawn())
+                    {
+                        return;
+                    }
                 }
 
                 UnityEngine.Debug.Log($"{methodName}: Checking spawn chance for boss: {bossSpawn.BossName}");
 
-                int spawnChance;
+                int spawnChance = bossSpawn.BossChance;
                 string bossConfigName = WildSpawnTypeDictionaries.BossNameToConfigName.TryGetValue(bossSpawn.BossName, out var configName)
                     ? configName
                     : bossSpawn.BossName;
@@ -472,10 +489,10 @@ namespace Donuts
                 bossSpawn.IsSpawnPending = true;
 
                 // Delay before processing the spawn check unless IgnoreTimerFirstSpawn is true and it's the first spawn
-                if (!(bossSpawn.IgnoreTimerFirstSpawn && bossSpawn.TimesSpawned == 0))
+                if (!isSwitchTriggered && bossSpawn.TimesSpawned >= bossSpawn.MaxTriggersBeforeCooldown)
                 {
-                    UnityEngine.Debug.Log($"{methodName}: Waiting for delay: {bossSpawn.TimeDelay} seconds before spawning {bossSpawn.BossName}.");
-                    await UniTask.Delay(TimeSpan.FromSeconds(bossSpawn.TimeDelay), cancellationToken: cancellationToken);
+                    UnityEngine.Debug.Log($"{methodName}: {bossSpawn.BossName} reached max triggers, entering cooldown.");
+                    bossSpawn.TriggerCooldown();
                 }
 
                 // Get potential spawn coordinates within the specified zones
@@ -785,17 +802,19 @@ namespace Donuts
 
         private void UnsubscribeFromSwitches()
         {
-            foreach (var bossSpawn in botWaves.BOSSES)
-            {
-                if (!string.IsNullOrEmpty(bossSpawn.TriggerID))
-                {
-                    WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
-                        .FirstOrDefault(obj => obj.Id == bossSpawn.TriggerID);
+            var uniqueTriggerIds = botWaves.BOSSES
+                .Where(b => !string.IsNullOrEmpty(b.TriggerID))
+                .Select(b => b.TriggerID)
+                .Distinct();
 
-                    if (switchObj != null)
-                    {
-                        switchObj.OnDoorStateChanged -= (obj, prevState, nextState) => OnSwitchStateChanged(bossSpawn, obj, prevState, nextState);
-                    }
+            foreach (var triggerId in uniqueTriggerIds)
+            {
+                WorldInteractiveObject switchObj = FindObjectsOfType<WorldInteractiveObject>()
+                    .FirstOrDefault(obj => obj.Id == triggerId);
+
+                if (switchObj != null)
+                {
+                    switchObj.OnDoorStateChanged -= OnSwitchStateChanged;
                 }
             }
         }
