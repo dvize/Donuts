@@ -105,14 +105,13 @@ namespace Donuts
                 mainplayer.BeingHitAction += Mainplayer_BeingHitAction;
             }
 
+            DetermineMapLocationAndName();
+
             // Get selected preset and setup bot limits now
             selectionName = await DonutsPlugin.RunWeightedScenarioSelectionSync();
             await DonutInitialization.SetupBotLimitSync(selectionName);
 
             Logger.LogWarning($"Selected selectionName: {selectionName}");
-
-            DetermineMapLocationAndName();
-
             Logger.LogWarning($"Determined mapName: {mapName}");
 
             var startingBotConfig = GetStartingBotConfig(selectionName);

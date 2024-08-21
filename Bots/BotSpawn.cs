@@ -200,10 +200,5 @@ namespace Donuts
 
             DonutComponent.Logger.LogInfo("Exiting SpawnBots method.");
         }
-
-        private static void LogCancellation(CancellationToken cancellationToken)
-        {
-            DonutComponent.Logger.LogInfo(() => Debug.Log("LogCancellation: Cancellation token was triggered."));
-        }
     }
 }
