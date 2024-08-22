@@ -22,14 +22,9 @@ namespace Donuts
             get; private set;
         }
 
-        public BotSpawnHelper()
-        {
-            Logger ??= BepInEx.Logging.Logger.CreateLogSource(nameof(BotSpawnHelper));
-        }
-
         internal static AICorePoint GetClosestCorePoint(Vector3 position)
         {
-            Debug.Log($"GetClosestCorePoint: Finding closest core point for position {position}.");
+            DonutComponent.Logger.LogDebug($"GetClosestCorePoint: Finding closest core point for position {position}.");
             var botGame = Singleton<IBotGame>.Instance;
             var coversData = botGame.BotsController.CoversData;
             var groupPoint = coversData.GetClosest(position);
@@ -39,11 +34,11 @@ namespace Donuts
         internal static async UniTask ActivateStartingBots(BotCreationDataClass botCacheElement, WildSpawnType wildSpawnType, EPlayerSide side, IBotCreator ibotCreator,
             BotSpawner botSpawnerClass, Vector3 spawnPosition, BotDifficulty botDifficulty, int maxCount, string zone, CancellationToken cancellationToken)
         {
-            Debug.Log("ActivateStartingBots: Method entered.");
+            DonutComponent.Logger.LogDebug("ActivateStartingBots: Method entered.");
 
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("ActivateStartingBots: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("ActivateStartingBots: Cancellation requested, exiting method.");
                 return;
             }
 
@@ -55,14 +50,14 @@ namespace Donuts
             }
             else
             {
-                Debug.Log($"ActivateStartingBots: botCacheElement is valid with {botCacheElement.Profiles.Count} profiles.");
+                DonutComponent.Logger.LogDebug($"ActivateStartingBots: botCacheElement is valid with {botCacheElement.Profiles.Count} profiles.");
             }
 
 
             if (WildSpawnTypeDictionaries.IsBoss(wildSpawnType) || WildSpawnTypeDictionaries.IsFollower(wildSpawnType))
             {
                 isFollowerOrBoss = true;
-                Debug.Log("ActivateStartingBots: Bot is a boss or follower.");
+                DonutComponent.Logger.LogDebug("ActivateStartingBots: Bot is a boss or follower.");
             }
 
 
@@ -92,17 +87,17 @@ namespace Donuts
                     return;
                 }
 
-                Debug.Log($"ActivateStartingBots: Adding position {spawnPosition} with core point ID {closestCorePoint.Id}.");
+                DonutComponent.Logger.LogDebug($"ActivateStartingBots: Adding position {spawnPosition} with core point ID {closestCorePoint.Id}.");
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
-                Debug.Log($"ActivateStartingBots: Spawning bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                DonutComponent.Logger.LogDebug($"ActivateStartingBots: Spawning bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                           $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone: {zone}");
 
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
             else if (isFollowerOrBoss)
             {
-                Debug.Log("ActivateStartingBots: Bot is a follower or boss, proceeding with activation.");
+                DonutComponent.Logger.LogDebug("ActivateStartingBots: Bot is a follower or boss, proceeding with activation.");
                 var closestBotZone = botSpawnerClass?.GetClosestZone(spawnPosition, out _);
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
@@ -111,7 +106,7 @@ namespace Donuts
                 Debug.LogError($"ActivateStartingBots: Attempted to spawn a group bot but the botCacheElement was null.");
             }
 
-            Debug.Log("ActivateStartingBots: Method exiting.");
+            DonutComponent.Logger.LogDebug("ActivateStartingBots: Method exiting.");
         }
 
         internal static WildSpawnType DetermineWildSpawnType(string spawnType)
@@ -121,14 +116,14 @@ namespace Donuts
                 forceAllBotType.Value == "SCAV" ? "assault" :
                 spawnType);
 
-            Debug.Log($"DetermineWildSpawnType: Initial Spawn Type: {determinedSpawnType}");
+            DonutComponent.Logger.LogDebug($"DetermineWildSpawnType: Initial Spawn Type: {determinedSpawnType}");
 
             if (determinedSpawnType == GetWildSpawnType("pmc"))
             {
                 determinedSpawnType = DeterminePMCFactionBasedOnRatio();
             }
 
-            Debug.Log($"DetermineWildSpawnType: Final Spawn Type: {determinedSpawnType}");
+            DonutComponent.Logger.LogDebug($"DetermineWildSpawnType: Final Spawn Type: {determinedSpawnType}");
 
             return determinedSpawnType;
         }
@@ -138,10 +133,10 @@ namespace Donuts
             int factionRatio = pmcFactionRatio.Value;
             int randomValue = UnityEngine.Random.Range(0, 100);
 
-            Debug.Log($"DeterminePMCFactionBasedOnRatio: Random Value: {randomValue}, Faction Ratio: {factionRatio}");
+            DonutComponent.Logger.LogDebug($"DeterminePMCFactionBasedOnRatio: Random Value: {randomValue}, Faction Ratio: {factionRatio}");
 
             WildSpawnType chosenFaction = randomValue < factionRatio ? WildSpawnType.pmcUSEC : WildSpawnType.pmcBEAR;
-            Debug.Log($"DeterminePMCFactionBasedOnRatio: Chosen PMC Faction: {chosenFaction.ToString()}");
+            DonutComponent.Logger.LogDebug($"DeterminePMCFactionBasedOnRatio: Chosen PMC Faction: {chosenFaction.ToString()}");
 
             return chosenFaction;
         }
@@ -150,21 +145,21 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("AdjustMaxCountForHardCap: Cancellation requested, returning maxCount.");
+                DonutComponent.Logger.LogDebug("AdjustMaxCountForHardCap: Cancellation requested, returning maxCount.");
                 return maxCount;
             }
 
             int activePMCs = await BotCountManager.GetAlivePlayers("pmc", cancellationToken);
             int activeSCAVs = await BotCountManager.GetAlivePlayers("scav", cancellationToken);
 
-            Debug.Log($"AdjustMaxCountForHardCap: Active PMCs: {activePMCs}, Active SCAVs: {activeSCAVs}");
+            DonutComponent.Logger.LogDebug($"AdjustMaxCountForHardCap: Active PMCs: {activePMCs}, Active SCAVs: {activeSCAVs}");
 
             if (wildSpawnType == "pmc")
             {
                 if (activePMCs + maxCount > PMCBotLimit)
                 {
                     maxCount = PMCBotLimit - activePMCs;
-                    Debug.Log($"AdjustMaxCountForHardCap: Adjusted maxCount for PMC: {maxCount}");
+                    DonutComponent.Logger.LogDebug($"AdjustMaxCountForHardCap: Adjusted maxCount for PMC: {maxCount}");
                 }
             }
             else if (wildSpawnType == "scav")
@@ -172,7 +167,7 @@ namespace Donuts
                 if (activeSCAVs + maxCount > SCAVBotLimit)
                 {
                     maxCount = SCAVBotLimit - activeSCAVs;
-                    Debug.Log($"AdjustMaxCountForHardCap: Adjusted maxCount for SCAV: {maxCount}");
+                    DonutComponent.Logger.LogDebug($"AdjustMaxCountForHardCap: Adjusted maxCount for SCAV: {maxCount}");
                 }
             }
 
@@ -181,13 +176,13 @@ namespace Donuts
 
         internal static int AdjustMaxCountForRespawnLimits(string wildSpawnType, int maxCount)
         {
-            Debug.Log($"AdjustMaxCountForRespawnLimits: Checking respawn limits for {wildSpawnType} with maxCount {maxCount}");
+            DonutComponent.Logger.LogDebug($"AdjustMaxCountForRespawnLimits: Checking respawn limits for {wildSpawnType} with maxCount {maxCount}");
 
             if (wildSpawnType == "pmc" && !maxRespawnReachedPMC)
             {
                 if (currentMaxPMC + maxCount >= DefaultPluginVars.maxRespawnsPMC.Value)
                 {
-                    Debug.Log($"AdjustMaxCountForRespawnLimits: Max PMC respawn limit reached: {DefaultPluginVars.maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC + maxCount}");
+                    DonutComponent.Logger.LogDebug($"AdjustMaxCountForRespawnLimits: Max PMC respawn limit reached: {DefaultPluginVars.maxRespawnsPMC.Value}. Current PMCs respawns this raid: {currentMaxPMC + maxCount}");
 
                     if (currentMaxPMC < DefaultPluginVars.maxRespawnsPMC.Value)
                     {
@@ -208,7 +203,7 @@ namespace Donuts
             {
                 if (currentMaxSCAV + maxCount >= maxRespawnsSCAV.Value)
                 {
-                    Debug.Log($"AdjustMaxCountForRespawnLimits: Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV + maxCount}");
+                    DonutComponent.Logger.LogDebug($"AdjustMaxCountForRespawnLimits: Max SCAV respawn limit reached: {maxRespawnsSCAV.Value}. Current SCAVs respawns this raid: {currentMaxSCAV + maxCount}");
 
                     if (currentMaxSCAV < maxRespawnsSCAV.Value)
                     {
@@ -230,7 +225,7 @@ namespace Donuts
 
         public static int DetermineMaxBotCount(string spawnType, int defaultMinCount, int defaultMaxCount)
         {
-            Debug.Log($"DetermineMaxBotCount: Determining max bot count for spawnType {spawnType} with defaultMinCount {defaultMinCount} and defaultMaxCount {defaultMaxCount}");
+            DonutComponent.Logger.LogDebug($"DetermineMaxBotCount: Determining max bot count for spawnType {spawnType} with defaultMinCount {defaultMinCount} and defaultMaxCount {defaultMaxCount}");
 
             string groupChance = spawnType == "scav" ? scavGroupChance.Value : pmcGroupChance.Value;
             return getActualBotCount(groupChance, defaultMinCount, defaultMaxCount);
@@ -240,11 +235,11 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("SetupSpawn: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("SetupSpawn: Cancellation requested, exiting method.");
                 return;
             }
 
-            Debug.Log($"SetupSpawn: Entering SetupSpawn method.");
+            DonutComponent.Logger.LogDebug($"SetupSpawn: Entering SetupSpawn method.");
 
             if (botWave == null)
             {
@@ -258,7 +253,7 @@ namespace Donuts
                 return;
             }
 
-            Debug.Log($"SetupSpawn: Attempting to spawn {(isGroup ? "group" : "solo")} with bot count {maxCount} in spawn zone {zone}");
+            DonutComponent.Logger.LogDebug($"SetupSpawn: Attempting to spawn {(isGroup ? "group" : "solo")} with bot count {maxCount} in spawn zone {zone}");
 
             try
             {
@@ -276,14 +271,14 @@ namespace Donuts
                 Debug.LogError($"SetupSpawn: Exception in SetupSpawn: {ex.Message}\n{ex.StackTrace}");
             }
 
-            Debug.Log($"SetupSpawn: Exiting SetupSpawn method.");
+            DonutComponent.Logger.LogDebug($"SetupSpawn: Exiting SetupSpawn method.");
         }
 
         private static async UniTask SpawnGroupBots(BotWave botWave, int count, WildSpawnType wildSpawnType, Vector3 coordinate, string zone, List<Vector3> coordinates, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log($"SpawnGroupBots: Cancellation requested, aborting.");
+                DonutComponent.Logger.LogDebug($"SpawnGroupBots: Cancellation requested, aborting.");
                 return;
             }
 
@@ -305,10 +300,10 @@ namespace Donuts
                 return;
             }
 
-            Debug.Log($"SpawnGroupBots: Spawning a group of {count} bots.");
+            DonutComponent.Logger.LogDebug($"SpawnGroupBots: Spawning a group of {count} bots.");
 
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-            Debug.Log($"SpawnGroupBots: Determined side: {side}");
+            DonutComponent.Logger.LogDebug($"SpawnGroupBots: Determined side: {side}");
 
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             if (cancellationTokenSource == null)
@@ -318,7 +313,7 @@ namespace Donuts
             }
 
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
-            Debug.Log($"SpawnGroupBots: Determined bot difficulty: {botDifficulty}");
+            DonutComponent.Logger.LogDebug($"SpawnGroupBots: Determined bot difficulty: {botDifficulty}");
 
             var cachedBotGroup = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, count);
             if (cachedBotGroup == null)
@@ -328,7 +323,7 @@ namespace Donuts
                 await DonutsBotPrep.CreateBot(botInfo, true, count, cancellationToken);
                 DonutsBotPrep.BotInfos.Add(botInfo);
                 cachedBotGroup = botInfo.Bots;
-                Debug.Log($"SpawnGroupBots: Created new bot group.");
+                DonutComponent.Logger.LogDebug($"SpawnGroupBots: Created new bot group.");
             }
             else
             {
@@ -336,18 +331,18 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Debug.Log($"SpawnGroupBots: Minimum spawn distance from player: {minSpawnDistFromPlayer}");
+            DonutComponent.Logger.LogDebug($"SpawnGroupBots: Minimum spawn distance from player: {minSpawnDistFromPlayer}");
 
             bool spawned = false;
 
             foreach (var coord in coordinates)
             {
-                Debug.Log($"SpawnGroupBots: Checking coordinate {coord} for valid spawn position.");
+                DonutComponent.Logger.LogDebug($"SpawnGroupBots: Checking coordinate {coord} for valid spawn position.");
 
                 Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coord, maxSpawnTriesPerBot.Value, cancellationToken);
                 if (spawnPosition.HasValue)
                 {
-                    Debug.Log($"SpawnGroupBots: Valid spawn position found at {spawnPosition.Value}");
+                    DonutComponent.Logger.LogDebug($"SpawnGroupBots: Valid spawn position found at {spawnPosition.Value}");
 
                     if (cachedBotGroup == null)
                     {
@@ -355,24 +350,24 @@ namespace Donuts
                         break;
                     }
 
-                    Debug.Log($"SpawnGroupBots: Spawning bot group at position {spawnPosition.Value}");
+                    DonutComponent.Logger.LogDebug($"SpawnGroupBots: Spawning bot group at position {spawnPosition.Value}");
                     await SpawnBotForGroup(cachedBotGroup, wildSpawnType, side, botCreator, botSpawnerClass, spawnPosition.Value, cancellationTokenSource, botDifficulty, count, botWave, zone, cancellationToken);
                     spawned = true;
                     break;
                 }
                 else
                 {
-                    Debug.Log($"SpawnGroupBots: No valid spawn position at coordinate {coord}, checking next.");
+                    DonutComponent.Logger.LogDebug($"SpawnGroupBots: No valid spawn position at coordinate {coord}, checking next.");
                 }
             }
 
             if (!spawned)
             {
-                Debug.Log($"SpawnGroupBots: No valid spawn position found after retries - skipping this spawn");
+                DonutComponent.Logger.LogDebug($"SpawnGroupBots: No valid spawn position found after retries - skipping this spawn");
             }
             else
             {
-                Debug.Log($"SpawnGroupBots: Successfully spawned bot group.");
+                DonutComponent.Logger.LogDebug($"SpawnGroupBots: Successfully spawned bot group.");
             }
         }
 
@@ -381,7 +376,7 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log($"SpawnSingleBot: Cancellation requested, aborting.");
+                DonutComponent.Logger.LogDebug($"SpawnSingleBot: Cancellation requested, aborting.");
                 return;
             }
 
@@ -403,10 +398,10 @@ namespace Donuts
                 return;
             }
 
-            Debug.Log($"SpawnSingleBot: Attempting to spawn a single bot.");
+            DonutComponent.Logger.LogDebug($"SpawnSingleBot: Attempting to spawn a single bot.");
 
             EPlayerSide side = GetSideForWildSpawnType(wildSpawnType);
-            Debug.Log($"SpawnSingleBot: Determined side: {side}");
+            DonutComponent.Logger.LogDebug($"SpawnSingleBot: Determined side: {side}");
 
             var cancellationTokenSource = AccessTools.Field(typeof(BotSpawner), "_cancellationTokenSource").GetValue(botSpawnerClass) as CancellationTokenSource;
             if (cancellationTokenSource == null)
@@ -416,7 +411,7 @@ namespace Donuts
             }
 
             BotDifficulty botDifficulty = GetBotDifficulty(wildSpawnType);
-            Debug.Log($"SpawnSingleBot: Determined bot difficulty: {botDifficulty}");
+            DonutComponent.Logger.LogDebug($"SpawnSingleBot: Determined bot difficulty: {botDifficulty}");
 
             var BotCacheDataList = DonutsBotPrep.GetWildSpawnData(wildSpawnType, botDifficulty);
             if (BotCacheDataList == null)
@@ -425,13 +420,13 @@ namespace Donuts
                 return;
             }
 
-            Debug.Log($"SpawnSingleBot: Retrieved BotCacheDataList with {BotCacheDataList.Count()} entries.");
+            DonutComponent.Logger.LogDebug($"SpawnSingleBot: Retrieved BotCacheDataList with {BotCacheDataList.Count()} entries.");
 
             try
             {
-                Debug.Log($"SpawnSingleBot: Attempting to spawn bot from cache or create new.");
+                DonutComponent.Logger.LogDebug($"SpawnSingleBot: Attempting to spawn bot from cache or create new.");
                 await SpawnBotFromCacheOrCreateNew(BotCacheDataList, wildSpawnType, side, botCreator, botSpawnerClass, coordinate, cancellationTokenSource, botDifficulty, botWave, zone, coordinates, cancellationToken);
-                Debug.Log($"SpawnSingleBot: Spawned bot successfully.");
+                DonutComponent.Logger.LogDebug($"SpawnSingleBot: Spawned bot successfully.");
             }
             catch (Exception ex)
             {
@@ -445,11 +440,11 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("SpawnBotFromCacheOrCreateNew: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("SpawnBotFromCacheOrCreateNew: Cancellation requested, exiting method.");
                 return;
             }
 
-            Debug.Log($"SpawnBotFromCacheOrCreateNew: Finding Cached Bot");
+            DonutComponent.Logger.LogDebug($"SpawnBotFromCacheOrCreateNew: Finding Cached Bot");
 
             var botCacheElement = DonutsBotPrep.FindCachedBots(wildSpawnType, botDifficulty, 1);
 
@@ -459,7 +454,7 @@ namespace Donuts
             }
             else
             {
-                Debug.Log($"SpawnBotFromCacheOrCreateNew: Bot Cache is empty for solo bot. Creating a new bot.");
+                DonutComponent.Logger.LogDebug($"SpawnBotFromCacheOrCreateNew: Bot Cache is empty for solo bot. Creating a new bot.");
                 await CreateNewBot(wildSpawnType, side, ibotCreator, botSpawnerClass, coordinate, cancellationTokenSource, zone, coordinates, cancellationToken);
             }
         }
@@ -468,25 +463,25 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("ActivateBotFromCache: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("ActivateBotFromCache: Cancellation requested, exiting method.");
                 return;
             }
 
-            Debug.Log($"ActivateBotFromCache: Attempting to activate bot from cache for coordinate {coordinate}.");
+            DonutComponent.Logger.LogDebug($"ActivateBotFromCache: Attempting to activate bot from cache for coordinate {coordinate}.");
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
             Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
 
             if (!spawnPosition.HasValue)
             {
-                Debug.Log("ActivateBotFromCache: Initial spawn position not found, checking alternative coordinates.");
+                DonutComponent.Logger.LogDebug("ActivateBotFromCache: Initial spawn position not found, checking alternative coordinates.");
 
                 foreach (var coord in coordinates)
                 {
                     spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coord, maxSpawnTriesPerBot.Value, cancellationToken);
                     if (spawnPosition.HasValue)
                     {
-                        Debug.Log($"ActivateBotFromCache: Found spawn position at alternative coordinate {coord}.");
+                        DonutComponent.Logger.LogDebug($"ActivateBotFromCache: Found spawn position at alternative coordinate {coord}.");
                         break;
                     }
                 }
@@ -498,14 +493,14 @@ namespace Donuts
                 var closestCorePoint = GetClosestCorePoint(spawnPosition.Value);
                 botCacheElement.AddPosition(spawnPosition.Value, closestCorePoint.Id);
 
-                Debug.Log($"ActivateBotFromCache: Spawning bot at distance to player of: {Vector3.Distance(spawnPosition.Value, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                DonutComponent.Logger.LogDebug($"ActivateBotFromCache: Spawning bot at distance to player of: {Vector3.Distance(spawnPosition.Value, DonutComponent.gameWorld.MainPlayer.Position)} " +
                                   $"of side: {botCacheElement.Side} in spawn zone {zone}");
 
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
             }
             else
             {
-                Debug.Log($"ActivateBotFromCache: No valid spawn position found - skipping this spawn");
+                DonutComponent.Logger.LogDebug($"ActivateBotFromCache: No valid spawn position found - skipping this spawn");
                 return;
             }
         }
@@ -515,11 +510,11 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("SpawnBotForGroup: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("SpawnBotForGroup: Cancellation requested, exiting method.");
                 return;
             }
 
-            Debug.Log($"SpawnBotForGroup: Attempting to spawn bot group for spawn position {spawnPosition}.");
+            DonutComponent.Logger.LogDebug($"SpawnBotForGroup: Attempting to spawn bot group for spawn position {spawnPosition}.");
 
             if (botCacheElement != null)
             {
@@ -527,7 +522,7 @@ namespace Donuts
                 var closestCorePoint = GetClosestCorePoint(spawnPosition);
                 botCacheElement.AddPosition(spawnPosition, closestCorePoint.Id);
 
-                Debug.Log($"SpawnBotForGroup: Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                DonutComponent.Logger.LogDebug($"SpawnBotForGroup: Spawning grouped bots at distance to player of: {Vector3.Distance(spawnPosition, DonutComponent.gameWorld.MainPlayer.Position)} " +
                                   $"of side: {botCacheElement.Side} and difficulty: {botDifficulty} in spawn zone {zone}");
 
                 await ActivateBot(closestBotZone, botCacheElement, cancellationTokenSource, cancellationToken);
@@ -542,11 +537,11 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log($"CreateNewBot: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug($"CreateNewBot: Cancellation requested, exiting method.");
                 return;
             }
 
-            Debug.Log($"CreateNewBot: Starting bot creation process.");
+            DonutComponent.Logger.LogDebug($"CreateNewBot: Starting bot creation process.");
 
             BotDifficulty botdifficulty = GetBotDifficulty(wildSpawnType);
 
@@ -560,20 +555,20 @@ namespace Donuts
             }
 
             var minSpawnDistFromPlayer = SpawnChecks.GetMinDistanceFromPlayer();
-            Debug.Log($"CreateNewBot: Min spawn distance from player: {minSpawnDistFromPlayer}");
+            DonutComponent.Logger.LogDebug($"CreateNewBot: Min spawn distance from player: {minSpawnDistFromPlayer}");
 
             Vector3? spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coordinate, maxSpawnTriesPerBot.Value, cancellationToken);
 
             if (!spawnPosition.HasValue)
             {
-                Debug.Log($"CreateNewBot: Initial spawn position not found, checking alternative coordinates.");
+                DonutComponent.Logger.LogDebug($"CreateNewBot: Initial spawn position not found, checking alternative coordinates.");
 
                 foreach (var coord in coordinates)
                 {
                     spawnPosition = await SpawnChecks.GetValidSpawnPosition(minSpawnDistFromPlayer, 1, 1, coord, maxSpawnTriesPerBot.Value, cancellationToken);
                     if (spawnPosition.HasValue)
                     {
-                        Debug.Log($"CreateNewBot: Found spawn position at alternative coordinate.");
+                        DonutComponent.Logger.LogDebug($"CreateNewBot: Found spawn position at alternative coordinate.");
                         break;
                     }
                 }
@@ -586,14 +581,14 @@ namespace Donuts
 
                 var closestBotZone = botSpawnerClass.GetClosestZone(spawnPosition.Value, out float dist);
 
-                Debug.Log($"CreateNewBot: Spawning bot at distance to player of: {Vector3.Distance(spawnPosition.Value, DonutComponent.gameWorld.MainPlayer.Position)} " +
+                DonutComponent.Logger.LogDebug($"CreateNewBot: Spawning bot at distance to player of: {Vector3.Distance(spawnPosition.Value, DonutComponent.gameWorld.MainPlayer.Position)} " +
                                   $"of side: {bot.Side} and difficulty: {botdifficulty} in spawn zone {zone}");
 
                 await ActivateBot(closestBotZone, bot, cancellationTokenSource, cancellationToken);
             }
             else
             {
-                Debug.Log($"CreateNewBot: No valid spawn position found - skipping this spawn");
+                DonutComponent.Logger.LogDebug($"CreateNewBot: No valid spawn position found - skipping this spawn");
             }
         }
 
@@ -602,7 +597,7 @@ namespace Donuts
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                Debug.Log("ActivateBot: Cancellation requested, exiting method.");
+                DonutComponent.Logger.LogDebug("ActivateBot: Cancellation requested, exiting method.");
                 return;
             }
 
@@ -613,8 +608,8 @@ namespace Donuts
                 return;
             }
 
-            Debug.Log($"ActivateBot: BotCreationDataClass data initialized: {botData != null}");
-            Debug.Log($"ActivateBot: ProfileData initialized: {botData._profileData != null}");
+            DonutComponent.Logger.LogDebug($"ActivateBot: BotCreationDataClass data initialized: {botData != null}");
+            DonutComponent.Logger.LogDebug($"ActivateBot: ProfileData initialized: {botData._profileData != null}");
 
             // Ensure profiles list is not null and has at least one profile
             if (botData.Profiles == null || botData.Profiles.Count == 0)
@@ -689,7 +684,7 @@ namespace Donuts
                 {
                     //botInfo.Bots.Profiles.Clear();
                     botInfo.Bots = null;
-                    Debug.Log("ClearBotCacheAfterActivation: Bot cache cleared.");
+                    DonutComponent.Logger.LogDebug("ClearBotCacheAfterActivation: Bot cache cleared.");
                     break;
                 }
             }
@@ -709,7 +704,7 @@ namespace Donuts
 
                     if (distanceSquared <= activationDistanceSquared)
                     {
-                        Debug.Log($"IsWithinBotActivationDistance: Player within activation distance at {position}.");
+                        DonutComponent.Logger.LogDebug($"IsWithinBotActivationDistance: Player within activation distance at {position}.");
                         return true;
                     }
                 }
@@ -725,7 +720,7 @@ namespace Donuts
         internal static WildSpawnType GetWildSpawnType(string spawnType)
         {
             spawnType = spawnType.ToLower();
-            Debug.Log($"GetWildSpawnType: Determining WildSpawnType for spawnType {spawnType}");
+            DonutComponent.Logger.LogDebug($"GetWildSpawnType: Determining WildSpawnType for spawnType {spawnType}");
 
             if (spawnType == "pmc")
             {
@@ -742,13 +737,13 @@ namespace Donuts
 
         internal static EPlayerSide GetSideForWildSpawnType(WildSpawnType spawnType)
         {
-            Debug.Log($"GetSideForWildSpawnType: Getting side for WildSpawnType {spawnType}");
+            DonutComponent.Logger.LogDebug($"GetSideForWildSpawnType: Getting side for WildSpawnType {spawnType}");
             return WildSpawnTypeDictionaries.WildSpawnTypeToEPlayerSide.TryGetValue(spawnType, out var side) ? side : EPlayerSide.Savage;
         }
 
         internal static int getActualBotCount(string pluginGroupChance, int minGroupSize, int maxGroupSize)
         {
-            Debug.Log($"getActualBotCount: Calculating actual bot count with group chance {pluginGroupChance}");
+            DonutComponent.Logger.LogDebug($"getActualBotCount: Calculating actual bot count with group chance {pluginGroupChance}");
 
             InitializeGroupChanceWeights();
 
@@ -768,7 +763,7 @@ namespace Donuts
 
         internal static int getGroupChance(string pmcGroupChance, int minGroupSize, int maxGroupSize)
         {
-            Debug.Log($"getGroupChance: Calculating group chance for {pmcGroupChance}");
+            DonutComponent.Logger.LogDebug($"getGroupChance: Calculating group chance for {pmcGroupChance}");
 
             double[] probabilities = GetProbabilityArray(pmcGroupChance) ?? GetDefaultProbabilityArray(pmcGroupChance);
             System.Random random = new System.Random();
@@ -780,7 +775,7 @@ namespace Donuts
             if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
                 double totalWeight = relativeWeights.Sum();
-                Debug.Log($"GetProbabilityArray: Calculating probabilities for {pmcGroupChance} with total weight {totalWeight}");
+                DonutComponent.Logger.LogDebug($"GetProbabilityArray: Calculating probabilities for {pmcGroupChance} with total weight {totalWeight}");
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();
             }
 
@@ -792,7 +787,7 @@ namespace Donuts
             if (groupChanceWeights.TryGetValue(pmcGroupChance, out var relativeWeights))
             {
                 double totalWeight = relativeWeights.Sum();
-                Debug.Log($"GetDefaultProbabilityArray: Calculating default probabilities for {pmcGroupChance} with total weight {totalWeight}");
+                DonutComponent.Logger.LogDebug($"GetDefaultProbabilityArray: Calculating default probabilities for {pmcGroupChance} with total weight {totalWeight}");
                 return relativeWeights.Select(weight => weight / totalWeight).ToArray();
             }
 
@@ -808,7 +803,7 @@ namespace Donuts
             }
 
             double probabilityThreshold = random.NextDouble();
-            Debug.Log($"getOutcomeWithProbability: Calculating outcome with probability threshold {probabilityThreshold}");
+            DonutComponent.Logger.LogDebug($"getOutcomeWithProbability: Calculating outcome with probability threshold {probabilityThreshold}");
 
             double cumulative = 0.0;
             int adjustedMaxCount = maxGroupSize - minGroupSize;
@@ -817,7 +812,7 @@ namespace Donuts
                 cumulative += probabilities[i];
                 if (probabilityThreshold < cumulative)
                 {
-                    Debug.Log($"getOutcomeWithProbability: Outcome determined at index {i}");
+                    DonutComponent.Logger.LogDebug($"getOutcomeWithProbability: Outcome determined at index {i}");
                     return i;
                 }
             }
@@ -830,7 +825,7 @@ namespace Donuts
             int[] lowWeights = ParseGroupWeightDistro(groupWeightDistroLow.Value);
             int[] highWeights = ParseGroupWeightDistro(groupWeightDistroHigh.Value);
 
-            Debug.Log("InitializeGroupChanceWeights: Initializing group chance weights.");
+            DonutComponent.Logger.LogDebug("InitializeGroupChanceWeights: Initializing group chance weights.");
 
             groupChanceWeights["Default"] = defaultWeights;
             groupChanceWeights["Low"] = lowWeights;
@@ -839,7 +834,7 @@ namespace Donuts
 
         internal static int[] ParseGroupWeightDistro(string weightsString)
         {
-            Debug.Log($"ParseGroupWeightDistro: Parsing group weight distribution {weightsString}");
+            DonutComponent.Logger.LogDebug($"ParseGroupWeightDistro: Parsing group weight distribution {weightsString}");
             return weightsString.Split(new char[] { ',' })
                                 .Where(s => !string.IsNullOrWhiteSpace(s))
                                 .Select(int.Parse)
@@ -848,7 +843,7 @@ namespace Donuts
 
         internal static BotDifficulty GetBotDifficulty(WildSpawnType wildSpawnType)
         {
-            Debug.Log($"GetBotDifficulty: Getting difficulty for WildSpawnType {wildSpawnType}");
+            DonutComponent.Logger.LogDebug($"GetBotDifficulty: Getting difficulty for WildSpawnType {wildSpawnType}");
 
             if (wildSpawnType == WildSpawnType.assault)
             {
@@ -866,7 +861,7 @@ namespace Donuts
 
         internal static BotDifficulty grabPMCDifficulty()
         {
-            Debug.Log($"grabPMCDifficulty: Grabbing PMC difficulty");
+            DonutComponent.Logger.LogDebug($"grabPMCDifficulty: Grabbing PMC difficulty");
 
             switch (botDifficultiesPMC.Value.ToLower())
             {
@@ -888,7 +883,7 @@ namespace Donuts
 
         internal static BotDifficulty grabSCAVDifficulty()
         {
-            Debug.Log($"grabSCAVDifficulty: Grabbing SCAV difficulty");
+            DonutComponent.Logger.LogDebug($"grabSCAVDifficulty: Grabbing SCAV difficulty");
 
             switch (botDifficultiesSCAV.Value.ToLower())
             {
@@ -910,7 +905,7 @@ namespace Donuts
 
         internal static BotDifficulty grabOtherDifficulty()
         {
-            Debug.Log($"grabOtherDifficulty: Grabbing difficulty for other types");
+            DonutComponent.Logger.LogDebug($"grabOtherDifficulty: Grabbing difficulty for other types");
 
             switch (botDifficultiesOther.Value.ToLower())
             {
